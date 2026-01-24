@@ -20,6 +20,29 @@ artifacts/
 **/*.joblib
 **/*.log
 
+# Local state / caches / outputs
+.auto_pipeline_state
+state/
+tmp/
+logs/
+catboost_info/
+mlflow.db
+models/
+raw/
+reports/
+
+# Big data files
+*.csv
+*.tsv
+*.jsonl
+*.feather
+*.h5
+*.hdf5
+*.zip
+*.7z
+*.tar
+*.gz
+
 # IDE / OS
 .vscode/
 .idea/
