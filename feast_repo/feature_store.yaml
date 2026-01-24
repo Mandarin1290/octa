@@ -1,0 +1,7 @@
+project: default
+registry: data/registry.db
+provider: local
+online_store:
+  type: redis
+  connection_string: 127.0.0.1:6379
+  # optional: other redis config may go here

@@ -1,0 +1,10 @@
+{
+  "timeframe": "30m",
+  "input_list": "reports/cascade/20260114T174932Z/1H/pass_1h.txt",
+  "n_input": 0,
+  "n_pass": 0,
+  "passlist": "reports/cascade/20260114T174932Z/30m/pass_30m.txt",
+  "safe_mode": true,
+  "fast": true,
+  "seconds": 0.0
+}

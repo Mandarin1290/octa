@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-22T07:24:51.145505+00:00",
+  "symbol": "DJI",
+  "run_id": "20260122T055752Z__1H",
+  "snapshot_id": "9d7cd3d2a7d7f5ea686273a52f9e68204a4de07cece08606b64f48c569d75bea",
+  "attestation_hash": "107e6b9236696271fe3acb5ad8793cf280919c0a61afae5b162de4cf844d50d4",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-22T07:24:51.145751+00:00",
+      "action": "snapshot_taken",
+      "id": "9d7cd3d2a7d7f5ea686273a52f9e68204a4de07cece08606b64f48c569d75bea",
+      "name": "training_run",
+      "evidence_hash": "9d7cd3d2a7d7f5ea686273a52f9e68204a4de07cece08606b64f48c569d75bea"
+    },
+    {
+      "ts": "2026-01-22T07:24:51.146286+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "107e6b9236696271fe3acb5ad8793cf280919c0a61afae5b162de4cf844d50d4"
+    },
+    {
+      "ts": "2026-01-22T07:24:51.146317+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "9fc3db21abe1bd03cb93784be0f8227b9143bf87de27376e1f069d59b6a2bca5"
+    }
+  ]
+}

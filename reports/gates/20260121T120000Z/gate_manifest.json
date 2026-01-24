@@ -1,0 +1,9 @@
+{
+  "run_id": "20260121T120000Z",
+  "created_utc": "2026-01-21T16:53:04.032166+00:00",
+  "reports_dir": "/home/n-b/Octa/reports",
+  "dataset": "stocks",
+  "manifest_dir": "/home/n-b/Octa/reports/gates/20260121T120000Z",
+  "artifacts_dir": "/home/n-b/Octa/reports/cascade/20260121T120000Z/global_gate_1d",
+  "config_fingerprint": "ab527b9ace42b530c7e0074d1762d7b075121be673675cb0709c1bafd5a3d40e"
+}

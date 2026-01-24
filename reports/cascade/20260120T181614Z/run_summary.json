@@ -1,0 +1,66 @@
+{
+  "run_id": "20260120T181614Z",
+  "out_dir": "reports/cascade/20260120T181614Z",
+  "raw_root": "raw",
+  "scan_raw": true,
+  "config": "configs/cascade_hf.yaml",
+  "safe_mode": false,
+  "fast": false,
+  "stages": [
+    {
+      "timeframe": "1D",
+      "source": "external_passlist",
+      "input_passlist": "reports/cascade/20260120T181614Z/1D/pass_1d.txt",
+      "n_pass": 289,
+      "passlist": "reports/cascade/20260120T181614Z/1D/pass_1d.txt"
+    },
+    {
+      "timeframe": "1H",
+      "input_list": "reports/cascade/20260120T181614Z/1D/pass_1d.txt",
+      "n_input": 289,
+      "n_missing_parquet": 4,
+      "n_pass": 0,
+      "passlist": "reports/cascade/20260120T181614Z/1H/pass_1h.txt",
+      "missing_parquet_list": "reports/cascade/20260120T181614Z/1H/missing_parquet.txt",
+      "safe_mode": false,
+      "fast": false,
+      "seconds": 12230.135
+    },
+    {
+      "timeframe": "30m",
+      "input_list": "reports/cascade/20260120T181614Z/1H/pass_1h.txt",
+      "n_input": 0,
+      "n_missing_parquet": 0,
+      "n_pass": 0,
+      "passlist": "reports/cascade/20260120T181614Z/30m/pass_30m.txt",
+      "missing_parquet_list": "",
+      "safe_mode": false,
+      "fast": false,
+      "seconds": 0.0
+    },
+    {
+      "timeframe": "5m",
+      "input_list": "reports/cascade/20260120T181614Z/30m/pass_30m.txt",
+      "n_input": 0,
+      "n_missing_parquet": 0,
+      "n_pass": 0,
+      "passlist": "reports/cascade/20260120T181614Z/5m/pass_5m.txt",
+      "missing_parquet_list": "",
+      "safe_mode": false,
+      "fast": false,
+      "seconds": 0.0
+    },
+    {
+      "timeframe": "1m",
+      "input_list": "reports/cascade/20260120T181614Z/5m/pass_5m.txt",
+      "n_input": 0,
+      "n_missing_parquet": 0,
+      "n_pass": 0,
+      "passlist": "reports/cascade/20260120T181614Z/1m/pass_1m.txt",
+      "missing_parquet_list": "",
+      "safe_mode": false,
+      "fast": false,
+      "seconds": 0.0
+    }
+  ]
+}

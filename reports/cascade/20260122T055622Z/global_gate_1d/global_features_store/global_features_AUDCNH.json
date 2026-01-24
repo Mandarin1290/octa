@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/AUDCNH_1D.parquet",
+  "n": 3551,
+  "vol_ann": 0.14392952373940987,
+  "max_drawdown": -0.4003702615339406,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

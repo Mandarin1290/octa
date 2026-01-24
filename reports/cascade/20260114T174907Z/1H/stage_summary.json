@@ -1,0 +1,10 @@
+{
+  "timeframe": "1H",
+  "input_list": "reports/cascade/20260114T174907Z/global_gate_1d/pass_symbols_1d.txt",
+  "n_input": 0,
+  "n_pass": 0,
+  "passlist": "reports/cascade/20260114T174907Z/1H/pass_1h.txt",
+  "safe_mode": true,
+  "fast": true,
+  "seconds": 0.0
+}

@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/NQX_full_1day.parquet",
+  "n": 1713,
+  "vol_ann": 0.24664456033239787,
+  "max_drawdown": -0.355631178971059,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

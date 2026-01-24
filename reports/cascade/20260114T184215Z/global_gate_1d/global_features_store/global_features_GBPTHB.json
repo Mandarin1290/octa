@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/GBPTHB_1D.parquet",
+  "n": 4168,
+  "vol_ann": 0.09027398311632813,
+  "max_drawdown": -0.34332212616074287,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

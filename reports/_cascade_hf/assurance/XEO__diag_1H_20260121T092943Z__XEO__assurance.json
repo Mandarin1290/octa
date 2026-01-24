@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-21T11:05:41.619241+00:00",
+  "symbol": "XEO",
+  "run_id": "diag_1H_20260121T092943Z__XEO",
+  "snapshot_id": "e06fc003ad103868df65a178b5591673321d4f8c915c54463d12d2194c51615e",
+  "attestation_hash": "3b682b1d2b06273d78e12656d8a07ef34199b97ed13d308ce612eef92441380e",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T11:05:41.619410+00:00",
+      "action": "snapshot_taken",
+      "id": "e06fc003ad103868df65a178b5591673321d4f8c915c54463d12d2194c51615e",
+      "name": "training_run",
+      "evidence_hash": "e06fc003ad103868df65a178b5591673321d4f8c915c54463d12d2194c51615e"
+    },
+    {
+      "ts": "2026-01-21T11:05:41.619725+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "3b682b1d2b06273d78e12656d8a07ef34199b97ed13d308ce612eef92441380e"
+    },
+    {
+      "ts": "2026-01-21T11:05:41.619745+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "PASS",
+      "evidence_hash": "fb66bf30697c9e016e763f42fc0cded509b42028ba3a563662af7e5a0f0155f2"
+    }
+  ]
+}

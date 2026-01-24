@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-21T11:00:48.442944+00:00",
+  "symbol": "USDHUF",
+  "run_id": "diag_1H_20260121T092943Z__USDHUF",
+  "snapshot_id": "9bed7c66e26efd586e7e80fde8a5a7ebc02b7c04dbe683f533298e4dba3b24a0",
+  "attestation_hash": "1043dea08473602b8ad45d01fadb52d05d3e7e539b8545fcf4dbe38dfe95fa7a",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T11:00:48.443060+00:00",
+      "action": "snapshot_taken",
+      "id": "9bed7c66e26efd586e7e80fde8a5a7ebc02b7c04dbe683f533298e4dba3b24a0",
+      "name": "training_run",
+      "evidence_hash": "9bed7c66e26efd586e7e80fde8a5a7ebc02b7c04dbe683f533298e4dba3b24a0"
+    },
+    {
+      "ts": "2026-01-21T11:00:48.443274+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "1043dea08473602b8ad45d01fadb52d05d3e7e539b8545fcf4dbe38dfe95fa7a"
+    },
+    {
+      "ts": "2026-01-21T11:00:48.443293+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "3ad9f3c8c0c99c055e70c1b48fe23b59cf28179cf4e1409c66897973cda1e9ef"
+    }
+  ]
+}

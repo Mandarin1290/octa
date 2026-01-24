@@ -1,0 +1,49 @@
+*** Begin Patch
+*** Add File: octa_core/broker_adapter.py
+@@
++from typing import Dict, Any, Optional
++from dataclasses import dataclass
++import threading
+@@
++@dataclass
++class BrokerCredentials:
++    name: str
++    api_key: Optional[str] = None
++    secret: Optional[str] = None
++    live: bool = False
++
+@@
++class BrokerAdapter:
+@@
++    def __init__(self):
++        self._mode = "SIMULATED"
++        self._approved_live = False
++        self._lock = threading.Lock()
++
++    def enable_live(self, approvals: int = 0) -> None:
++        with self._lock:
++            if approvals < 2:
++                raise PermissionError("live enable requires multi-approval")
++            self._approved_live = True
++            self._mode = "LIVE"
++
++    def disable_live(self) -> None:
++        with self._lock:
++            self._approved_live = False
++            self._mode = "SIMULATED"
++
++    def place_order(self, creds: BrokerCredentials, order: Dict[str, Any]) -> Dict[str, Any]:
++        if creds.live:
++            with self._lock:
++                if not self._approved_live:
++                    raise PermissionError("Attempt to use live broker without required approvals")
++        return self._route_to_simulator(creds, order)
++
++    def _route_to_simulator(self, creds: BrokerCredentials, order: Dict[str, Any]) -> Dict[str, Any]:
++        client_id = order.get("client_order_id") or f"sim-{id(order)}"
++        return {"client_order_id": client_id, "status": "simulated", "broker": creds.name}
++
++
++__all__ = ["BrokerAdapter", "BrokerCredentials"]
+
+*** End Patch

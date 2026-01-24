@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/AACT_1D.parquet",
+  "n": 562,
+  "vol_ann": 0.159471257113277,
+  "max_drawdown": -0.23050259965337938,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

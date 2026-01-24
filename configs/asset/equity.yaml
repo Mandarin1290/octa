@@ -1,0 +1,25 @@
+gates:
+  by_asset_class:
+    stock:
+      sharpe_min: 0.5
+      max_drawdown_max: 0.2
+      min_trades: 30
+      required_folds_pass_ratio: 0.6
+
+# Optional per-asset IBKR cost assumptions (conservative defaults)
+broker:
+  name: ibkr
+  cost_bps: 2.0
+  spread_bps: 1.0
+
+# Optional liquidity filter for equities
+liquidity:
+  enabled: false
+  min_adv_usd: 1000000
+
+session:
+  enabled: true
+  timezone: America/New_York
+  open: "09:30"
+  close: "16:00"
+  weekdays: [0, 1, 2, 3, 4]

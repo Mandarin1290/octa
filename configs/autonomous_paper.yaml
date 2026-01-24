@@ -1,0 +1,65 @@
+# Autonomous universe→gates→cascade training→promote PASS→paper
+# SAFE DEFAULTS: fail-closed and LIVE disabled.
+
+run_id: null  # optional override
+
+registry_root: artifacts
+reports_dir: reports
+pkl_dir: raw/PKL
+training_config: configs/dev.yaml
+
+# Universe scan (local parquet preferred)
+universe:
+  stock_dir: raw/Stock_parquet
+  fx_dir: raw/FX_parquet
+  crypto_dir: raw/Crypto_parquet
+  futures_dir: raw/Future_parquet
+  asset_map_path: assets/asset_map.yaml
+  limit: 0
+
+# Which timeframes to evaluate for data quality scan (per-symbol)
+timeframes: [1D, 1H, 30M, 5M, 1M]
+
+# Cascaded training order (configurable)
+# You may extend to include 15M by adding it here if data exists.
+cascade_order: [1D, 1H, 30M, 5M, 1M]
+
+# Data quality thresholds (fail-closed per symbol+tf)
+data_quality:
+  max_duplicate_frac: 0.001
+  max_missing_frac: 0.02
+  min_spacing_match_frac: 0.95
+  spacing_tolerance_seconds: 120
+  require_utc_timezone: true
+  allow_naive_timestamps: false
+
+# Global eligibility gate (slow, 1D)
+global_gate:
+  min_history_days: 252
+  max_drawdown_max: 0.6
+  max_vol_annual: 2.5
+  fred_enabled: true
+  edgar_enabled: true
+  # MUST be a compliant User-Agent; override in your private config
+  edgar_user_agent: "OCTA/1.0 (research; contact=ops@example.com)"
+
+# Resource budgets
+budgets:
+  max_runtime_s: 7200
+  max_ram_mb: 14000
+  max_threads: 4
+  max_disk_mb: 20000
+
+# Optional: start paper runner immediately after promotion.
+# Fail-closed: without a wired broker adapter, orders will be skipped.
+paper:
+  enabled: true
+  level: paper
+  ledger_dir: artifacts/ledger_paper
+  paper_log_path: artifacts/paper_trade_log.ndjson
+  last_n_rows: 300
+  live_enable: false
+  budgets:
+    max_runtime_s: 3600
+    max_ram_mb: 12000
+    max_threads: 4

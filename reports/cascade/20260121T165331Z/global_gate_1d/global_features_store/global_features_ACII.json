@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/ACII_1D.parquet",
+  "n": 485,
+  "vol_ann": 1.0861934073337642,
+  "max_drawdown": -0.08868778280542988,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

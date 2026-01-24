@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/ATLCZ_1D.parquet",
+  "n": 483,
+  "vol_ann": 0.0600753159541995,
+  "max_drawdown": -0.04445538650572811,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

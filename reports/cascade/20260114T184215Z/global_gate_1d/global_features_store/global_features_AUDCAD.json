@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/AUDCAD_1D.parquet",
+  "n": 4152,
+  "vol_ann": 0.07497124809295219,
+  "max_drawdown": -0.22625027908015172,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

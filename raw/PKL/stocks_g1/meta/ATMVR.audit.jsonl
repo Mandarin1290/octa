@@ -1,0 +1,16 @@
+{"type": "START", "ts_utc": "2026-01-08T19:52:16.615759+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "ATMVR", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-08T19:52:16.616075+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "ATMVR", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ATMVR_1H.parquet", "parquet_sha256": "b36e24157f69313c0751e4320c648fb4ad3e7486d55266b45db058501ea4cb83"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T19:52:16.629093+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "ATMVR", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T19:54:26.835443+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "ATMVR", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T19:54:26.836774+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "ATMVR", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/ATMVR.meta.json"}
+{"type": "START", "ts_utc": "2026-01-08T21:49:26.896018+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "ATMVR", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-08T21:49:26.897494+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "ATMVR", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ATMVR_1H.parquet", "parquet_sha256": "b36e24157f69313c0751e4320c648fb4ad3e7486d55266b45db058501ea4cb83"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T21:49:26.904304+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "ATMVR", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T21:49:37.905873+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "ATMVR", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T21:49:37.906984+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "ATMVR", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/ATMVR.meta.json"}
+{"type": "START", "ts_utc": "2026-01-09T06:59:53.112725+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "ATMVR", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-09T06:59:53.113703+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "ATMVR", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ATMVR_1H.parquet", "parquet_sha256": "b36e24157f69313c0751e4320c648fb4ad3e7486d55266b45db058501ea4cb83"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-09T06:59:53.122090+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "ATMVR", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-09T07:00:26.942797+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "ATMVR", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_PKL_DEBUG_FAIL", "ts_utc": "2026-01-09T07:00:26.946592+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "ATMVR", "tf": "1H", "pkl": "/home/n-b/Octa/raw/PKL/stocks_g1/1H_DEBUG_FAIL/ATMVR.pkl", "pkl_sha256": "54d28c257f781a097c9d15e7494f3e284b996e0b26998dcff867e66f4df25f4f", "artifact_kind": "debug"}
+{"type": "WRITE_META", "ts_utc": "2026-01-09T07:00:26.947411+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "ATMVR", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/ATMVR.meta.json"}

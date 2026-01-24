@@ -1,0 +1,118 @@
+{
+  "timeframe": "1H",
+  "n_symbols": 289,
+  "run_id_prefix": "diag_1H_20260121T092943Z",
+  "status_counts": {
+    "FAIL": 226,
+    "PASS": 59,
+    "MISSING_PARQUET": 4
+  },
+  "top_reason_keys": [
+    {
+      "reason": "turnover_per_day",
+      "count": 120,
+      "examples": [
+        "AACT",
+        "AAM",
+        "ABBV",
+        "ABM",
+        "ABR_D"
+      ]
+    },
+    {
+      "reason": "avg_net_trade_return",
+      "count": 85,
+      "examples": [
+        "AACT",
+        "ABR_D",
+        "ABR_E",
+        "ABR_F",
+        "ACEL"
+      ]
+    },
+    {
+      "reason": "data_load_failed",
+      "count": 75,
+      "examples": [
+        "AUDBRL",
+        "AUDCAD",
+        "AUDCHF",
+        "AUDCNH",
+        "AUDHUF"
+      ]
+    },
+    {
+      "reason": "net_to_gross",
+      "count": 65,
+      "examples": [
+        "AACT",
+        "ABR_D",
+        "ABR_F",
+        "ACEL",
+        "ACGLO"
+      ]
+    },
+    {
+      "reason": "cost_stress_failed",
+      "count": 63,
+      "examples": [
+        "AACT",
+        "ABR_D",
+        "ABR_F",
+        "ACEL",
+        "ACGLO"
+      ]
+    },
+    {
+      "reason": "sortino",
+      "count": 40,
+      "examples": [
+        "ABR_D",
+        "ABR_F",
+        "ACP_A",
+        "ACR_C",
+        "ADC_A"
+      ]
+    },
+    {
+      "reason": "profit_factor",
+      "count": 30,
+      "examples": [
+        "ABR_D",
+        "ACP_A",
+        "ACR_C",
+        "ADC_A",
+        "AGX"
+      ]
+    },
+    {
+      "reason": "sharpe",
+      "count": 23,
+      "examples": [
+        "ABR_D",
+        "ACR_C",
+        "ADC_A",
+        "AGX",
+        "ALLE"
+      ]
+    },
+    {
+      "reason": "tail_kill_switch",
+      "count": 7,
+      "examples": [
+        "CXU",
+        "SET",
+        "SKEW",
+        "SPEN",
+        "SPRI"
+      ]
+    },
+    {
+      "reason": "folds",
+      "count": 1,
+      "examples": [
+        "AEFC"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+# CPU-optimierte Laufzeit-Policy (opt-in)
+# Ziel: 3 von 4 physischen Kernen nutzen, 1 Kern frei lassen.
+# Hinweis: Default-Verhalten bleibt unverändert, wenn diese Config nicht genutzt wird.
+
+compute:
+  enabled: true
+  reserve_cores: 1
+  prefer_physical_cores: true
+  auto_cap_max_workers: true
+  # Bei parallelem Multi-Symbol-Training: BLAS/OpenMP pro Worker auf 1
+  blas_threads_per_worker: 1
+  # Optional für Single-Symbol-Jobs (run_train --symbol ...):
+  # single_job_blas_threads: 3
+
+# Parallelität über Symbols (Daemon/Batch) statt innerhalb eines Modells.
+# So bleibt die Non-Determinismus-Prüfung stabil.
+max_workers: 3
+
+kvp:
+  enabled: true
+  filename: kvp_summary.json

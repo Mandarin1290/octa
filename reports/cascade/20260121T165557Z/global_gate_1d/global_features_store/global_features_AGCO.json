@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/AGCO_1D.parquet",
+  "n": 4193,
+  "vol_ann": 0.34671135765366246,
+  "max_drawdown": -0.5407025769527489,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

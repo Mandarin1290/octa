@@ -1,0 +1,60 @@
+# Feature flags for OCTA integrations (safe defaults)
+# Default: PAPER-only posture, heavy integrations off.
+
+features:
+  # Core behaviors
+  auto_install_deps: true
+  gate_tuning:
+    enabled: false
+    overlay_path: octa_core/config/risk_overlays.yaml
+
+  # Execution
+  execution:
+    ibkr_ib_insync:
+      enabled: false
+
+  # Risk integrations
+  quantlib:
+    enabled: false
+  opengamma:
+    enabled: false
+    required_for_live: false
+
+  # Security
+  security:
+    audit_log:
+      enabled: true
+      path: artifacts/security/audit.jsonl
+    encryption_at_rest:
+      enabled: false
+
+  # Accounting
+  accounting:
+    enabled: false
+
+  # Control plane
+  control_plane:
+    enabled: false
+    host: 127.0.0.1
+    port: 8080
+
+  telegram_control:
+    enabled: false
+
+  # Optional portfolio optimization libs (install only if enabled)
+  portfolio_optim:
+    riskfolio:
+      enabled: false
+    cvxpy:
+      enabled: false
+
+modes:
+  # Wrapper-level mode selection; does not change existing OCTA entrypoints.
+  default_mode: autopilot   # training_daemon|autopilot
+  allow_live: false
+
+thresholds:
+  min_free_disk_gb: 15
+  max_data_dir_gb_warn: 200
+  min_tradeable_symbols_paper: 10
+  min_tradeable_symbols_live: 30

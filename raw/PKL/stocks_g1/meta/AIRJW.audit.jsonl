@@ -1,0 +1,21 @@
+{"type": "START", "ts_utc": "2026-01-08T18:45:37.268534+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "AIRJW", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-08T18:45:37.268830+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "AIRJW", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/AIRJW_1H.parquet", "parquet_sha256": "a2eebf019715a1b8ff368d7ce966741ca75feb68785895092c979b62dfa0940b"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T18:45:37.275564+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "AIRJW", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T18:48:33.186419+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "AIRJW", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T18:48:33.187484+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "AIRJW", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/AIRJW.meta.json"}
+{"type": "START", "ts_utc": "2026-01-08T20:46:28.624682+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "AIRJW", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-08T20:46:28.625652+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "AIRJW", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/AIRJW_1H.parquet", "parquet_sha256": "a2eebf019715a1b8ff368d7ce966741ca75feb68785895092c979b62dfa0940b"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T20:46:28.635436+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "AIRJW", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T20:48:56.114292+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "AIRJW", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T20:48:56.117517+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "AIRJW", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/AIRJW.meta.json"}
+{"type": "START", "ts_utc": "2026-01-08T21:29:36.557796+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "AIRJW", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-08T21:29:36.559866+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "AIRJW", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/AIRJW_1H.parquet", "parquet_sha256": "a2eebf019715a1b8ff368d7ce966741ca75feb68785895092c979b62dfa0940b"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T21:29:36.569396+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "AIRJW", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T21:30:14.903665+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "AIRJW", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T21:30:14.904577+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "AIRJW", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/AIRJW.meta.json"}
+{"type": "START", "ts_utc": "2026-01-09T06:36:51.584997+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AIRJW", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-09T06:36:51.586170+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AIRJW", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/AIRJW_1H.parquet", "parquet_sha256": "a2eebf019715a1b8ff368d7ce966741ca75feb68785895092c979b62dfa0940b"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-09T06:36:51.595298+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AIRJW", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-09T06:37:43.142342+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AIRJW", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_PKL_DEBUG_FAIL", "ts_utc": "2026-01-09T06:37:43.147076+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AIRJW", "tf": "1H", "pkl": "/home/n-b/Octa/raw/PKL/stocks_g1/1H_DEBUG_FAIL/AIRJW.pkl", "pkl_sha256": "008c8030953ff8d3f127dd0dccf23af916b027d4d3d24943216c9c7439289db0", "artifact_kind": "debug"}
+{"type": "WRITE_META", "ts_utc": "2026-01-09T06:37:43.148146+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AIRJW", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/AIRJW.meta.json"}

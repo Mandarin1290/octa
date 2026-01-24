@@ -1,0 +1,19 @@
+# Gate overlay (RELAX QUALITY MINS ONLY)
+#
+# This file is consumed by octa_training.core.config.load_config via env var:
+#   OCTA_GATE_OVERLAY_PATH=configs/gate_overlay_relax_quality.yaml
+#
+# Safety policy:
+# - Relaxes only model-quality MIN thresholds.
+# - Does NOT relax risk MAX constraints (drawdown/CVaR/turnover, etc.).
+#
+# Use-case:
+# - Increase pass-through per timeframe while keeping hard risk floors intact.
+
+overlay:
+  gate_version: "hf_gate_overlay_relax_quality_v1"
+  relax:
+    # Multiply the following MIN thresholds by this factor:
+    # sharpe_min, sortino_min, profit_factor_min, sharpe_oos_over_is_min,
+    # net_to_gross_min, avg_net_trade_return_min
+    sharpe_min_factor: 0.85

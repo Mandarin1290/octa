@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/ARTNA_1D.parquet",
+  "n": 6491,
+  "vol_ann": 0.27945673750782496,
+  "max_drawdown": -0.4939073366460479,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

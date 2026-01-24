@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-21T00:46:18.642148+00:00",
+  "symbol": "SKEW",
+  "run_id": "diag_1H_20260120T232103Z__SKEW",
+  "snapshot_id": "083ba7e7d0685d854feecaac03b0fc6ddbe32786b94dfb5efe5724a4c811823c",
+  "attestation_hash": "1833297cb66118348c54a4fef83f84effa060c831e142f99d66203e2bd468c61",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T00:46:18.642295+00:00",
+      "action": "snapshot_taken",
+      "id": "083ba7e7d0685d854feecaac03b0fc6ddbe32786b94dfb5efe5724a4c811823c",
+      "name": "training_run",
+      "evidence_hash": "083ba7e7d0685d854feecaac03b0fc6ddbe32786b94dfb5efe5724a4c811823c"
+    },
+    {
+      "ts": "2026-01-21T00:46:18.642601+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "1833297cb66118348c54a4fef83f84effa060c831e142f99d66203e2bd468c61"
+    },
+    {
+      "ts": "2026-01-21T00:46:18.642620+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "16eed36a552f4a4eb570b0ec4efd21f541b29320fb0f25f8432f7d2a4d334e82"
+    }
+  ]
+}

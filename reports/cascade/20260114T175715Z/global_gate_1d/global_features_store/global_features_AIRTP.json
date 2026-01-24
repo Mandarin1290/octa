@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/AIRTP_1D.parquet",
+  "n": 1319,
+  "vol_ann": 0.383193024282991,
+  "max_drawdown": -0.3312966481626368,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

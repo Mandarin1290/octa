@@ -1,0 +1,26 @@
+version: '3.7'
+services:
+  pushgateway:
+    image: prom/pushgateway:1.5.0
+    ports:
+      - '9091:9091'
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+    ports:
+      - '9090:9090'
+    depends_on:
+      - pushgateway
+  grafana:
+    image: grafana/grafana:9.5.6
+    ports:
+      - '3000:3000'
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus

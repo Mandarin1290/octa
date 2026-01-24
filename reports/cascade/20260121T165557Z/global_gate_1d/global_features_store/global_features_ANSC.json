@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/ANSC_1D.parquet",
+  "n": 468,
+  "vol_ann": 0.01861900742050163,
+  "max_drawdown": -0.006294964028776828,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

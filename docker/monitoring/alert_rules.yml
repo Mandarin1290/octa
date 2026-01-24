@@ -1,0 +1,11 @@
+groups:
+  - name: octa-canary.rules
+    rules:
+      - alert: OctaCanaryFailed
+        expr: octa_canary_passed == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Evidently canary failed"
+          description: "The Evidently canary reported a failed check (octa_canary_passed == 0)."

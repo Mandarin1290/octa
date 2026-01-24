@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/AIV_1D.parquet",
+  "n": 4139,
+  "vol_ann": 0.3046900163130001,
+  "max_drawdown": -0.5442313014967319,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

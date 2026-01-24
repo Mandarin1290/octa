@@ -1,0 +1,60 @@
+name: Build and Test Trainer Container
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build image
+        run: |
+          docker build -t octa-trainer:latest .
+
+      - name: Run trainer (sample data)
+        run: |
+          docker run --rm -v ${{ github.workspace }}/tests/data:/data octa-trainer:latest --parquet /data/sample_parquet.parquet --target target --version ci-run-1 --cv-folds 3 --hyperopt --backtest
+
+      - name: Run canary
+        run: |
+          docker run --rm -v ${{ github.workspace }}/artifacts:/artifacts octa-trainer:latest python3 -m scripts.evidently_canary_wrapper --reference /artifacts/models/demo_model/regression/test-run-1 --candidate /artifacts/models/demo_model/regression/ci-run-1 --outdir /artifacts/canary
+
+      - name: Assert canary passed
+        run: |
+          python3 - <<'PY'
+import json,sys
+path='artifacts/canary/canary_report.json'
+try:
+    r=json.load(open(path))
+except Exception as e:
+    print('Missing or invalid canary report:',e); sys.exit(1)
+print('Canary passed:', r.get('passed'))
+sys.exit(0 if r.get('passed') else 1)
+PY
+
+      - name: Push canary metrics to Prometheus Pushgateway (optional)
+        if: ${{ secrets.PUSHGATEWAY_URL != '' }}
+        env:
+          PUSHGATEWAY_URL: ${{ secrets.PUSHGATEWAY_URL }}
+        run: |
+          docker run --rm -v ${{ github.workspace }}/artifacts:/artifacts octa-trainer:latest python3 -m scripts.metrics_exporter --canary /artifacts/canary/canary_report.json --gateway ${PUSHGATEWAY_URL} --job octa_canary --group repo=${{ github.repository }} --group run=${{ github.run_id }} || true
+
+      - name: Import GPG key and sign artifacts (optional)
+        if: ${{ secrets.GPG_PRIVATE_KEY != '' }}
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          set -e
+          echo "$GPG_PRIVATE_KEY" > /tmp/private.key.asc
+          gpg --batch --import /tmp/private.key.asc || (echo 'GPG import failed' && exit 1)
+          # sign integrity files if present
+          if [ -f artifacts/models/demo_model/regression/ci-run-1/integrity.sha256 ]; then
+            gpg --batch --yes --passphrase "$GPG_PASSPHRASE" -o artifacts/models/demo_model/regression/ci-run-1/integrity.sha256.sig --detach-sign artifacts/models/demo_model/regression/ci-run-1/integrity.sha256
+            echo 'SIGNED=1'
+          else
+            echo 'No integrity file to sign'
+          fi

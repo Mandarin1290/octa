@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-21T10:46:43.244144+00:00",
+  "symbol": "GBPJPY",
+  "run_id": "diag_1H_20260121T092943Z__GBPJPY",
+  "snapshot_id": "31467d0e373d62e71dd999cd475fb1968fc80acd65b90e3edd2528ddb3e29250",
+  "attestation_hash": "1c827e04b9fbf2396d01188dba9fcccec9cf29a834bfdad3683f6747130e402a",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T10:46:43.244335+00:00",
+      "action": "snapshot_taken",
+      "id": "31467d0e373d62e71dd999cd475fb1968fc80acd65b90e3edd2528ddb3e29250",
+      "name": "training_run",
+      "evidence_hash": "31467d0e373d62e71dd999cd475fb1968fc80acd65b90e3edd2528ddb3e29250"
+    },
+    {
+      "ts": "2026-01-21T10:46:43.244667+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "1c827e04b9fbf2396d01188dba9fcccec9cf29a834bfdad3683f6747130e402a"
+    },
+    {
+      "ts": "2026-01-21T10:46:43.244696+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "024cb1ff6bc146da9b0b7d6ca0cfcfb7d79ec5206af6c3003e0b26b85bdea727"
+    }
+  ]
+}

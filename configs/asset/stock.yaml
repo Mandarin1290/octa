@@ -1,0 +1,19 @@
+# Asset-class overlay: stocks/equities
+
+signal:
+  vol_target: 0.12
+
+broker:
+  cost_bps: 2.0
+  spread_bps: 1.0
+  stress_cost_multiplier: 3.0
+
+features:
+  horizons: [1, 3, 5]
+
+session:
+  enabled: true
+  timezone: America/New_York
+  open: "09:30"
+  close: "16:00"
+  weekdays: [0, 1, 2, 3, 4]

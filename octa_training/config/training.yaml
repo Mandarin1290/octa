@@ -1,0 +1,180 @@
+# OCTA training configuration - realistic defaults for Tier-1 pipeline
+paths:
+  raw_dir: "/home/n-b/Octa/raw"
+  pkl_dir: "/home/n-b/Octa/raw/PKL"
+  logs_dir: "/home/n-b/Octa/logs"
+  state_dir: "/home/n-b/Octa/state"
+  reports_dir: "/home/n-b/Octa/reports"
+
+gating:
+  norm_mse_threshold: 0.02
+  abs_mse_threshold: NaN
+  min_train_samples: 1000
+  min_backtest_samples: 2000
+  max_cv_rel_std: 0.2
+  max_cv_backtest_delta: 0.15
+  min_sharpe: -50.0
+  max_drawdown: 0.1
+
+tuning:
+  optuna_trials: 2000
+  cv_folds: 5
+  early_stopping_rounds: 50
+  enabled: true
+  timeout_sec: 7200
+  models_order: ["catboost", "lightgbm", "xgboost", "lstm"]
+retrain:
+  default_cadence_days: 7
+  max_retries: 3
+
+costs:
+  compute_cost_per_hour_usd: 1.5
+  storage_cost_per_gb_month_usd: 0.02
+
+signal:
+  mode: "cls"
+  upper_q: 0.9
+  lower_q: 0.1
+  leverage_cap: 1.0
+  vol_target: 0.05
+  realized_vol_window: 20
+  cost_bps: 0.1
+  spread_bps: 0.05
+  stress_cost_multiplier: 3.0
+
+# IBKR-only conservative execution/cost model (used for evaluation)
+broker:
+  name: ibkr
+  cost_bps: 2.0
+  spread_bps: 1.0
+  stress_cost_multiplier: 3.0
+
+# Liquidity filter (ADV proxies)
+liquidity:
+  enabled: false
+  adv_lookback_days: 20
+  min_adv_usd: NaN
+  min_adv_shares: NaN
+  min_history_days: 10
+
+# Portfolio-level packaging gate proxies
+portfolio_gate:
+  enabled: false
+  max_turnover_ann: NaN
+  max_avg_gross_exposure: NaN
+
+# Notifications
+notifications:
+  telegram:
+    enabled: false
+    token_env: OCTA_TELEGRAM_BOT_TOKEN
+    chat_id_env: OCTA_TELEGRAM_CHAT_ID
+
+training_command: "python3 -m scripts.train_and_save --parquet {parquet} --version {symbol} --backtest --cv-folds {cv_folds} --hyperopt"
+
+asset_class_overrides:
+  # direct_map: explicit symbol -> asset class
+  direct_map:
+    BTC: crypto
+    ETH: crypto
+    EURUSD: forex
+    DJR: index
+  # regex rules evaluated by priority (higher first)
+  regex_rules:
+    - pattern: "^ES\\d+"
+      asset_class: future
+      priority: 10
+    - pattern: "_ETF$"
+      asset_class: etf
+      priority: 5
+    - pattern: "\\bFX\\b|_FX_"
+      asset_class: forex
+      priority: 8
+    - pattern: "BTC|ETH|SOL|CRYPTO"
+      asset_class: crypto
+      priority: 9
+
+symbol_overrides: {}
+
+# runtime/hardware tuning
+max_workers: 4
+min_ram_mb: 2048
+prefer_gpu: true
+
+# Gate defaults (global and per asset class)
+gates:
+  global:
+    sharpe_min: 0.8
+    max_drawdown_max: 0.25
+    profit_factor_min: 1.1
+    min_trades: 50
+    required_folds_pass_ratio: 0.7
+  by_asset_class:
+    stock:
+      sharpe_min: 0.8
+      max_drawdown_max: 0.20
+      profit_factor_min: 1.15
+      min_trades: 60
+      required_folds_pass_ratio: 0.75
+    forex:
+      sharpe_min: 1.0
+      max_drawdown_max: 0.20
+      profit_factor_min: 1.15
+      min_trades: 200
+      required_folds_pass_ratio: 0.75
+    crypto:
+      sharpe_min: 1.0
+      max_drawdown_max: 0.25
+      profit_factor_min: 1.12
+      min_trades: 200
+      required_folds_pass_ratio: 0.7
+    future:
+      sharpe_min: 1.2
+      max_drawdown_max: 0.20
+      profit_factor_min: 1.18
+      min_trades: 200
+      required_folds_pass_ratio: 0.8
+    option:
+      sharpe_min: 1.0
+      max_drawdown_max: 0.15
+      profit_factor_min: 1.20
+      min_trades: 120
+      required_folds_pass_ratio: 0.75
+    index:
+      sharpe_min: 0.5
+      max_drawdown_max: 0.25
+      profit_factor_min: 1.05
+      min_trades: 40
+      required_folds_pass_ratio: 0.6
+
+# Feature engineering defaults
+features:
+  window_short: 5
+  window_med: 20
+  window_long: 60
+  vol_window: 20
+  horizons: [1]
+
+# Splitting defaults
+splits:
+  n_folds: 5
+  train_window: 1000
+  test_window: 200
+  step: 200
+  purge_size: 10
+  embargo_size: 5
+  min_train_size: 500
+  min_test_size: 100
+  min_folds_required: 1
+  expanding: true
+
+# Model training defaults
+seed: 42
+scale_linear: true
+models_order: ["lightgbm", "xgboost", "catboost", "logreg", "ridge"]
+packaging:
+  quarantine_on_smoke_fail: false
+  compare_metric_name: sharpe
+  min_improvement: 0.01
+  max_age_days: 30
+

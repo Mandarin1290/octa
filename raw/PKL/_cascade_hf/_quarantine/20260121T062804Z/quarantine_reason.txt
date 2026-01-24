@@ -1,0 +1,1 @@
+Parquet for symbol AFBI not found in /home/n-b/Octa/raw

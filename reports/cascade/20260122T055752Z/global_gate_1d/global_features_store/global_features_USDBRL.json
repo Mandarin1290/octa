@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/USDBRL_1D.parquet",
+  "n": 4179,
+  "vol_ann": 0.15505954266710625,
+  "max_drawdown": -0.2669543329737505,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

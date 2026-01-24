@@ -1,0 +1,5 @@
+mode: PAPER
+env: paper
+service_name: octa-foundation-paper
+broker:
+  requires_secret: false

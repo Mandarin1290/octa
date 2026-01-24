@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/GBPJPY_1D.parquet",
+  "n": 4153,
+  "vol_ann": 0.10988945997758762,
+  "max_drawdown": -0.35816334365642033,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

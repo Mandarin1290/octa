@@ -1,0 +1,40 @@
+{
+  "ts": "2026-01-21T07:14:52.671624+00:00",
+  "symbol": "AME",
+  "run_id": "20260121T120000Z__1H",
+  "snapshot_id": "9a54680623257e3472c48632dea99abe8c0248d685eee265537984b151d57468",
+  "attestation_hash": "ba3ba4524612c120bcb59d9fef2c2a1c0362806e81d546e362768073333a7f79",
+  "governance": {
+    "cycle": "weekly_strategy",
+    "ts": "2026-01-21T07:14:52.672481+00:00",
+    "evidence_hash": "168216e7d6ce9bcb50364033e0d64faaf575fba20a386509ff396d9f290d00eb",
+    "notes": "symbol=AME run_id=20260121T120000Z__1H event=tradeable_artifact_created",
+    "participants": [
+      "auto"
+    ]
+  },
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T07:14:52.671851+00:00",
+      "action": "snapshot_taken",
+      "id": "9a54680623257e3472c48632dea99abe8c0248d685eee265537984b151d57468",
+      "name": "training_run",
+      "evidence_hash": "9a54680623257e3472c48632dea99abe8c0248d685eee265537984b151d57468"
+    },
+    {
+      "ts": "2026-01-21T07:14:52.672441+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "ba3ba4524612c120bcb59d9fef2c2a1c0362806e81d546e362768073333a7f79"
+    },
+    {
+      "ts": "2026-01-21T07:14:52.672460+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "eb0c91bb5fc0ef1fabbb0dd521c711f657d106585c1b75f3513f4a32e3ea0a72"
+    }
+  ]
+}

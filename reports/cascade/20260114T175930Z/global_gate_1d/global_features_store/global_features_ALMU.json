@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/ALMU_1D.parquet",
+  "n": 623,
+  "vol_ann": 1.3502726140164918,
+  "max_drawdown": -0.5008319467554077,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

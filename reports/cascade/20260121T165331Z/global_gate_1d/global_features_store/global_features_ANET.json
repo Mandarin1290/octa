@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/ANET_1D.parquet",
+  "n": 2911,
+  "vol_ann": 0.44882546782563276,
+  "max_drawdown": -0.5220076167100098,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

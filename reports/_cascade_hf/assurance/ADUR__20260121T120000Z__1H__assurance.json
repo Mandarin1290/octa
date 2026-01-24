@@ -1,0 +1,40 @@
+{
+  "ts": "2026-01-21T06:22:47.560289+00:00",
+  "symbol": "ADUR",
+  "run_id": "20260121T120000Z__1H",
+  "snapshot_id": "70c9d2dad32eefc59a30d8839b195dd978960c53f3650614f2809144f177630b",
+  "attestation_hash": "f26643b214d1b6e55d4c112680f49959814d2d2e7272faa2fe5545990a21cda4",
+  "governance": {
+    "cycle": "weekly_strategy",
+    "ts": "2026-01-21T06:22:47.561151+00:00",
+    "evidence_hash": "5d849b5f432b8191266d2045cea5d0694e359907f327a000ddb5147d2ed4bc2c",
+    "notes": "symbol=ADUR run_id=20260121T120000Z__1H event=tradeable_artifact_created",
+    "participants": [
+      "auto"
+    ]
+  },
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T06:22:47.560519+00:00",
+      "action": "snapshot_taken",
+      "id": "70c9d2dad32eefc59a30d8839b195dd978960c53f3650614f2809144f177630b",
+      "name": "training_run",
+      "evidence_hash": "70c9d2dad32eefc59a30d8839b195dd978960c53f3650614f2809144f177630b"
+    },
+    {
+      "ts": "2026-01-21T06:22:47.561111+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "f26643b214d1b6e55d4c112680f49959814d2d2e7272faa2fe5545990a21cda4"
+    },
+    {
+      "ts": "2026-01-21T06:22:47.561131+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "a7a5471c77833bfcb054b61cb0ed257620936592332ab6c3e9944f1ac50f12e9"
+    }
+  ]
+}

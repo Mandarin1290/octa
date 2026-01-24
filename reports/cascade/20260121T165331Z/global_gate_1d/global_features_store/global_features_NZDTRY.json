@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/NZDTRY_1D.parquet",
+  "n": 3258,
+  "vol_ann": 0.17902372162104344,
+  "max_drawdown": -0.3400441533192212,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

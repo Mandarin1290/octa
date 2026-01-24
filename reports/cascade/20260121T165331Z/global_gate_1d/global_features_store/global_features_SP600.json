@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/SP600_full_1day.parquet",
+  "n": 6289,
+  "vol_ann": 0.23416687302882572,
+  "max_drawdown": -0.5916574945528875,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

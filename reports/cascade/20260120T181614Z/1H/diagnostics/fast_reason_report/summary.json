@@ -1,0 +1,131 @@
+{
+  "timeframe": "1H",
+  "n_symbols": 289,
+  "run_id_prefix": "diag_1H_20260120T232103Z",
+  "status_counts": {
+    "FAIL": 270,
+    "MISSING_PARQUET": 4,
+    "PASS": 15
+  },
+  "top_reason_keys": [
+    {
+      "reason": "avg_net_trade_return",
+      "count": 168,
+      "examples": [
+        "AACT",
+        "AAON",
+        "AATC",
+        "ABBV",
+        "ABR_D"
+      ]
+    },
+    {
+      "reason": "turnover_per_day",
+      "count": 162,
+      "examples": [
+        "AACT",
+        "AAM",
+        "AAXJ",
+        "ABBV",
+        "ABM"
+      ]
+    },
+    {
+      "reason": "net_to_gross",
+      "count": 131,
+      "examples": [
+        "AACT",
+        "ABBV",
+        "ABR_D",
+        "ABR_E",
+        "ABR_F"
+      ]
+    },
+    {
+      "reason": "cost_stress_failed",
+      "count": 127,
+      "examples": [
+        "AACT",
+        "ABBV",
+        "ABR_D",
+        "ABR_E",
+        "ABR_F"
+      ]
+    },
+    {
+      "reason": "sortino",
+      "count": 93,
+      "examples": [
+        "AACT",
+        "ABBV",
+        "ABR_D",
+        "ABR_F",
+        "ACEL"
+      ]
+    },
+    {
+      "reason": "profit_factor",
+      "count": 88,
+      "examples": [
+        "AACT",
+        "ABR_D",
+        "ABR_F",
+        "ACEL",
+        "ACGLO"
+      ]
+    },
+    {
+      "reason": "sharpe",
+      "count": 76,
+      "examples": [
+        "AACT",
+        "ABR_D",
+        "ABR_F",
+        "ACEL",
+        "ACGLO"
+      ]
+    },
+    {
+      "reason": "data_load_failed",
+      "count": 75,
+      "examples": [
+        "AUDBRL",
+        "AUDCAD",
+        "AUDCHF",
+        "AUDCNH",
+        "AUDHUF"
+      ]
+    },
+    {
+      "reason": "tail_kill_switch",
+      "count": 7,
+      "examples": [
+        "CXU",
+        "SET",
+        "SKEW",
+        "SPEN",
+        "SPRI"
+      ]
+    },
+    {
+      "reason": "folds",
+      "count": 5,
+      "examples": [
+        "AGM_E",
+        "APGE",
+        "ATHS",
+        "AWF",
+        "DJCISI"
+      ]
+    },
+    {
+      "reason": "subwindow_stability_failed",
+      "count": 3,
+      "examples": [
+        "ATLCZ",
+        "AVBP",
+        "XSP"
+      ]
+    }
+  ]
+}

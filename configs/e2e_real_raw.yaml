@@ -1,0 +1,17 @@
+# E2E real-raw test config
+# Uses real raw data but isolates state/artifacts to avoid clobbering prod outputs.
+paths:
+  raw_dir: "/home/n-b/Octa/raw"
+  pkl_dir: "/home/n-b/Octa/raw/PKL/_e2e_real"
+  logs_dir: "/home/n-b/Octa/logs/_e2e_real"
+  state_dir: "/home/n-b/Octa/state/_e2e_real"
+  reports_dir: "/home/n-b/Octa/reports/_e2e_real"
+
+# Keep behavior close to prod, but disable tuning for speed/stability.
+tuning:
+  enabled: false
+
+# Keep notifications off for test runs
+notifications:
+  telegram:
+    enabled: false

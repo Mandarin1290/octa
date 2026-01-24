@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/WPUT_full_1day.parquet",
+  "n": 2125,
+  "vol_ann": 0.13565964143714526,
+  "max_drawdown": -0.2886722344292876,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

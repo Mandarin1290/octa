@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/DJR_full_1day.parquet",
+  "n": 3865,
+  "vol_ann": 0.18811143474974046,
+  "max_drawdown": -0.41973236457279506,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

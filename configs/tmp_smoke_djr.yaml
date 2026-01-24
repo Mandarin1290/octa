@@ -1,0 +1,17 @@
+paths:
+  raw_dir: raw/tmp_raw
+splits:
+  n_folds: 2
+  train_window: 1000
+  test_window: 200
+  step: 200
+  purge_size: 0
+  embargo_size: 0
+  min_train_size: 500
+  min_test_size: 100
+features:
+  window_short: 3
+  window_med: 10
+  horizons: [1]
+packaging:
+  quarantine_on_smoke_fail: false

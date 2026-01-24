@@ -1,0 +1,40 @@
+{
+  "ts": "2026-01-21T06:33:48.777749+00:00",
+  "symbol": "AFRI",
+  "run_id": "20260121T120000Z__1H",
+  "snapshot_id": "be07f4ff95552eab43b66286805397f75df54b814eb8af7d832e4bb35d179c3a",
+  "attestation_hash": "4cb6f69fa82fb4da9090240332beb72b5734971896c6a6e28d67ee3f5f43d4d4",
+  "governance": {
+    "cycle": "weekly_strategy",
+    "ts": "2026-01-21T06:33:48.778606+00:00",
+    "evidence_hash": "d8798e96c64620a54840c22b026b9a6ae70c0b3ce638cb410b11b6ef61ab703b",
+    "notes": "symbol=AFRI run_id=20260121T120000Z__1H event=tradeable_artifact_created",
+    "participants": [
+      "auto"
+    ]
+  },
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T06:33:48.777984+00:00",
+      "action": "snapshot_taken",
+      "id": "be07f4ff95552eab43b66286805397f75df54b814eb8af7d832e4bb35d179c3a",
+      "name": "training_run",
+      "evidence_hash": "be07f4ff95552eab43b66286805397f75df54b814eb8af7d832e4bb35d179c3a"
+    },
+    {
+      "ts": "2026-01-21T06:33:48.778566+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "4cb6f69fa82fb4da9090240332beb72b5734971896c6a6e28d67ee3f5f43d4d4"
+    },
+    {
+      "ts": "2026-01-21T06:33:48.778586+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "fd5724c7a424c01a18d00292bc3cf1994b3db63864a350e888760e8215594ba5"
+    }
+  ]
+}

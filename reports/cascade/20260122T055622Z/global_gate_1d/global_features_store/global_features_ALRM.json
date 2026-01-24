@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/ALRM_1D.parquet",
+  "n": 2645,
+  "vol_ann": 0.3882672160834254,
+  "max_drawdown": -0.5791624106230848,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

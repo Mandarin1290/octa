@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/AXS_E_1D.parquet",
+  "n": 2290,
+  "vol_ann": 0.16397439394962685,
+  "max_drawdown": -0.37237621021415046,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

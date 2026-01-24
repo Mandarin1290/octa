@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-21T00:29:38.288442+00:00",
+  "symbol": "CADJPY",
+  "run_id": "diag_1H_20260120T232103Z__CADJPY",
+  "snapshot_id": "db6e5d771792e3699ed1ef0627eefa0479334d26ff46b26f705a79a349da3499",
+  "attestation_hash": "66fccf19887c19246287e8d731cf9c3400a4acc949e9f3bdefce8ba389e2618d",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T00:29:38.288563+00:00",
+      "action": "snapshot_taken",
+      "id": "db6e5d771792e3699ed1ef0627eefa0479334d26ff46b26f705a79a349da3499",
+      "name": "training_run",
+      "evidence_hash": "db6e5d771792e3699ed1ef0627eefa0479334d26ff46b26f705a79a349da3499"
+    },
+    {
+      "ts": "2026-01-21T00:29:38.288785+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "66fccf19887c19246287e8d731cf9c3400a4acc949e9f3bdefce8ba389e2618d"
+    },
+    {
+      "ts": "2026-01-21T00:29:38.288804+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "8b5fedf2e9fe51f3671e2bc3c73fc8348af078d04ab81aca173025eb2cb6de31"
+    }
+  ]
+}

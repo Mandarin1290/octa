@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-21T10:50:00.428370+00:00",
+  "symbol": "NYFANG",
+  "run_id": "diag_1H_20260121T092943Z__NYFANG",
+  "snapshot_id": "34f494b0679bb4b1e47e18dc920307282a2e44872bb8f9c9587316ded58de995",
+  "attestation_hash": "248dbbbb91a5c4ef807488b1efc64d54f07a2eae0ad36e1c7659507e83f4630e",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T10:50:00.428513+00:00",
+      "action": "snapshot_taken",
+      "id": "34f494b0679bb4b1e47e18dc920307282a2e44872bb8f9c9587316ded58de995",
+      "name": "training_run",
+      "evidence_hash": "34f494b0679bb4b1e47e18dc920307282a2e44872bb8f9c9587316ded58de995"
+    },
+    {
+      "ts": "2026-01-21T10:50:00.428819+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "248dbbbb91a5c4ef807488b1efc64d54f07a2eae0ad36e1c7659507e83f4630e"
+    },
+    {
+      "ts": "2026-01-21T10:50:00.428838+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "f4f494591167ce72da1742e7ac560859102a237facdb6d51b3c70c64a75d343c"
+    }
+  ]
+}

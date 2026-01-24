@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/AMSF_1D.parquet",
+  "n": 5060,
+  "vol_ann": 0.3322561581748743,
+  "max_drawdown": -0.40896397492497194,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

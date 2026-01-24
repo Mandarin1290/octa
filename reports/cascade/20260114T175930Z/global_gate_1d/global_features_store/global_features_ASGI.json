@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/ASGI_1D.parquet",
+  "n": 1364,
+  "vol_ann": 0.16702064332926375,
+  "max_drawdown": -0.23708428182777197,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

@@ -1,0 +1,99 @@
+{
+  "A": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/A_1D.parquet",
+      "n": 6539,
+      "vol_ann": 0.4131831501402617,
+      "max_drawdown": -0.9317609476285967
+    }
+  },
+  "AA": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AA_1D.parquet",
+      "n": 2314,
+      "vol_ann": 0.5538914935424788,
+      "max_drawdown": -0.9090154891356446
+    }
+  },
+  "AACB": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 135,
+      "min": 252
+    }
+  },
+  "AACBR": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 99,
+      "min": 252
+    }
+  },
+  "AACBU": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 124,
+      "min": 252
+    }
+  },
+  "AACG": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AACG_1D.parquet",
+      "n": 4407,
+      "vol_ann": 2.4556004409385244,
+      "max_drawdown": -0.97057962529274
+    }
+  },
+  "AACI": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 85,
+      "min": 252
+    }
+  },
+  "AACIU": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 220,
+      "min": 252
+    }
+  },
+  "AACIW": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AACIW_1D.parquet",
+      "n": 549,
+      "vol_ann": 4.119040461896861,
+      "max_drawdown": -0.9748110831234257
+    }
+  },
+  "AACT": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/AACT_1D.parquet",
+      "n": 562,
+      "vol_ann": 0.159471257113277,
+      "max_drawdown": -0.23050259965337938,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  }
+}

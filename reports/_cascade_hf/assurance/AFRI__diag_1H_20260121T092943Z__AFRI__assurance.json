@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-21T09:48:01.696164+00:00",
+  "symbol": "AFRI",
+  "run_id": "diag_1H_20260121T092943Z__AFRI",
+  "snapshot_id": "5c4ad6591098b517a055a260b5cf42ba90c02b51ae7d34a4fcc6058ecfca6147",
+  "attestation_hash": "6d1060bbc6bff88e70408dd55f21ce67368f16bed2ab68dccd7287367225d798",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T09:48:01.696302+00:00",
+      "action": "snapshot_taken",
+      "id": "5c4ad6591098b517a055a260b5cf42ba90c02b51ae7d34a4fcc6058ecfca6147",
+      "name": "training_run",
+      "evidence_hash": "5c4ad6591098b517a055a260b5cf42ba90c02b51ae7d34a4fcc6058ecfca6147"
+    },
+    {
+      "ts": "2026-01-21T09:48:01.696593+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "6d1060bbc6bff88e70408dd55f21ce67368f16bed2ab68dccd7287367225d798"
+    },
+    {
+      "ts": "2026-01-21T09:48:01.696612+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "PASS",
+      "evidence_hash": "c69bf9c8558f6d02f6f163805f911a0b9d63a0ff029da56919103c6d597bcc5b"
+    }
+  ]
+}

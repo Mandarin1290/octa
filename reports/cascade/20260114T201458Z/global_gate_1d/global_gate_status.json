@@ -1,0 +1,2234 @@
+{
+  "A": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/A_1D.parquet",
+      "n": 6539,
+      "vol_ann": 0.4131831501402617,
+      "max_drawdown": -0.9317609476285967
+    }
+  },
+  "AA": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AA_1D.parquet",
+      "n": 2314,
+      "vol_ann": 0.5538914935424788,
+      "max_drawdown": -0.9090154891356446
+    }
+  },
+  "AACB": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 135,
+      "min": 252
+    }
+  },
+  "AACBR": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 99,
+      "min": 252
+    }
+  },
+  "AACBU": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 124,
+      "min": 252
+    }
+  },
+  "AACG": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AACG_1D.parquet",
+      "n": 4407,
+      "vol_ann": 2.4556004409385244,
+      "max_drawdown": -0.97057962529274
+    }
+  },
+  "AACI": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 85,
+      "min": 252
+    }
+  },
+  "AACIU": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 220,
+      "min": 252
+    }
+  },
+  "AACIW": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AACIW_1D.parquet",
+      "n": 549,
+      "vol_ann": 4.119040461896861,
+      "max_drawdown": -0.9748110831234257
+    }
+  },
+  "AACT": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/AACT_1D.parquet",
+      "n": 562,
+      "vol_ann": 0.159471257113277,
+      "max_drawdown": -0.23050259965337938,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "AAGR": {
+    "status": "FAIL",
+    "reason": "data_load_failed",
+    "details": {
+      "error": "Parquet file raw/Stock_parquet/AAGR_1D.parquet contains non-positive prices in columns ['open', 'high', 'low', 'close']",
+      "path": "raw/Stock_parquet/AAGR_1D.parquet"
+    }
+  },
+  "AAGRW": {
+    "status": "FAIL",
+    "reason": "data_load_failed",
+    "details": {
+      "error": "Parquet file raw/Stock_parquet/AAGRW_1D.parquet contains non-positive prices in columns ['open', 'high', 'low', 'close']",
+      "path": "raw/Stock_parquet/AAGRW_1D.parquet"
+    }
+  },
+  "AAL": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AAL_1D.parquet",
+      "n": 3034,
+      "vol_ann": 0.5020911235663422,
+      "max_drawdown": -0.8413720614788546
+    }
+  },
+  "AAM": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/AAM_1D.parquet",
+      "n": 308,
+      "vol_ann": 0.030713153495241733,
+      "max_drawdown": -0.016299137104506256,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "AAME": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AAME_1D.parquet",
+      "n": 6051,
+      "vol_ann": 0.8226664879558276,
+      "max_drawdown": -0.9158815749313257
+    }
+  },
+  "AAMI": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AAMI_1D.parquet",
+      "n": 2824,
+      "vol_ann": 0.3844989904590732,
+      "max_drawdown": -0.8110450667937964
+    }
+  },
+  "AAOI": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AAOI_1D.parquet",
+      "n": 3085,
+      "vol_ann": 0.8810644497004128,
+      "max_drawdown": -0.9849412709567312
+    }
+  },
+  "AAON": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/AAON_1D.parquet",
+      "n": 6538,
+      "vol_ann": 0.41275012952708173,
+      "max_drawdown": -0.4885608429183348,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "AAP": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AAP_1D.parquet",
+      "n": 6061,
+      "vol_ann": 0.37577048389216966,
+      "max_drawdown": -0.8641472085430045
+    }
+  },
+  "AAPG": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 234,
+      "min": 252
+    }
+  },
+  "AAPL": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AAPL_1D.parquet",
+      "n": 6539,
+      "vol_ann": 0.38482542661133656,
+      "max_drawdown": -0.8179992698064987
+    }
+  },
+  "AARD": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 223,
+      "min": 252
+    }
+  },
+  "AAT": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AAT_1D.parquet",
+      "n": 3764,
+      "vol_ann": 0.28345005193943595,
+      "max_drawdown": -0.6184671811385917
+    }
+  },
+  "AATC": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/AATC_1D.parquet",
+      "n": 1113,
+      "vol_ann": 0.36743364326987304,
+      "max_drawdown": -0.5769777278435001,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "AAUC": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 144,
+      "min": 252
+    }
+  },
+  "AAXJ": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/AAXJ_1D.parquet",
+      "n": 4371,
+      "vol_ann": 0.2465895621830613,
+      "max_drawdown": -0.4936766380960844,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "AB": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AB_1D.parquet",
+      "n": 4994,
+      "vol_ann": 0.3793896614256719,
+      "max_drawdown": -0.8764537646071765
+    }
+  },
+  "ABAT": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ABAT_1D.parquet",
+      "n": 573,
+      "vol_ann": 1.2576560222743112,
+      "max_drawdown": -0.9318385650224216
+    }
+  },
+  "ABBV": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ABBV_1D.parquet",
+      "n": 3270,
+      "vol_ann": 0.2629274591191091,
+      "max_drawdown": -0.45089744069721405,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ABCB": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ABCB_1D.parquet",
+      "n": 6504,
+      "vol_ann": 0.45575944296317117,
+      "max_drawdown": -0.8743592141048104
+    }
+  },
+  "ABCL": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ABCL_1D.parquet",
+      "n": 1269,
+      "vol_ann": 0.6883392004070019,
+      "max_drawdown": -0.9637218045112782
+    }
+  },
+  "ABEO": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ABEO_1D.parquet",
+      "n": 4643,
+      "vol_ann": 0.9884162347307136,
+      "max_drawdown": -0.9996564885496183
+    }
+  },
+  "ABEV": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ABEV_1D.parquet",
+      "n": 3053,
+      "vol_ann": 0.333704226867372,
+      "max_drawdown": -0.7351979658554304
+    }
+  },
+  "ABG": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ABG_1D.parquet",
+      "n": 5950,
+      "vol_ann": 0.5065677805505497,
+      "max_drawdown": -0.9276358636659672
+    }
+  },
+  "ABI": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 126,
+      "min": 252
+    }
+  },
+  "ABL": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ABL_1D.parquet",
+      "n": 625,
+      "vol_ann": 0.6431759888545737,
+      "max_drawdown": -0.6279064000727375
+    }
+  },
+  "ABLLL": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ABLLL_1D.parquet",
+      "n": 513,
+      "vol_ann": 0.28612737840658037,
+      "max_drawdown": -0.30870273928640646,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ABLLW": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ABLLW_1D.parquet",
+      "n": 523,
+      "vol_ann": 1.1826664544106986,
+      "max_drawdown": -0.6828426395939087
+    }
+  },
+  "ABLV": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ABLV_1D.parquet",
+      "n": 682,
+      "vol_ann": 1.3300547647043237,
+      "max_drawdown": -0.9545004061738424
+    }
+  },
+  "ABLVW": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 246,
+      "min": 252
+    }
+  },
+  "ABM": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ABM_1D.parquet",
+      "n": 6539,
+      "vol_ann": 0.33068536584113534,
+      "max_drawdown": -0.596396778714249,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ABNB": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ABNB_1D.parquet",
+      "n": 1270,
+      "vol_ann": 0.468938565118097,
+      "max_drawdown": -0.6195812580704667
+    }
+  },
+  "ABOS": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ABOS_1D.parquet",
+      "n": 1131,
+      "vol_ann": 0.983728094881613,
+      "max_drawdown": -0.9555818540433925
+    }
+  },
+  "ABP": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ABP_1D.parquet",
+      "n": 674,
+      "vol_ann": 17.112315024952892,
+      "max_drawdown": -0.986860371267151
+    }
+  },
+  "ABPWW": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 181,
+      "min": 252
+    }
+  },
+  "ABR": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ABR_1D.parquet",
+      "n": 5449,
+      "vol_ann": 0.5156318097639339,
+      "max_drawdown": -0.9775817940732061
+    }
+  },
+  "ABR_D": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ABR_D_1D.parquet",
+      "n": 1148,
+      "vol_ann": 0.19084993822264248,
+      "max_drawdown": -0.3800623052959502,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ABR_E": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ABR_E_1D.parquet",
+      "n": 1098,
+      "vol_ann": 0.221610211992291,
+      "max_drawdown": -0.3771895679252628,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ABR_F": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ABR_F_1D.parquet",
+      "n": 1056,
+      "vol_ann": 0.17909987498805488,
+      "max_drawdown": -0.3333307189439959,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ABSI": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ABSI_1D.parquet",
+      "n": 1117,
+      "vol_ann": 0.9648447707320752,
+      "max_drawdown": -0.9620336744800264
+    }
+  },
+  "ABT": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ABT_1D.parquet",
+      "n": 6539,
+      "vol_ann": 0.23918113570773208,
+      "max_drawdown": -0.46273716615464855,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ABTC": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ABTC_1D.parquet",
+      "n": 1885,
+      "vol_ann": 1.6045899579140144,
+      "max_drawdown": -0.9999932279116466
+    }
+  },
+  "ABTS": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ABTS_1D.parquet",
+      "n": 2594,
+      "vol_ann": 1.561991902744889,
+      "max_drawdown": -0.9984614358974359
+    }
+  },
+  "ABUS": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ABUS_1D.parquet",
+      "n": 3799,
+      "vol_ann": 0.8379156033196841,
+      "max_drawdown": -0.9718810601163542
+    }
+  },
+  "ABVC": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ABVC_1D.parquet",
+      "n": 1109,
+      "vol_ann": 1.393153315712656,
+      "max_drawdown": -0.9930514096185737
+    }
+  },
+  "ABVE": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ABVE_1D.parquet",
+      "n": 379,
+      "vol_ann": 3.4749580304689838,
+      "max_drawdown": -0.9336864406779661
+    }
+  },
+  "ABVEW": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ABVEW_1D.parquet",
+      "n": 376,
+      "vol_ann": 4.1109192170664715,
+      "max_drawdown": -0.8592178770949721
+    }
+  },
+  "ABVX": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ABVX_1D.parquet",
+      "n": 552,
+      "vol_ann": 3.9977371803059376,
+      "max_drawdown": -0.6746381371932033
+    }
+  },
+  "ACA": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ACA_1D.parquet",
+      "n": 1801,
+      "vol_ann": 0.39899273376469885,
+      "max_drawdown": -0.36794630149632657,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ACAD": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACAD_1D.parquet",
+      "n": 5431,
+      "vol_ann": 0.8651158904964932,
+      "max_drawdown": -0.9629213483146067
+    }
+  },
+  "ACB": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACB_1D.parquet",
+      "n": 1807,
+      "vol_ann": 1.023660331632556,
+      "max_drawdown": -0.9975819946452477
+    }
+  },
+  "ACCL": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 53,
+      "min": 252
+    }
+  },
+  "ACCO": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACCO_1D.parquet",
+      "n": 5126,
+      "vol_ann": 0.5974954457837832,
+      "max_drawdown": -0.9762559118918562
+    }
+  },
+  "ACCS": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACCS_1D.parquet",
+      "n": 3657,
+      "vol_ann": 1.9399533757987193,
+      "max_drawdown": -0.9887640449438202
+    }
+  },
+  "ACDC": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACDC_1D.parquet",
+      "n": 912,
+      "vol_ann": 0.7588439321719969,
+      "max_drawdown": -0.8759720062208398
+    }
+  },
+  "ACEL": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ACEL_1D.parquet",
+      "n": 1943,
+      "vol_ann": 0.3940881904856468,
+      "max_drawdown": -0.5783132530120483,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ACET": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACET_1D.parquet",
+      "n": 1994,
+      "vol_ann": 0.948421793575603,
+      "max_drawdown": -0.9969366221308668
+    }
+  },
+  "ACFN": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACFN_1D.parquet",
+      "n": 2789,
+      "vol_ann": 4.0998525012328,
+      "max_drawdown": -0.9797507788161994
+    }
+  },
+  "ACGL": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ACGL_1D.parquet",
+      "n": 6441,
+      "vol_ann": 0.2634492140223215,
+      "max_drawdown": -0.5383973999384473,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ACGLN": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ACGLN_1D.parquet",
+      "n": 1145,
+      "vol_ann": 0.15876735223067895,
+      "max_drawdown": -0.3763597557703183,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ACGLO": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ACGLO_1D.parquet",
+      "n": 2104,
+      "vol_ann": 0.15980218509084815,
+      "max_drawdown": -0.3701111042401005,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ACHC": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACHC_1D.parquet",
+      "n": 3514,
+      "vol_ann": 0.4365552911470176,
+      "max_drawdown": -0.8580209714354586
+    }
+  },
+  "ACHR": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACHR_1D.parquet",
+      "n": 1264,
+      "vol_ann": 0.8357653728808727,
+      "max_drawdown": -0.9049008168028004
+    }
+  },
+  "ACHV": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACHV_1D.parquet",
+      "n": 4359,
+      "vol_ann": 0.8849425529423816,
+      "max_drawdown": -0.9999776462332488
+    }
+  },
+  "ACI": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ACI_1D.parquet",
+      "n": 1386,
+      "vol_ann": 0.31272389673036394,
+      "max_drawdown": -0.33729843198371545,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ACIC": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACIC_1D.parquet",
+      "n": 3527,
+      "vol_ann": 0.7190218584476017,
+      "max_drawdown": -0.9891343904341044
+    }
+  },
+  "ACII": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ACII_1D.parquet",
+      "n": 485,
+      "vol_ann": 1.0861934073337642,
+      "max_drawdown": -0.08868778280542988,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ACIU": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACIU_1D.parquet",
+      "n": 2331,
+      "vol_ann": 0.8011593125203746,
+      "max_drawdown": -0.9233160621761658
+    }
+  },
+  "ACIW": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACIW_1D.parquet",
+      "n": 4640,
+      "vol_ann": 0.3888854517828022,
+      "max_drawdown": -0.7274702108157654
+    }
+  },
+  "ACLS": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACLS_1D.parquet",
+      "n": 6408,
+      "vol_ann": 0.7055772060329524,
+      "max_drawdown": -0.9934299516908213
+    }
+  },
+  "ACLX": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACLX_1D.parquet",
+      "n": 980,
+      "vol_ann": 0.6432646167764356,
+      "max_drawdown": -0.6233019853709509
+    }
+  },
+  "ACM": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ACM_1D.parquet",
+      "n": 4692,
+      "vol_ann": 0.35510130313431637,
+      "max_drawdown": -0.5997311783072583,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ACMR": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACMR_1D.parquet",
+      "n": 2050,
+      "vol_ann": 0.8331146131299587,
+      "max_drawdown": -0.8722674667809687
+    }
+  },
+  "ACN": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ACN_1D.parquet",
+      "n": 4109,
+      "vol_ann": 0.24437557056565443,
+      "max_drawdown": -0.41021439764428824,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ACNB": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACNB_1D.parquet",
+      "n": 4553,
+      "vol_ann": 0.371507199722198,
+      "max_drawdown": -0.6078327579593402
+    }
+  },
+  "ACNT": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACNT_1D.parquet",
+      "n": 4677,
+      "vol_ann": 0.4993588568633002,
+      "max_drawdown": -0.918796992481203
+    }
+  },
+  "ACOG": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ACOG_1D.parquet",
+      "n": 285,
+      "vol_ann": 0.8201637303123933,
+      "max_drawdown": -0.554270462633452,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ACON": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACON_1D.parquet",
+      "n": 927,
+      "vol_ann": 158.75296256597218,
+      "max_drawdown": -0.9999981783253842
+    }
+  },
+  "ACONW": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACONW_1D.parquet",
+      "n": 683,
+      "vol_ann": 4.022461882263381,
+      "max_drawdown": -0.9833333333333333
+    }
+  },
+  "ACP": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ACP_1D.parquet",
+      "n": 3756,
+      "vol_ann": 0.19573084366083104,
+      "max_drawdown": -0.5103154700440435,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ACP_A": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ACP_A_1D.parquet",
+      "n": 1087,
+      "vol_ann": 0.21527629367639448,
+      "max_drawdown": -0.27326440177252587,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ACQRU": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ACQRU_1D.parquet",
+      "n": 372,
+      "vol_ann": 0.07279438425963836,
+      "max_drawdown": -0.042156862745098,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ACQRW": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACQRW_1D.parquet",
+      "n": 381,
+      "vol_ann": 4.618541014298311,
+      "max_drawdown": -0.9997916666666666
+    }
+  },
+  "ACR": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACR_1D.parquet",
+      "n": 1225,
+      "vol_ann": 0.35963155766615373,
+      "max_drawdown": -0.616986301369863
+    }
+  },
+  "ACRE": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACRE_1D.parquet",
+      "n": 3442,
+      "vol_ann": 0.3944203041105446,
+      "max_drawdown": -0.7567825299194202
+    }
+  },
+  "ACRS": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACRS_1D.parquet",
+      "n": 2574,
+      "vol_ann": 1.0827948174207802,
+      "max_drawdown": -0.98044862079418
+    }
+  },
+  "ACRV": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACRV_1D.parquet",
+      "n": 784,
+      "vol_ann": 1.0382327036296388,
+      "max_drawdown": -0.9547413793103449
+    }
+  },
+  "ACR_C": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ACR_C_1D.parquet",
+      "n": 1226,
+      "vol_ann": 0.14206184070888786,
+      "max_drawdown": -0.25520857252200524,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ACR_D": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ACR_D_1D.parquet",
+      "n": 1146,
+      "vol_ann": 0.20540870835402786,
+      "max_drawdown": -0.34807692307692306,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ACT": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ACT_1D.parquet",
+      "n": 1079,
+      "vol_ann": 0.2503401747408891,
+      "max_drawdown": -0.21872793858100947,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ACTG": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACTG_1D.parquet",
+      "n": 5798,
+      "vol_ann": 0.5796793387625013,
+      "max_drawdown": -0.9523722640709156
+    }
+  },
+  "ACTU": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ACTU_1D.parquet",
+      "n": 349,
+      "vol_ann": 0.7767629542800506,
+      "max_drawdown": -0.5243697478991597,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ACTV": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACTV_1D.parquet",
+      "n": 1880,
+      "vol_ann": 0.46228619111740415,
+      "max_drawdown": -0.7964956404222346
+    }
+  },
+  "ACU": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACU_1D.parquet",
+      "n": 5319,
+      "vol_ann": 0.3761775457238213,
+      "max_drawdown": -0.6938080649403269
+    }
+  },
+  "ACV": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ACV_1D.parquet",
+      "n": 2668,
+      "vol_ann": 0.2556511172830428,
+      "max_drawdown": -0.536416947428644,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ACVA": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACVA_1D.parquet",
+      "n": 1200,
+      "vol_ann": 0.5923385795931745,
+      "max_drawdown": -0.8625809935205184
+    }
+  },
+  "ACWX": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACWX_1D.parquet",
+      "n": 4470,
+      "vol_ann": 0.21699310805935812,
+      "max_drawdown": -0.6058510245506727
+    }
+  },
+  "ACXP": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ACXP_1D.parquet",
+      "n": 1135,
+      "vol_ann": 1.2965403626178746,
+      "max_drawdown": -0.9804858934169279
+    }
+  },
+  "AD": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AD_1D.parquet",
+      "n": 6538,
+      "vol_ann": 0.44043478905882144,
+      "max_drawdown": -0.8634743357450538
+    }
+  },
+  "ADAG": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADAG_1D.parquet",
+      "n": 1228,
+      "vol_ann": 0.8665188655372896,
+      "max_drawdown": -0.9695945945945946
+    }
+  },
+  "ADAM": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADAM_1D.parquet",
+      "n": 1117,
+      "vol_ann": 0.660319363427481,
+      "max_drawdown": -0.7729716959906403
+    }
+  },
+  "ADAMG": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 85,
+      "min": 252
+    }
+  },
+  "ADAMH": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 85,
+      "min": 252
+    }
+  },
+  "ADAMI": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 85,
+      "min": 252
+    }
+  },
+  "ADAML": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 84,
+      "min": 252
+    }
+  },
+  "ADAMM": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 85,
+      "min": 252
+    }
+  },
+  "ADAMN": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 85,
+      "min": 252
+    }
+  },
+  "ADAMZ": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 85,
+      "min": 252
+    }
+  },
+  "ADAP": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADAP_1D.parquet",
+      "n": 2635,
+      "vol_ann": 1.217286681566938,
+      "max_drawdown": -0.9980587121212121
+    }
+  },
+  "ADBE": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADBE_1D.parquet",
+      "n": 6539,
+      "vol_ann": 0.4204258571441934,
+      "max_drawdown": -0.7993993993993994
+    }
+  },
+  "ADC": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADC_1D.parquet",
+      "n": 6538,
+      "vol_ann": 0.32870592522429254,
+      "max_drawdown": -0.7024534218778823
+    }
+  },
+  "ADCT": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADCT_1D.parquet",
+      "n": 2409,
+      "vol_ann": 0.9497482291662339,
+      "max_drawdown": -0.9908305582761998
+    }
+  },
+  "ADC_A": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ADC_A_1D.parquet",
+      "n": 1076,
+      "vol_ann": 0.16413769682943632,
+      "max_drawdown": -0.38023715415019765,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ADEA": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADEA_1D.parquet",
+      "n": 4700,
+      "vol_ann": 0.5030276349300228,
+      "max_drawdown": -0.8098236244075955
+    }
+  },
+  "ADGM": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADGM_1D.parquet",
+      "n": 357,
+      "vol_ann": 1.5919465697496251,
+      "max_drawdown": -0.9181546961325967
+    }
+  },
+  "ADI": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADI_1D.parquet",
+      "n": 6539,
+      "vol_ann": 0.4058068349456257,
+      "max_drawdown": -0.8297596484920137
+    }
+  },
+  "ADIL": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADIL_1D.parquet",
+      "n": 1868,
+      "vol_ann": 1.4347498773241758,
+      "max_drawdown": -0.9989435774309724
+    }
+  },
+  "ADILW": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADILW_1D.parquet",
+      "n": 757,
+      "vol_ann": 5.236024692857547,
+      "max_drawdown": -0.9995964125560538
+    }
+  },
+  "ADM": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADM_1D.parquet",
+      "n": 6539,
+      "vol_ann": 0.30465717398969366,
+      "max_drawdown": -0.6800591675221468
+    }
+  },
+  "ADMA": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADMA_1D.parquet",
+      "n": 3038,
+      "vol_ann": 0.6540947427312379,
+      "max_drawdown": -0.9128000000000001
+    }
+  },
+  "ADNT": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADNT_1D.parquet",
+      "n": 2314,
+      "vol_ann": 0.599477062082609,
+      "max_drawdown": -0.9223050994268662
+    }
+  },
+  "ADNWW": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADNWW_1D.parquet",
+      "n": 1560,
+      "vol_ann": 2.3803211219655807,
+      "max_drawdown": -0.9998529411764706
+    }
+  },
+  "ADP": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ADP_1D.parquet",
+      "n": 6307,
+      "vol_ann": 0.24079403255962886,
+      "max_drawdown": -0.5882895380879367,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ADPT": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADPT_1D.parquet",
+      "n": 1638,
+      "vol_ann": 0.7656866059319684,
+      "max_drawdown": -0.9655299675228816
+    }
+  },
+  "ADSE": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADSE_1D.parquet",
+      "n": 1009,
+      "vol_ann": 0.633022959692808,
+      "max_drawdown": -0.7983539094650206
+    }
+  },
+  "ADSEW": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADSEW_1D.parquet",
+      "n": 817,
+      "vol_ann": 1.708157154731453,
+      "max_drawdown": -0.9054054054054054
+    }
+  },
+  "ADSK": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADSK_1D.parquet",
+      "n": 6539,
+      "vol_ann": 0.40614461433736326,
+      "max_drawdown": -0.7692006269592476
+    }
+  },
+  "ADT": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADT_1D.parquet",
+      "n": 1999,
+      "vol_ann": 0.48860827348466856,
+      "max_drawdown": -0.6732762686522231
+    }
+  },
+  "ADTN": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADTN_1D.parquet",
+      "n": 6539,
+      "vol_ann": 0.4694423030564974,
+      "max_drawdown": -0.8834011718448437
+    }
+  },
+  "ADTX": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADTX_1D.parquet",
+      "n": 1384,
+      "vol_ann": 46.412737714350584,
+      "max_drawdown": -0.9999999996092105
+    }
+  },
+  "ADUR": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/ADUR_1D.parquet",
+      "n": 288,
+      "vol_ann": 0.8317165115447336,
+      "max_drawdown": -0.43128234617596317,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "ADUS": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADUS_1D.parquet",
+      "n": 4067,
+      "vol_ann": 0.44869420678392663,
+      "max_drawdown": -0.7037037037037037
+    }
+  },
+  "ADV": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADV_1D.parquet",
+      "n": 1481,
+      "vol_ann": 0.5991298611584011,
+      "max_drawdown": -0.9397193500738552
+    }
+  },
+  "ADVB": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 209,
+      "min": 252
+    }
+  },
+  "ADVWW": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADVWW_1D.parquet",
+      "n": 1126,
+      "vol_ann": 3.1242816119689016,
+      "max_drawdown": -0.9994972067039106
+    }
+  },
+  "ADX": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADX_1D.parquet",
+      "n": 6539,
+      "vol_ann": 0.1910078775698213,
+      "max_drawdown": -0.750779939617578
+    }
+  },
+  "ADXN": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADXN_1D.parquet",
+      "n": 1316,
+      "vol_ann": 1.3348102202500518,
+      "max_drawdown": -0.9893551054154609
+    }
+  },
+  "ADXS": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/ADXS_1D.parquet",
+      "n": 2878,
+      "vol_ann": 19.51574736103348,
+      "max_drawdown": -0.9999582898852972
+    }
+  },
+  "ADYX": {
+    "status": "FAIL",
+    "reason": "data_load_failed",
+    "details": {
+      "error": "Parquet file raw/Stock_parquet/ADYX_1D.parquet contains non-positive prices in columns ['open', 'high', 'low', 'close']",
+      "path": "raw/Stock_parquet/ADYX_1D.parquet"
+    }
+  },
+  "AEAE": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/AEAE_1D.parquet",
+      "n": 449,
+      "vol_ann": 0.15679439191769617,
+      "max_drawdown": -0.1291866028708133,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "AEAEU": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 209,
+      "min": 252
+    }
+  },
+  "AEAEW": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AEAEW_1D.parquet",
+      "n": 484,
+      "vol_ann": 5.040329966243334,
+      "max_drawdown": -0.9984285714285714
+    }
+  },
+  "AEBI": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 128,
+      "min": 252
+    }
+  },
+  "AEC": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AEC_1D.parquet",
+      "n": 2238,
+      "vol_ann": 0.5306452310955511,
+      "max_drawdown": -0.8445217391304348
+    }
+  },
+  "AEE": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AEE_1D.parquet",
+      "n": 6539,
+      "vol_ann": 0.21697332905593386,
+      "max_drawdown": -0.6056816433015528
+    }
+  },
+  "AEF": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AEF_1D.parquet",
+      "n": 4592,
+      "vol_ann": 0.26064631240334474,
+      "max_drawdown": -0.7618682097307511
+    }
+  },
+  "AEFC": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/AEFC_1D.parquet",
+      "n": 1556,
+      "vol_ann": 0.2807561340260432,
+      "max_drawdown": -0.5777360493121606,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "AEG": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AEG_1D.parquet",
+      "n": 6539,
+      "vol_ann": 0.4500810715966071,
+      "max_drawdown": -0.9362120085071609
+    }
+  },
+  "AEHL": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AEHL_1D.parquet",
+      "n": 3882,
+      "vol_ann": 1.1777565133441732,
+      "max_drawdown": -0.9999881102693603
+    }
+  },
+  "AEHR": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AEHR_1D.parquet",
+      "n": 6276,
+      "vol_ann": 0.897758799846099,
+      "max_drawdown": -0.9545454545454546
+    }
+  },
+  "AEI": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AEI_1D.parquet",
+      "n": 1282,
+      "vol_ann": 1.3076798966911438,
+      "max_drawdown": -0.9991563636363636
+    }
+  },
+  "AEIS": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AEIS_1D.parquet",
+      "n": 6539,
+      "vol_ann": 0.554448267965308,
+      "max_drawdown": -0.9250504929588248
+    }
+  },
+  "AEM": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AEM_1D.parquet",
+      "n": 6539,
+      "vol_ann": 0.46767842742143945,
+      "max_drawdown": -0.7395086612767667
+    }
+  },
+  "AEMD": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AEMD_1D.parquet",
+      "n": 4666,
+      "vol_ann": 1.5107417300223713,
+      "max_drawdown": -0.999995137254902
+    }
+  },
+  "AENT": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AENT_1D.parquet",
+      "n": 1108,
+      "vol_ann": 0.940765540391402,
+      "max_drawdown": -0.9291428571428572
+    }
+  },
+  "AENTW": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AENTW_1D.parquet",
+      "n": 475,
+      "vol_ann": 3.9926041239901124,
+      "max_drawdown": -0.9333333333333333
+    }
+  },
+  "AEO": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AEO_1D.parquet",
+      "n": 6539,
+      "vol_ann": 0.5083295713345656,
+      "max_drawdown": -0.7856330765904979
+    }
+  },
+  "AEON": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AEON_1D.parquet",
+      "n": 614,
+      "vol_ann": 1.6367119113355029,
+      "max_drawdown": -0.9996590444035195
+    }
+  },
+  "AEP": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AEP_1D.parquet",
+      "n": 6539,
+      "vol_ann": 0.2420155148519568,
+      "max_drawdown": -0.6538808456589569
+    }
+  },
+  "AER": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AER_1D.parquet",
+      "n": 4807,
+      "vol_ann": 0.4993940946554601,
+      "max_drawdown": -0.9437602424929458
+    }
+  },
+  "AERO": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 39,
+      "min": 252
+    }
+  },
+  "AERT": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AERT_1D.parquet",
+      "n": 539,
+      "vol_ann": 1.1966594098243761,
+      "max_drawdown": -0.8267857142857142
+    }
+  },
+  "AERTW": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 243,
+      "min": 252
+    }
+  },
+  "AES": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AES_1D.parquet",
+      "n": 6539,
+      "vol_ann": 0.4993184610793178,
+      "max_drawdown": -0.9865480109480544
+    }
+  },
+  "AESI": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AESI_1D.parquet",
+      "n": 707,
+      "vol_ann": 0.4648766262742405,
+      "max_drawdown": -0.6591368165903582
+    }
+  },
+  "AEVA": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AEVA_1D.parquet",
+      "n": 1420,
+      "vol_ann": 0.9049424156409909,
+      "max_drawdown": -0.9771
+    }
+  },
+  "AEVAW": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 235,
+      "min": 252
+    }
+  },
+  "AEX": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Indices_parquet/AEX_full_1day.parquet",
+      "n": 5122,
+      "vol_ann": 0.1979224011826053,
+      "max_drawdown": -0.6453995372842143
+    }
+  },
+  "AEXA": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 68,
+      "min": 252
+    }
+  },
+  "AEYE": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AEYE_1D.parquet",
+      "n": 1842,
+      "vol_ann": 0.8893485243474905,
+      "max_drawdown": -0.9280970918250515
+    }
+  },
+  "AFB": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/AFB_1D.parquet",
+      "n": 6021,
+      "vol_ann": 0.1385141868646442,
+      "max_drawdown": -0.5628713988416117,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "AFBI": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/AFBI_1D.parquet",
+      "n": 1316,
+      "vol_ann": 0.29642615723555626,
+      "max_drawdown": -0.2886152617391593,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "AFCG": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AFCG_1D.parquet",
+      "n": 1203,
+      "vol_ann": 0.40472222948768427,
+      "max_drawdown": -0.7367079122914737
+    }
+  },
+  "AFG": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AFG_1D.parquet",
+      "n": 6539,
+      "vol_ann": 0.32084002655006894,
+      "max_drawdown": -0.6294482465136072
+    }
+  },
+  "AFGB": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/AFGB_1D.parquet",
+      "n": 1708,
+      "vol_ann": 0.19137906359130594,
+      "max_drawdown": -0.37249428581509947,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "AFGC": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/AFGC_1D.parquet",
+      "n": 1497,
+      "vol_ann": 0.24694541808607084,
+      "max_drawdown": -0.46119476612538013,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "AFGD": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/AFGD_1D.parquet",
+      "n": 1403,
+      "vol_ann": 0.15262525551011688,
+      "max_drawdown": -0.31833680621329796,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "AFGE": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/AFGE_1D.parquet",
+      "n": 1297,
+      "vol_ann": 0.16978697281168267,
+      "max_drawdown": -0.3365947224514826,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "AFIB": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AFIB_1D.parquet",
+      "n": 1311,
+      "vol_ann": 26.569734083806452,
+      "max_drawdown": -0.9999973439575033
+    }
+  },
+  "AFJK": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AFJK_1D.parquet",
+      "n": 308,
+      "vol_ann": 9.24453857789024,
+      "max_drawdown": -0.7061016949152542
+    }
+  },
+  "AFJKR": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 182,
+      "min": 252
+    }
+  },
+  "AFJKU": {
+    "status": "FAIL",
+    "reason": "insufficient_history",
+    "details": {
+      "n": 112,
+      "min": 252
+    }
+  },
+  "AFL": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AFL_1D.parquet",
+      "n": 6539,
+      "vol_ann": 0.34675240556097325,
+      "max_drawdown": -0.8270638114012584
+    }
+  },
+  "AFMD": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AFMD_1D.parquet",
+      "n": 2686,
+      "vol_ann": 1.3610090314012804,
+      "max_drawdown": -0.9996119471044231
+    }
+  },
+  "AFRI": {
+    "status": "PASS",
+    "reason": null,
+    "details": {
+      "path": "raw/Stock_parquet/AFRI_1D.parquet",
+      "n": 889,
+      "vol_ann": 0.3695125283013901,
+      "max_drawdown": -0.4002006018054163,
+      "fred": {
+        "enabled": false
+      },
+      "edgar": {
+        "enabled": false,
+        "user_agent_configured": true
+      }
+    }
+  },
+  "AFRIW": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AFRIW_1D.parquet",
+      "n": 710,
+      "vol_ann": 1.3367771312453003,
+      "max_drawdown": -0.8125
+    }
+  },
+  "AFRM": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AFRM_1D.parquet",
+      "n": 1248,
+      "vol_ann": 0.9755385837828026,
+      "max_drawdown": -0.9471279373368147
+    }
+  },
+  "AFYA": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AFYA_1D.parquet",
+      "n": 1623,
+      "vol_ann": 0.47992105164071736,
+      "max_drawdown": -0.720915217050619
+    }
+  },
+  "AG": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AG_1D.parquet",
+      "n": 3784,
+      "vol_ann": 0.6184847603373791,
+      "max_drawdown": -0.9019897268676443
+    }
+  },
+  "AGAE": {
+    "status": "FAIL",
+    "reason": "max_drawdown_exceeded",
+    "details": {
+      "path": "raw/Stock_parquet/AGAE_1D.parquet",
+      "n": 1896,
+      "vol_ann": 0.9456291210755544,
+      "max_drawdown": -0.9686586493987049
+    }
+  }
+}

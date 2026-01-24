@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-21T00:39:09.467374+00:00",
+  "symbol": "GBPUSD",
+  "run_id": "diag_1H_20260120T232103Z__GBPUSD",
+  "snapshot_id": "48425e0ffd75a763cee0c4d26e8c17b211588a89bbf53e3b9e4f080c589a2d8c",
+  "attestation_hash": "f3b267488c38e4ffb7de7962a7bd71af5856c32fc3f979a73776f29d28a5b0db",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T00:39:09.467496+00:00",
+      "action": "snapshot_taken",
+      "id": "48425e0ffd75a763cee0c4d26e8c17b211588a89bbf53e3b9e4f080c589a2d8c",
+      "name": "training_run",
+      "evidence_hash": "48425e0ffd75a763cee0c4d26e8c17b211588a89bbf53e3b9e4f080c589a2d8c"
+    },
+    {
+      "ts": "2026-01-21T00:39:09.467713+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "f3b267488c38e4ffb7de7962a7bd71af5856c32fc3f979a73776f29d28a5b0db"
+    },
+    {
+      "ts": "2026-01-21T00:39:09.467731+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "119ebd321e539ed354a336a59d00407925a1787d98028740ec63949d686fb91b"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-22T08:35:06.165005+00:00",
+  "symbol": "ANSC",
+  "run_id": "20260122T055752Z__30m",
+  "snapshot_id": "98754febf93047433b7fc82dcf46a6b9b33731fb3715609e453bd76578a4d10c",
+  "attestation_hash": "680ffac5f591ef0ba8381d3a9369ced96ada690ae4bab1ce6cebcb593f35c21b",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-22T08:35:06.165144+00:00",
+      "action": "snapshot_taken",
+      "id": "98754febf93047433b7fc82dcf46a6b9b33731fb3715609e453bd76578a4d10c",
+      "name": "training_run",
+      "evidence_hash": "98754febf93047433b7fc82dcf46a6b9b33731fb3715609e453bd76578a4d10c"
+    },
+    {
+      "ts": "2026-01-22T08:35:06.165433+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "680ffac5f591ef0ba8381d3a9369ced96ada690ae4bab1ce6cebcb593f35c21b"
+    },
+    {
+      "ts": "2026-01-22T08:35:06.165454+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "PASS",
+      "evidence_hash": "0fc1eb4b2cf4682458f4dc1d4f58616a162473f4b18aa4af7e03171a68b1f22d"
+    }
+  ]
+}

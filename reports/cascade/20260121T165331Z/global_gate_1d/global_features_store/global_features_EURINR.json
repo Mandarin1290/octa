@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/EURINR_1D.parquet",
+  "n": 4166,
+  "vol_ann": 0.09403461469337468,
+  "max_drawdown": -0.2807681402804737,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

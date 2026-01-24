@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/USDILS_1D.parquet",
+  "n": 4170,
+  "vol_ann": 0.08818278333219205,
+  "max_drawdown": -0.24577447518147943,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

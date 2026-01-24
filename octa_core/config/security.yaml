@@ -1,0 +1,24 @@
+security:
+  vault:
+    enabled: false
+    url: "http://127.0.0.1:8200"
+    token_env: "VAULT_TOKEN"
+
+  secrets:
+    prefer_keyring: true
+
+  audit:
+    enabled: true
+    path: "artifacts/security/audit.jsonl"
+
+  encryption_at_rest:
+    enabled: false
+    master_key_env: "OCTA_MASTER_KEY"
+    # Encrypt only sensitive outputs by default; do not encrypt large parquet unless enabled.
+    policy:
+      encrypt_paths:
+        - "artifacts/security"
+        - "artifacts/accounting"
+      exclude_globs:
+        - "**/*.parquet"
+        - "**/*.pkl"

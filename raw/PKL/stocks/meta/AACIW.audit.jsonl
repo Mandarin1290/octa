@@ -1,0 +1,37 @@
+{"type": "START", "ts_utc": "2026-01-08T14:47:54.718612+00:00", "run_id": "stocks_pkl_1d1h_20260108T144704Z", "symbol": "AACIW", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-08T14:47:54.727200+00:00", "run_id": "stocks_pkl_1d1h_20260108T144704Z", "symbol": "AACIW", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/AACIW_1D.parquet", "parquet_sha256": "15e515bd413de0ea8be825e31c41b37ffde05256356035a0054f1ad6a7ef4824"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T14:47:54.728071+00:00", "run_id": "stocks_pkl_1d1h_20260108T144704Z", "symbol": "AACIW", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T14:48:20.437410+00:00", "run_id": "stocks_pkl_1d1h_20260108T144704Z", "symbol": "AACIW", "tf": "1D", "passed": true, "error": null}
+{"type": "WRITE_PKL", "ts_utc": "2026-01-08T14:48:20.450926+00:00", "run_id": "stocks_pkl_1d1h_20260108T144704Z", "symbol": "AACIW", "tf": "1D", "pkl": "/home/n-b/Octa/raw/PKL/stocks/1D/AACIW.pkl", "pkl_sha256": "520240a4c997fe2e6ea150f570d2533b6067a47151e3a7373ebf0cdd52019d35"}
+{"type": "LOAD", "ts_utc": "2026-01-08T14:48:20.452695+00:00", "run_id": "stocks_pkl_1d1h_20260108T144704Z", "symbol": "AACIW", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/AACIW_1H.parquet", "parquet_sha256": "00e6b0bf07d5f5978633e0422bf9fe54f5796a2b6d3b84784e137bc9d9f781f0"}
+{"type": "SKIP", "ts_utc": "2026-01-08T14:48:20.462629+00:00", "run_id": "stocks_pkl_1d1h_20260108T144704Z", "symbol": "AACIW", "tf": "1H", "reason": "not_hourly_like"}
+{"type": "START", "ts_utc": "2026-01-08T14:49:43.125987+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "AACIW", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-08T14:49:43.130846+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "AACIW", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/AACIW_1D.parquet", "parquet_sha256": "15e515bd413de0ea8be825e31c41b37ffde05256356035a0054f1ad6a7ef4824"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T14:49:43.133750+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "AACIW", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T14:49:43.306212+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "AACIW", "tf": "1D", "passed": true, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T14:49:43.386808+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "AACIW", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks/meta/AACIW.meta.json"}
+{"type": "START", "ts_utc": "2026-01-08T15:42:30.442161+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "AACIW", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-08T15:42:30.445105+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "AACIW", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/AACIW_1D.parquet", "parquet_sha256": "15e515bd413de0ea8be825e31c41b37ffde05256356035a0054f1ad6a7ef4824"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T15:42:30.445656+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "AACIW", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T15:42:30.498509+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "AACIW", "tf": "1D", "passed": true, "error": null}
+{"type": "LOAD", "ts_utc": "2026-01-08T15:42:30.541036+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "AACIW", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/AACIW_1H.parquet", "parquet_sha256": "00e6b0bf07d5f5978633e0422bf9fe54f5796a2b6d3b84784e137bc9d9f781f0"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T15:42:30.549539+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "AACIW", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T15:42:52.860995+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "AACIW", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T15:42:52.862266+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "AACIW", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks/meta/AACIW.meta.json"}
+{"type": "START", "ts_utc": "2026-01-08T16:09:17.111333+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "AACIW", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-08T16:09:17.113943+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "AACIW", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/AACIW_1D.parquet", "parquet_sha256": "15e515bd413de0ea8be825e31c41b37ffde05256356035a0054f1ad6a7ef4824"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T16:09:17.114495+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "AACIW", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T16:09:17.166523+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "AACIW", "tf": "1D", "passed": true, "error": null}
+{"type": "LOAD", "ts_utc": "2026-01-08T16:09:17.215427+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "AACIW", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/AACIW_1H.parquet", "parquet_sha256": "00e6b0bf07d5f5978633e0422bf9fe54f5796a2b6d3b84784e137bc9d9f781f0"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T16:09:17.223963+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "AACIW", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T16:09:42.401024+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "AACIW", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T16:09:42.404227+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "AACIW", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks/meta/AACIW.meta.json"}
+{"type": "START", "ts_utc": "2026-01-08T16:36:54.938748+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "AACIW", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-08T16:36:54.941831+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "AACIW", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/AACIW_1D.parquet", "parquet_sha256": "15e515bd413de0ea8be825e31c41b37ffde05256356035a0054f1ad6a7ef4824"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T16:36:54.942563+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "AACIW", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T16:37:30.406237+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "AACIW", "tf": "1D", "passed": true, "error": null}
+{"type": "WRITE_PKL", "ts_utc": "2026-01-08T16:37:30.419773+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "AACIW", "tf": "1D", "pkl": "/home/n-b/Octa/raw/PKL/stocks/1D/AACIW.pkl", "pkl_sha256": "1ba406f6fb4f60b27b129c6d0926cf374e02e81a47e72c6882825c974db7683a"}
+{"type": "LOAD", "ts_utc": "2026-01-08T16:37:30.421348+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "AACIW", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/AACIW_1H.parquet", "parquet_sha256": "00e6b0bf07d5f5978633e0422bf9fe54f5796a2b6d3b84784e137bc9d9f781f0"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T16:37:30.428829+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "AACIW", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T16:37:48.155031+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "AACIW", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T16:37:48.157590+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "AACIW", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks/meta/AACIW.meta.json"}

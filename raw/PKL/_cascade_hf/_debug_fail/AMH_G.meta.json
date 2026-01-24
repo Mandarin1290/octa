@@ -1,0 +1,386 @@
+{
+  "schema_version": 1,
+  "symbol": "AMH_G",
+  "asset_class": "unknown",
+  "run_id": "20260121T120000Z__1H",
+  "created_at": "2026-01-21T07:16:47.912119",
+  "artifact_kind": "debug",
+  "created_with": {
+    "code_version": null,
+    "python": "3.13.5",
+    "libs": {
+      "numpy": "2.2.6",
+      "pandas": "2.3.3",
+      "lightgbm": "4.6.0",
+      "xgboost": "3.0.5",
+      "catboost": "1.2.8",
+      "sklearn": "1.7.2"
+    }
+  },
+  "metrics": {
+    "sharpe": 5.219269634692094,
+    "sortino": 5.519433389434332,
+    "sharpe_is_mean": 21.28630859060435,
+    "sharpe_wf_std": 4.4812580331092,
+    "sharpe_oos_over_is": 0.2451937409662286,
+    "max_drawdown": 0.00804353021025439,
+    "calmar": 38.78467016819638,
+    "profit_factor": 1.6116968661767077,
+    "cagr": 0.31196566619263977,
+    "net_to_gross": 0.7898442724465903,
+    "cvar_99": -0.003111759623423023,
+    "cvar_99_sigma": 2.5988840560154074,
+    "cvar_95": -0.0021439406701301593,
+    "daily_vol": 0.003277194756031661,
+    "cvar_95_over_daily_vol": 0.6541999573049624,
+    "turnover": 61.45387164740866,
+    "turnover_per_day": 1.4748929195378078,
+    "avg_gross_exposure": 0.052664549435215036,
+    "hit_rate": 0.3246753246753247,
+    "avg_trade": null,
+    "avg_net_trade_return": 0.00014576382506989205,
+    "n_trades": 308,
+    "fold_metrics": [
+      {
+        "sharpe": -1.7515731802128691,
+        "sharpe_is": 20.8661199628992,
+        "max_drawdown": 0.00429617017559436,
+        "n_trades": 9
+      },
+      {
+        "sharpe": -0.4879426804835712,
+        "sharpe_is": 21.010508992589223,
+        "max_drawdown": 0.0042115878841966214,
+        "n_trades": 70
+      },
+      {
+        "sharpe": -6.756889216175082,
+        "sharpe_is": 21.40458458519823,
+        "max_drawdown": 0.013913277837791171,
+        "n_trades": 68
+      },
+      {
+        "sharpe": 6.768226649148533,
+        "sharpe_is": 21.57173408180713,
+        "max_drawdown": 0.0036926671522681254,
+        "n_trades": 73
+      },
+      {
+        "sharpe": -3.4894118362322684,
+        "sharpe_is": 21.578595330527964,
+        "max_drawdown": 0.014994939850314859,
+        "n_trades": 66
+      }
+    ],
+    "metadata": {
+      "horizon": null,
+      "bar_size": null,
+      "cost_bps": 1.0,
+      "spread_bps": 0.5,
+      "sample_start": "2018-03-19T13:00:00+00:00",
+      "sample_end": "2019-01-04T12:00:00+00:00"
+    }
+  },
+  "gate": {
+    "passed": false,
+    "status": "FAIL_STRUCTURAL",
+    "gate_version": "hf_gate_2026-01-03_v1",
+    "reasons": [
+      "is_oos_degradation: sharpe_oos_over_is 0.2451937409662286 < 0.4",
+      "turnover_per_day too high: 1.4748929195378078 > 1.0"
+    ],
+    "passed_checks": [
+      "tail_kill_switch",
+      "sharpe",
+      "sortino",
+      "max_drawdown",
+      "profit_factor",
+      "n_trades",
+      "sharpe_wf_std_soft_fail",
+      "net_to_gross",
+      "avg_net_trade_return",
+      "avg_gross_exposure",
+      "tail_risk",
+      "folds_pass_ratio_soft_fail"
+    ],
+    "insufficient_evidence": [
+      "sharpe_wf_std_high",
+      "folds_pass_ratio_soft_fail"
+    ],
+    "robustness": {
+      "passed": true,
+      "reasons": [],
+      "details": {
+        "permutation": {
+          "mean_auc": 0.4960758963014982,
+          "aucs": [
+            0.4957081980519481,
+            0.4972789115646258,
+            0.4980463609677093,
+            0.4880508814102564,
+            0.5012951295129515
+          ],
+          "passed": true
+        },
+        "subwindow": {
+          "passed": true,
+          "pass_count": 3,
+          "required_pass_count": 1,
+          "windows": [
+            {
+              "i": 0,
+              "sharpe": 1.2112473914498323
+            },
+            {
+              "i": 1,
+              "sharpe": 1.2281042089545176
+            },
+            {
+              "i": 2,
+              "sharpe": 0.7760750520645404
+            }
+          ]
+        },
+        "cost_stress": {
+          "passed": true,
+          "sharpe": 3.829142309429442
+        },
+        "regime": {
+          "passed": true,
+          "subset_max_drawdown": -0.002038255770763664
+        },
+        "bootstrap": {
+          "enabled": true,
+          "passed": true,
+          "checks": {
+            "sharpe_p05": {
+              "value": 0.4673928537718372,
+              "pass": true,
+              "threshold": 0.0
+            },
+            "maxdd_p95": {
+              "value": 0.013948915812319352,
+              "pass": true,
+              "threshold": 0.5
+            },
+            "prob_sharpe_below_floor": {
+              "value": 0.0,
+              "pass": true,
+              "threshold": 0.35,
+              "floor": 0.0
+            }
+          }
+        }
+      },
+      "limited_reasons": []
+    },
+    "diagnostics": [
+      {
+        "name": "cvar_95_over_daily_vol",
+        "value": 0.6541999573049624,
+        "threshold": 2.5,
+        "op": "<=",
+        "passed": true,
+        "evaluable": true,
+        "confidence": 0.42473193072877075,
+        "reason": null
+      },
+      {
+        "name": "sharpe",
+        "value": 5.219269634692094,
+        "threshold": 0.7,
+        "op": ">=",
+        "passed": true,
+        "evaluable": true,
+        "confidence": 0.8658816177368663,
+        "reason": null
+      },
+      {
+        "name": "sortino",
+        "value": 5.519433389434332,
+        "threshold": 1.0,
+        "op": ">=",
+        "passed": true,
+        "evaluable": true,
+        "confidence": 0.8188219823588655,
+        "reason": null
+      },
+      {
+        "name": "max_drawdown",
+        "value": 0.00804353021025439,
+        "threshold": 0.2,
+        "op": "<=",
+        "passed": true,
+        "evaluable": true,
+        "confidence": 0.48973925572070653,
+        "reason": null
+      },
+      {
+        "name": "profit_factor",
+        "value": 1.6116968661767077,
+        "threshold": 1.1,
+        "op": ">=",
+        "passed": true,
+        "evaluable": true,
+        "confidence": 0.317489521085043,
+        "reason": null
+      },
+      {
+        "name": "n_trades",
+        "value": 308.0,
+        "threshold": 60.0,
+        "op": ">=",
+        "passed": true,
+        "evaluable": true,
+        "confidence": 0.8051948051948052,
+        "reason": null
+      },
+      {
+        "name": "sharpe_wf_std",
+        "value": 4.4812580331092,
+        "threshold": 0.7,
+        "op": "<=",
+        "passed": false,
+        "evaluable": true,
+        "confidence": 0.0,
+        "reason": "soft_fail_sharpe_wf_std"
+      },
+      {
+        "name": "sharpe_oos_over_is",
+        "value": 0.2451937409662286,
+        "threshold": 0.4,
+        "op": ">=",
+        "passed": false,
+        "evaluable": true,
+        "confidence": 0.0,
+        "reason": "is_oos_degradation"
+      },
+      {
+        "name": "net_to_gross",
+        "value": 0.7898442724465903,
+        "threshold": 0.6,
+        "op": ">=",
+        "passed": true,
+        "evaluable": true,
+        "confidence": 0.24035658555646197,
+        "reason": null
+      },
+      {
+        "name": "avg_net_trade_return",
+        "value": 0.00014576382506989205,
+        "threshold": 0.00008,
+        "op": ">=",
+        "passed": true,
+        "evaluable": true,
+        "confidence": 0.45116698219437545,
+        "reason": null
+      },
+      {
+        "name": "turnover_per_day",
+        "value": 1.4748929195378078,
+        "threshold": 1.0,
+        "op": "<=",
+        "passed": false,
+        "evaluable": true,
+        "confidence": 0.0,
+        "reason": "turnover_per_day"
+      },
+      {
+        "name": "avg_gross_exposure",
+        "value": 0.052664549435215036,
+        "threshold": 1000000000.0,
+        "op": "<=",
+        "passed": true,
+        "evaluable": true,
+        "confidence": 0.49999999998683387,
+        "reason": null
+      },
+      {
+        "name": "cvar_99_sigma",
+        "value": 2.5988840560154074,
+        "threshold": 1000000000.0,
+        "op": "<=",
+        "passed": true,
+        "evaluable": true,
+        "confidence": 0.499999999350279,
+        "reason": null
+      },
+      {
+        "name": "folds_pass_ratio",
+        "value": 0.25,
+        "threshold": 0.7,
+        "op": ">=",
+        "passed": false,
+        "evaluable": true,
+        "confidence": 0.0,
+        "reason": "soft_fail_folds_pass_ratio"
+      },
+      {
+        "name": "asset_profile",
+        "value": "legacy",
+        "threshold": null,
+        "op": null,
+        "passed": true,
+        "evaluable": true,
+        "confidence": 0.0,
+        "reason": null
+      },
+      {
+        "name": "asset_profile_hash",
+        "value": "de44b15995e86ac560ff7b98b9b21ea1dc444c74",
+        "threshold": null,
+        "op": null,
+        "passed": true,
+        "evaluable": true,
+        "confidence": 0.0,
+        "reason": null
+      },
+      {
+        "name": "applied_thresholds",
+        "value": {
+          "sharpe_min": 0.7,
+          "sortino_min": 1.0,
+          "profit_factor_min": 1.1,
+          "max_drawdown_max": 0.2,
+          "min_trades": 60,
+          "sharpe_wf_std_max": 0.7,
+          "sharpe_oos_over_is_min": 0.4,
+          "net_to_gross_min": 0.6,
+          "turnover_per_day_max": 1.0,
+          "avg_net_trade_return_min": 0.00008,
+          "cvar_95_over_daily_vol_max": 2.5,
+          "gate_version": "hf_gate_2026-01-03_v1",
+          "folds_min_evaluable": 3,
+          "sharpe_wf_std_min_folds": 3,
+          "sharpe_oos_over_is_min_folds": 1,
+          "robustness_permutation_auc_max": 0.55,
+          "robustness_subwindow_min_sharpe_ratio": 0.5,
+          "robustness_subwindow_abs_sharpe_min": 0.5,
+          "robustness_subwindow_min_obs": 252,
+          "robustness_stress_min_sharpe": 0.5,
+          "robustness_regime_top_quantile": 0.8,
+          "robustness_regime_max_drawdown": 0.5,
+          "bootstrap_min_obs": 252,
+          "bootstrap_sharpe_floor": 0.0,
+          "bootstrap_sharpe_p05_min": 0.0,
+          "bootstrap_maxdd_p95_max": 0.5,
+          "bootstrap_prob_sharpe_below_max": 0.35,
+          "bootstrap_n": 300,
+          "bootstrap_block": 10,
+          "bootstrap_seed": 1337
+        },
+        "threshold": null,
+        "op": null,
+        "passed": true,
+        "evaluable": true,
+        "confidence": 0.0,
+        "reason": null
+      }
+    ]
+  },
+  "feature_count": 62,
+  "horizons": [
+    "3"
+  ],
+  "meta_sha256": "9bb3a5090b1d3483cb7d5d4d5ced311fa1832bd7815486bfea55df95b92e572c"
+}

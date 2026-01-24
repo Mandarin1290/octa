@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-21T00:01:03.862510+00:00",
+  "symbol": "AOMN",
+  "run_id": "diag_1H_20260120T232103Z__AOMN",
+  "snapshot_id": "2384ff1d29491b7d5a2fc0087f0e6f32de0d42bf8aaf6123efa12470a531ad68",
+  "attestation_hash": "e98a6d4c04bf521766e2f922eedbf990133447f3f1e8d43d69f13c18293ed49f",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T00:01:03.862652+00:00",
+      "action": "snapshot_taken",
+      "id": "2384ff1d29491b7d5a2fc0087f0e6f32de0d42bf8aaf6123efa12470a531ad68",
+      "name": "training_run",
+      "evidence_hash": "2384ff1d29491b7d5a2fc0087f0e6f32de0d42bf8aaf6123efa12470a531ad68"
+    },
+    {
+      "ts": "2026-01-21T00:01:03.862961+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "e98a6d4c04bf521766e2f922eedbf990133447f3f1e8d43d69f13c18293ed49f"
+    },
+    {
+      "ts": "2026-01-21T00:01:03.862981+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "d751a35f00800861136ff1ce3b5167d8ffe82bb3b407a510bf5347e289246168"
+    }
+  ]
+}

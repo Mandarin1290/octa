@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/ARGO_A_1D.parquet",
+  "n": 1294,
+  "vol_ann": 0.15325733683806805,
+  "max_drawdown": -0.352670675627874,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

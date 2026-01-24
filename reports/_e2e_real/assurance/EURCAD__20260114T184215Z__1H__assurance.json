@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-14T19:57:50.886397+00:00",
+  "symbol": "EURCAD",
+  "run_id": "20260114T184215Z__1H",
+  "snapshot_id": "3cd8120902186e646325776ad1e2dfedeee34189fe73f0a3aef2df28fe7788f0",
+  "attestation_hash": "45edd1207c77ccf2de0bd4f172d7249ad0f348419c82a42f5f77682eeb03d2fa",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-14T19:57:50.886539+00:00",
+      "action": "snapshot_taken",
+      "id": "3cd8120902186e646325776ad1e2dfedeee34189fe73f0a3aef2df28fe7788f0",
+      "name": "training_run",
+      "evidence_hash": "3cd8120902186e646325776ad1e2dfedeee34189fe73f0a3aef2df28fe7788f0"
+    },
+    {
+      "ts": "2026-01-14T19:57:50.886760+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "45edd1207c77ccf2de0bd4f172d7249ad0f348419c82a42f5f77682eeb03d2fa"
+    },
+    {
+      "ts": "2026-01-14T19:57:50.886779+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "43a1247017d871f0fb8b15fe73c193284e103d53f4b6fa9172ae679f7ea93808"
+    }
+  ]
+}

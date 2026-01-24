@@ -1,0 +1,38 @@
+{
+  "timeframe": "1H",
+  "n_symbols": 1,
+  "run_id_prefix": "diag_1H_20260114T175056Z",
+  "status_counts": {
+    "FAIL": 1
+  },
+  "top_reason_keys": [
+    {
+      "reason": "net_to_gross",
+      "count": 1,
+      "examples": [
+        "AACT"
+      ]
+    },
+    {
+      "reason": "avg_net_trade_return",
+      "count": 1,
+      "examples": [
+        "AACT"
+      ]
+    },
+    {
+      "reason": "turnover_per_day",
+      "count": 1,
+      "examples": [
+        "AACT"
+      ]
+    },
+    {
+      "reason": "cost_stress_failed",
+      "count": 1,
+      "examples": [
+        "AACT"
+      ]
+    }
+  ]
+}

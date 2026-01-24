@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/ARDC_1D.parquet",
+  "n": 3293,
+  "vol_ann": 0.15460813829004574,
+  "max_drawdown": -0.453970080552359,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

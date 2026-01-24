@@ -1,0 +1,290 @@
+symbol,status,parquet,reasons
+AACT,FAIL,raw/Stock_parquet/AACT_1H.parquet,net_to_gross too low: 0.29368868516822294 < 0.6;avg_net_trade_return too low: 5.7367792762695836e-05 < 8e-05;turnover_per_day too high: 9.26237007371129 > 1.0;cost_stress_failed sharpe=-2.6220886575599214
+AAM,FAIL,raw/Stock_parquet/AAM_1H.parquet,turnover_per_day too high: 4.35227467708855 > 1.0
+AAON,PASS,raw/Stock_parquet/AAON_1H.parquet,
+AATC,PASS,raw/Stock_parquet/AATC_1H.parquet,
+AAXJ,PASS,raw/Stock_parquet/AAXJ_1H.parquet,
+ABBV,FAIL,raw/Stock_parquet/ABBV_1H.parquet,turnover_per_day too high: 1.6364428985330874 > 1.0
+ABLLL,MISSING_PARQUET,,
+ABM,FAIL,raw/Stock_parquet/ABM_1H.parquet,turnover_per_day too high: 1.2004669690722207 > 1.0
+ABR_D,FAIL,raw/Stock_parquet/ABR_D_1H.parquet,sharpe too low: -0.10332741637776041 < 0.7;sortino too low: -0.07607759785551485 < 1.0;profit_factor too low: 0.9914822260280604 < 1.1;net_to_gross too low: -0.08065749002660304 < 0.6;avg_net_trade_return too low: -2.9475047131159188e-06 < 8e-05;turnover_per_day too high: 1.4980498004293088 > 1.0;cost_stress_failed sharpe=-1.4820518062756587
+ABR_E,FAIL,raw/Stock_parquet/ABR_E_1H.parquet,avg_net_trade_return too low: 7.51513603747363e-05 < 8e-05
+ABR_F,FAIL,raw/Stock_parquet/ABR_F_1H.parquet,sortino too low: 0.9346193271784201 < 1.0;net_to_gross too low: 0.5871534052310424 < 0.6;avg_net_trade_return too low: 4.130489262416894e-05 < 8e-05;cost_stress_failed sharpe=0.3912390549410095
+ABT,PASS,raw/Stock_parquet/ABT_1H.parquet,
+ACA,PASS,raw/Stock_parquet/ACA_1H.parquet,
+ACEL,FAIL,raw/Stock_parquet/ACEL_1H.parquet,net_to_gross too low: 0.5664452207609512 < 0.6;avg_net_trade_return too low: 5.7383593131670694e-05 < 8e-05;turnover_per_day too high: 1.8635500759080608 > 1.0;cost_stress_failed sharpe=0.3701587188431681
+ACGL,PASS,raw/Stock_parquet/ACGL_1H.parquet,
+ACGLN,FAIL,raw/Stock_parquet/ACGLN_1H.parquet,turnover_per_day too high: 1.2958814044512683 > 1.0
+ACGLO,FAIL,raw/Stock_parquet/ACGLO_1H.parquet,net_to_gross too low: 0.43850640452644574 < 0.6;avg_net_trade_return too low: 5.9452921847237386e-05 < 8e-05;turnover_per_day too high: 4.15513999187461 > 1.0;cost_stress_failed sharpe=-0.500668645676693
+ACI,FAIL,raw/Stock_parquet/ACI_1H.parquet,turnover_per_day too high: 1.1728135656594019 > 1.0
+ACII,FAIL,raw/Stock_parquet/ACII_1H.parquet,
+ACM,PASS,raw/Stock_parquet/ACM_1H.parquet,
+ACN,FAIL,raw/Stock_parquet/ACN_1H.parquet,turnover_per_day too high: 1.151698168513154 > 1.0
+ACOG,PASS,raw/Stock_parquet/ACOG_1H.parquet,
+ACP,FAIL,raw/Stock_parquet/ACP_1H.parquet,turnover_per_day too high: 1.3568174689004362 > 1.0
+ACP_A,FAIL,raw/Stock_parquet/ACP_A_1H.parquet,sortino too low: 0.7830114056916007 < 1.0;profit_factor too low: 1.0960882419634885 < 1.1;net_to_gross too low: 0.49739352864529085 < 0.6;avg_net_trade_return too low: 2.840593815114244e-05 < 8e-05;cost_stress_failed sharpe=-0.010408587549738509
+ACQRU,PASS,raw/Stock_parquet/ACQRU_1H.parquet,
+ACR_C,FAIL,raw/Stock_parquet/ACR_C_1H.parquet,sharpe too low: 0.5664078996968172 < 0.7;sortino too low: 0.4494146361261519 < 1.0;profit_factor too low: 1.049213182073733 < 1.1;net_to_gross too low: 0.4847082040810974 < 0.6;avg_net_trade_return too low: 2.2291125287611683e-05 < 8e-05;cost_stress_failed sharpe=-0.03566466881714102
+ACR_D,PASS,raw/Stock_parquet/ACR_D_1H.parquet,
+ACT,PASS,raw/Stock_parquet/ACT_1H.parquet,
+ACTU,PASS,raw/Stock_parquet/ACTU_1H.parquet,
+ACV,FAIL,raw/Stock_parquet/ACV_1H.parquet,turnover_per_day too high: 1.3843376084768437 > 1.0
+ADC_A,FAIL,raw/Stock_parquet/ADC_A_1H.parquet,sharpe too low: -1.8998592374928651 < 0.7;sortino too low: -1.0789537586303652 < 1.0;profit_factor too low: 0.816112911647738 < 1.1;avg_net_trade_return too low: -7.242110174792236e-05 < 8e-05;turnover_per_day too high: 1.3765088968406254 > 1.0;cost_stress_failed sharpe=-2.8706399069074164
+ADP,FAIL,raw/Stock_parquet/ADP_1H.parquet,avg_net_trade_return too low: 6.138912139234778e-05 < 8e-05;turnover_per_day too high: 1.12970535126992 > 1.0
+ADUR,PASS,raw/Stock_parquet/ADUR_1H.parquet,
+AEAE,PASS,raw/Stock_parquet/AEAE_1H.parquet,
+AEFC,FAIL,raw/Stock_parquet/AEFC_1H.parquet,net_to_gross too low: 0.5104582161287025 < 0.6;avg_net_trade_return too low: 5.736991174954868e-05 < 8e-05;turnover_per_day too high: 2.6485133502065525 > 1.0;folds systematic failure: good_folds 0/3;cost_stress_failed sharpe=0.07338982286419614
+AFB,FAIL,raw/Stock_parquet/AFB_1H.parquet,turnover_per_day too high: 2.6222493144041614 > 1.0
+AFBI,PASS,raw/Stock_parquet/AFBI_1H.parquet,
+AFGB,FAIL,raw/Stock_parquet/AFGB_1H.parquet,turnover_per_day too high: 3.466452605347494 > 1.0
+AFGC,FAIL,raw/Stock_parquet/AFGC_1H.parquet,net_to_gross too low: 0.4453024919210453 < 0.6;avg_net_trade_return too low: 4.124051521778123e-05 < 8e-05;turnover_per_day too high: 2.3804191247032374 > 1.0;cost_stress_failed sharpe=-0.36241603274396994
+AFGD,FAIL,raw/Stock_parquet/AFGD_1H.parquet,net_to_gross too low: 0.43286495059964747 < 0.6;avg_net_trade_return too low: 5.3837121441040824e-05 < 8e-05;turnover_per_day too high: 3.45243406325909 > 1.0;cost_stress_failed sharpe=-0.52978885212359
+AFGE,PASS,raw/Stock_parquet/AFGE_1H.parquet,
+AFRI,PASS,raw/Stock_parquet/AFRI_1H.parquet,
+AGCO,PASS,raw/Stock_parquet/AGCO_1H.parquet,
+AGM_A,PASS,raw/Stock_parquet/AGM_A_1H.parquet,
+AGM_D,PASS,raw/Stock_parquet/AGM_D_1H.parquet,
+AGM_E,FAIL,raw/Stock_parquet/AGM_E_1H.parquet,net_to_gross too low: 0.5521902687940292 < 0.6;avg_net_trade_return too low: 5.2327344727874477e-05 < 8e-05;turnover_per_day too high: 1.7430467670223115 > 1.0;cost_stress_failed sharpe=0.3444298647154185
+AGM_F,FAIL,raw/Stock_parquet/AGM_F_1H.parquet,avg_net_trade_return too low: 7.967038600679382e-05 < 8e-05;turnover_per_day too high: 1.1214522245071379 > 1.0
+AGM_G,PASS,raw/Stock_parquet/AGM_G_1H.parquet,
+AGNC,PASS,raw/Stock_parquet/AGNC_1H.parquet,
+AGNCL,FAIL,raw/Stock_parquet/AGNCL_1H.parquet,turnover_per_day too high: 2.0300039046987584 > 1.0
+AGNCM,FAIL,raw/Stock_parquet/AGNCM_1H.parquet,net_to_gross too low: 0.4989746975149708 < 0.6;avg_net_trade_return too low: 7.015664694054181e-05 < 8e-05;turnover_per_day too high: 3.6244609184838668 > 1.0;cost_stress_failed sharpe=-0.009570796530209723
+AGNCN,FAIL,raw/Stock_parquet/AGNCN_1H.parquet,net_to_gross too low: 0.5036409076636613 < 0.6;turnover_per_day too high: 4.506753851267353 > 1.0;cost_stress_failed sharpe=0.041018462903454615
+AGNCO,FAIL,raw/Stock_parquet/AGNCO_1H.parquet,sortino too low: 0.8545526138261972 < 1.0;net_to_gross too low: 0.3571267299748096 < 0.6;avg_net_trade_return too low: 3.37306904523701e-05 < 8e-05;turnover_per_day too high: 2.895822108869142 > 1.0;cost_stress_failed sharpe=-0.8969515765887142
+AGX,FAIL,raw/Stock_parquet/AGX_1H.parquet,sharpe too low: 0.3902451774101316 < 0.7;sortino too low: 0.3029559390504578 < 1.0;profit_factor too low: 1.0343276910517354 < 1.1;net_to_gross too low: 0.2566512388878989 < 0.6;avg_net_trade_return too low: 1.0901543922264972e-05 < 8e-05;cost_stress_failed sharpe=-0.7393718752824862
+AHH_A,FAIL,raw/Stock_parquet/AHH_A_1H.parquet,avg_net_trade_return too low: 7.435397611427212e-05 < 8e-05;turnover_per_day too high: 1.4829657392062294 > 1.0
+AHL_E,PASS,raw/Stock_parquet/AHL_E_1H.parquet,
+AHR,FAIL,raw/Stock_parquet/AHR_1H.parquet,turnover_per_day too high: 1.114793464662664 > 1.0
+AIMBU,PASS,raw/Stock_parquet/AIMBU_1H.parquet,
+AIO,FAIL,raw/Stock_parquet/AIO_1H.parquet,net_to_gross too low: 0.5966460251490365 < 0.6;avg_net_trade_return too low: 6.683713009576903e-05 < 8e-05;turnover_per_day too high: 1.7463336500469564 > 1.0
+AIRTP,FAIL,raw/Stock_parquet/AIRTP_1H.parquet,turnover_per_day too high: 1.4488720093713905 > 1.0
+AIS,PASS,raw/Stock_parquet/AIS_1H.parquet,
+AIT,FAIL,raw/Stock_parquet/AIT_1H.parquet,turnover_per_day too high: 1.7148726464254511 > 1.0
+AIV,FAIL,raw/Stock_parquet/AIV_1H.parquet,avg_net_trade_return too low: 5.7643034993483524e-05 < 8e-05;turnover_per_day too high: 1.091388586829985 > 1.0
+AIZN,FAIL,raw/Stock_parquet/AIZN_1H.parquet,turnover_per_day too high: 2.317891745681502 > 1.0
+AJG,FAIL,raw/Stock_parquet/AJG_1H.parquet,sortino too low: 0.7437090053603851 < 1.0;profit_factor too low: 1.082220389390771 < 1.1;net_to_gross too low: 0.5757067535091731 < 0.6;avg_net_trade_return too low: 3.21390780184576e-05 < 8e-05;cost_stress_failed sharpe=0.25020446416336906
+ALB_A,PASS,raw/Stock_parquet/ALB_A_1H.parquet,
+ALC,FAIL,raw/Stock_parquet/ALC_1H.parquet,turnover_per_day too high: 1.0197047420315153 > 1.0
+ALCY,PASS,raw/Stock_parquet/ALCY_1H.parquet,
+ALF,FAIL,raw/Stock_parquet/ALF_1H.parquet,turnover_per_day too high: 4.958314552611299 > 1.0
+ALFUW,PASS,raw/Stock_parquet/ALFUW_1H.parquet,
+ALLE,FAIL,raw/Stock_parquet/ALLE_1H.parquet,sharpe too low: -0.051609879637937686 < 0.7;sortino too low: -0.035751941711418815 < 1.0;profit_factor too low: 0.9951800621616086 < 1.1;net_to_gross too low: -0.030591290433140912 < 0.6;avg_net_trade_return too low: -1.4440180563267416e-06 < 8e-05;turnover_per_day too high: 2.058082080667667 > 1.0;cost_stress_failed sharpe=-1.7881895131584398
+ALL_B,FAIL,raw/Stock_parquet/ALL_B_1H.parquet,turnover_per_day too high: 3.6431425616686846 > 1.0
+ALL_H,FAIL,raw/Stock_parquet/ALL_H_1H.parquet,net_to_gross too low: 0.49244367483690465 < 0.6;avg_net_trade_return too low: 4.993369357969422e-05 < 8e-05;turnover_per_day too high: 2.340059750348627 > 1.0;cost_stress_failed sharpe=-0.030143943227332385
+ALL_I,FAIL,raw/Stock_parquet/ALL_I_1H.parquet,net_to_gross too low: 0.4509276528221216 < 0.6;avg_net_trade_return too low: 5.4874389830074014e-05 < 8e-05;turnover_per_day too high: 3.28230371231352 > 1.0;cost_stress_failed sharpe=-0.4230631675694538
+ALL_J,FAIL,raw/Stock_parquet/ALL_J_1H.parquet,net_to_gross too low: 0.522940602533512 < 0.6;avg_net_trade_return too low: 7.53270097315763e-05 < 8e-05;turnover_per_day too high: 3.479207186155497 > 1.0;cost_stress_failed sharpe=0.21335291643748586
+ALMU,PASS,raw/Stock_parquet/ALMU_1H.parquet,
+ALRM,FAIL,raw/Stock_parquet/ALRM_1H.parquet,sortino too low: 0.8740956887246859 < 1.0;profit_factor too low: 1.0892593940442026 < 1.1;net_to_gross too low: 0.44531337902220325 < 0.6;avg_net_trade_return too low: 2.7921212654703667e-05 < 8e-05;turnover_per_day too high: 1.1011035295774472 > 1.0;cost_stress_failed sharpe=-0.2693306064260153
+ALSN,FAIL,raw/Stock_parquet/ALSN_1H.parquet,sortino too low: 0.8561851325575212 < 1.0;profit_factor too low: 1.0855433570173951 < 1.1;net_to_gross too low: 0.42884874573946996 < 0.6;avg_net_trade_return too low: 3.25955610929753e-05 < 8e-05;turnover_per_day too high: 1.6811707121178276 > 1.0;cost_stress_failed sharpe=-0.31001188926650464
+ALTG_A,PASS,raw/Stock_parquet/ALTG_A_1H.parquet,
+AMCR,PASS,raw/Stock_parquet/AMCR_1H.parquet,
+AME,PASS,raw/Stock_parquet/AME_1H.parquet,
+AMH,FAIL,raw/Stock_parquet/AMH_1H.parquet,sharpe too low: 0.6664787857543378 < 0.7;sortino too low: 0.492906050935687 < 1.0;profit_factor too low: 1.0587547585865933 < 1.1;net_to_gross too low: 0.35004976160360923 < 0.6;avg_net_trade_return too low: 2.1457670592094327e-05 < 8e-05;turnover_per_day too high: 1.679084031431181 > 1.0;cost_stress_failed sharpe=-0.5706145071121544
+AMH_G,FAIL,raw/Stock_parquet/AMH_G_1H.parquet,turnover_per_day too high: 1.4748929195378078 > 1.0
+AMH_H,FAIL,raw/Stock_parquet/AMH_H_1H.parquet,net_to_gross too low: 0.5939563477121564 < 0.6;avg_net_trade_return too low: 7.716975158696613e-05 < 8e-05;turnover_per_day too high: 2.507664616192191 > 1.0
+AMSF,FAIL,raw/Stock_parquet/AMSF_1H.parquet,avg_net_trade_return too low: 4.8232139797996335e-05 < 8e-05
+AMT,FAIL,raw/Stock_parquet/AMT_1H.parquet,turnover_per_day too high: 1.561232229922751 > 1.0
+AMTM,FAIL,raw/Stock_parquet/AMTM_1H.parquet,avg_net_trade_return too low: 5.8854974191073286e-05 < 8e-05
+ANET,PASS,raw/Stock_parquet/ANET_1H.parquet,
+ANG_B,FAIL,raw/Stock_parquet/ANG_B_1H.parquet,sharpe too low: -0.7151650002201357 < 0.7;sortino too low: -0.8406291787361909 < 1.0;profit_factor too low: 0.921799361620069 < 1.1;net_to_gross too low: -0.3561906610149076 < 0.6;avg_net_trade_return too low: -3.5004976525816385e-05 < 8e-05;turnover_per_day too high: 7.97232751458384 > 1.0;cost_stress_failed sharpe=-3.410832256874631
+ANSC,FAIL,raw/Stock_parquet/ANSC_1H.parquet,net_to_gross too low: 0.5854763922482653 < 0.6;turnover_per_day too high: 5.044727426880279 > 1.0
+AOMN,FAIL,raw/Stock_parquet/AOMN_1H.parquet,net_to_gross too low: 0.5050023004484503 < 0.6;turnover_per_day too high: 5.1525534573179765 > 1.0;cost_stress_failed sharpe=0.05477275981619773
+APACU,FAIL,raw/Stock_parquet/APACU_1H.parquet,
+APG,FAIL,raw/Stock_parquet/APG_1H.parquet,turnover_per_day too high: 1.0895071490769135 > 1.0
+APGE,FAIL,raw/Stock_parquet/APGE_1H.parquet,avg_net_trade_return too low: 7.551572731192389e-05 < 8e-05
+APOS,FAIL,raw/Stock_parquet/APOS_1H.parquet,turnover_per_day too high: 3.48663706585804 > 1.0
+APO_A,FAIL,raw/Stock_parquet/APO_A_1H.parquet,avg_net_trade_return too low: 7.922531674037187e-05 < 8e-05;turnover_per_day too high: 1.0716966148153302 > 1.0
+APPF,PASS,raw/Stock_parquet/APPF_1H.parquet,
+APXTU,FAIL,raw/Stock_parquet/APXTU_1H.parquet,
+AQNB,FAIL,raw/Stock_parquet/AQNB_1H.parquet,net_to_gross too low: 0.5865435497622328 < 0.6;avg_net_trade_return too low: 6.188309951285118e-05 < 8e-05;turnover_per_day too high: 1.7015462395671883 > 1.0
+ARCC,FAIL,raw/Stock_parquet/ARCC_1H.parquet,turnover_per_day too high: 1.2062517955275758 > 1.0
+ARDC,FAIL,raw/Stock_parquet/ARDC_1H.parquet,turnover_per_day too high: 1.9972606710959118 > 1.0
+ARDT,PASS,raw/Stock_parquet/ARDT_1H.parquet,
+ARES,FAIL,raw/Stock_parquet/ARES_1H.parquet,turnover_per_day too high: 1.241354368873255 > 1.0
+ARGO_A,FAIL,raw/Stock_parquet/ARGO_A_1H.parquet,sharpe too low: -1.0203530175480335 < 0.7;sortino too low: -0.7737145432620378 < 1.0;profit_factor too low: 0.9244086047987783 < 1.1;net_to_gross too low: -1.402861591219028 < 0.6;avg_net_trade_return too low: -2.9866967334421727e-05 < 8e-05;turnover_per_day too high: 2.403806557430281 > 1.0;cost_stress_failed sharpe=-2.7609234733837202
+ARGX,FAIL,raw/Stock_parquet/ARGX_1H.parquet,avg_net_trade_return too low: 6.856728959826129e-05 < 8e-05
+ARM,FAIL,raw/Stock_parquet/ARM_1H.parquet,avg_net_trade_return too low: 5.9602550888317646e-05 < 8e-05;turnover_per_day too high: 1.0366302591651027 > 1.0
+ARMH,PASS,raw/Stock_parquet/ARMH_1H.parquet,
+ARMN,FAIL,raw/Stock_parquet/ARMN_1H.parquet,sortino too low: 0.6031048970821997 < 1.0;profit_factor too low: 1.0620548829027763 < 1.1;net_to_gross too low: 0.40572331241014137 < 0.6;avg_net_trade_return too low: 2.1916899787980735e-05 < 8e-05;cost_stress_failed sharpe=-0.33774685540993626
+AROW,PASS,raw/Stock_parquet/AROW_1H.parquet,
+ARTNA,PASS,raw/Stock_parquet/ARTNA_1H.parquet,
+AS,PASS,raw/Stock_parquet/AS_1H.parquet,
+ASBA,FAIL,raw/Stock_parquet/ASBA_1H.parquet,turnover_per_day too high: 1.289442164713902 > 1.0
+ASB_E,FAIL,raw/Stock_parquet/ASB_E_1H.parquet,net_to_gross too low: 0.47379497098907325 < 0.6;avg_net_trade_return too low: 5.011467310090717e-05 < 8e-05;turnover_per_day too high: 2.3912452367074057 > 1.0;cost_stress_failed sharpe=-0.18579729645280493
+ASB_F,FAIL,raw/Stock_parquet/ASB_F_1H.parquet,net_to_gross too low: 0.43089411051943793 < 0.6;avg_net_trade_return too low: 4.228256598538158e-05 < 8e-05;turnover_per_day too high: 2.6645306836455775 > 1.0;cost_stress_failed sharpe=-0.5165187123329563
+ASGI,FAIL,raw/Stock_parquet/ASGI_1H.parquet,turnover_per_day too high: 1.7015487336455157 > 1.0
+ASO,PASS,raw/Stock_parquet/ASO_1H.parquet,
+ASX,FAIL,raw/Indices_parquet/ASX_full_1hour.parquet,sortino too low: 0.6458274850431591 < 1.0;profit_factor too low: 1.093731328275218 < 1.1;net_to_gross too low: 0.3629581758418621 < 0.6;avg_net_trade_return too low: 3.067884277355717e-05 < 8e-05;turnover_per_day too high: 2.59288591680132 > 1.0;cost_stress_failed sharpe=-0.7698233696708482
+ATAT,PASS,raw/Stock_parquet/ATAT_1H.parquet,
+ATCOL,FAIL,raw/Stock_parquet/ATCOL_1H.parquet,turnover_per_day too high: 1.7096234366007623 > 1.0
+ATHS,FAIL,raw/Stock_parquet/ATHS_1H.parquet,net_to_gross too low: 0.4864647616909218 < 0.6;avg_net_trade_return too low: 7.932564842787214e-05 < 8e-05;turnover_per_day too high: 4.413176001676285 > 1.0;cost_stress_failed sharpe=-0.16414776746852344
+ATH_A,PASS,raw/Stock_parquet/ATH_A_1H.parquet,
+ATH_B,FAIL,raw/Stock_parquet/ATH_B_1H.parquet,turnover_per_day too high: 2.000889979100787 > 1.0
+ATH_C,FAIL,raw/Stock_parquet/ATH_C_1H.parquet,net_to_gross too low: 0.5146210197698666 < 0.6;avg_net_trade_return too low: 6.53051689329552e-05 < 8e-05;turnover_per_day too high: 3.079838306121708 > 1.0;cost_stress_failed sharpe=0.11188803403453355
+ATH_D,FAIL,raw/Stock_parquet/ATH_D_1H.parquet,turnover_per_day too high: 2.5424382129517133 > 1.0
+ATH_E,FAIL,raw/Stock_parquet/ATH_E_1H.parquet,sharpe too low: 0.3346435679604326 < 0.7;sortino too low: 0.2884585368876748 < 1.0;profit_factor too low: 1.0291983391680692 < 1.1;net_to_gross too low: 0.1310224614001383 < 0.6;avg_net_trade_return too low: 8.829372127395308e-06 < 8e-05;turnover_per_day too high: 2.7998076366199633 > 1.0;cost_stress_failed sharpe=-1.8773954085798719
+ATLCL,PASS,raw/Stock_parquet/ATLCL_1H.parquet,
+ATLCP,FAIL,raw/Stock_parquet/ATLCP_1H.parquet,turnover_per_day too high: 1.9862998492114494 > 1.0
+ATLCZ,FAIL,raw/Stock_parquet/ATLCZ_1H.parquet,net_to_gross too low: 0.5630978907827852 < 0.6;turnover_per_day too high: 6.767995990681827 > 1.0
+ATMC,PASS,raw/Stock_parquet/ATMC_1H.parquet,
+ATMCR,PASS,raw/Stock_parquet/ATMCR_1H.parquet,
+ATMU,FAIL,raw/Stock_parquet/ATMU_1H.parquet,avg_net_trade_return too low: 7.316867706918421e-05 < 8e-05;turnover_per_day too high: 1.3777082472143765 > 1.0
+ATO,FAIL,raw/Stock_parquet/ATO_1H.parquet,avg_net_trade_return too low: 5.4216648230923086e-05 < 8e-05
+ATR,PASS,raw/Stock_parquet/ATR_1H.parquet,
+ATS,FAIL,raw/Stock_parquet/ATS_1H.parquet,turnover_per_day too high: 1.1927970355628534 > 1.0
+AUB,FAIL,raw/Stock_parquet/AUB_1H.parquet,turnover_per_day too high: 1.38363766458267 > 1.0
+AUB_A,PASS,raw/Stock_parquet/AUB_A_1H.parquet,
+AUDBRL,FAIL,raw/FX_parquet/AUDBRL_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+AUDCAD,FAIL,raw/FX_parquet/AUDCAD_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+AUDCHF,FAIL,raw/FX_parquet/AUDCHF_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+AUDCNH,FAIL,raw/FX_parquet/AUDCNH_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+AUDHUF,FAIL,raw/FX_parquet/AUDHUF_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+AUDILS,FAIL,raw/FX_parquet/AUDILS_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+AUDINR,FAIL,raw/FX_parquet/AUDINR_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+AUDJPY,FAIL,raw/FX_parquet/AUDJPY_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+AUDMXN,FAIL,raw/FX_parquet/AUDMXN_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+AUDNZD,FAIL,raw/FX_parquet/AUDNZD_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+AUDSGD,FAIL,raw/FX_parquet/AUDSGD_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+AUDTHB,FAIL,raw/FX_parquet/AUDTHB_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+AUDTRY,FAIL,raw/FX_parquet/AUDTRY_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+AUDUSD,FAIL,raw/FX_parquet/AUDUSD_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+AUDZAR,FAIL,raw/FX_parquet/AUDZAR_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+AUNA,FAIL,raw/Stock_parquet/AUNA_1H.parquet,sortino too low: 0.9839086892015454 < 1.0;avg_net_trade_return too low: 4.45846058907322e-05 < 8e-05
+AVBH,FAIL,raw/Stock_parquet/AVBH_1H.parquet,turnover_per_day too high: 1.1805621568449371 > 1.0
+AVBP,FAIL,raw/Stock_parquet/AVBP_1H.parquet,sortino too low: 0.984162410517124 < 1.0;avg_net_trade_return too low: 6.927874876216276e-05 < 8e-05
+AVGO,FAIL,raw/Stock_parquet/AVGO_1H.parquet,turnover_per_day too high: 1.9830055163499183 > 1.0
+AVIV,FAIL,raw/Stock_parquet/AVIV_1H.parquet,turnover_per_day too high: 1.214062021988899 > 1.0
+AWF,FAIL,raw/Stock_parquet/AWF_1H.parquet,avg_net_trade_return too low: 6.853187322255138e-05 < 8e-05;turnover_per_day too high: 1.548473083820395 > 1.0
+AWK,PASS,raw/Stock_parquet/AWK_1H.parquet,
+AWR,FAIL,raw/Stock_parquet/AWR_1H.parquet,turnover_per_day too high: 1.0353954599766788 > 1.0
+AXS,FAIL,raw/Stock_parquet/AXS_1H.parquet,sharpe too low: -0.6742031224231334 < 0.7;sortino too low: -0.415865188694869 < 1.0;profit_factor too low: 0.9370290240671398 < 1.1;net_to_gross too low: -1.8897259663996175 < 0.6;avg_net_trade_return too low: -2.2853102536964487e-05 < 8e-05;turnover_per_day too high: 1.2887882245339555 > 1.0;cost_stress_failed sharpe=-1.700507575601383
+AXS_E,FAIL,raw/Stock_parquet/AXS_E_1H.parquet,net_to_gross too low: 0.46632640540838083 < 0.6;avg_net_trade_return too low: 7.408359991117411e-05 < 8e-05;turnover_per_day too high: 4.5934045491450775 > 1.0;cost_stress_failed sharpe=-0.35463946741119184
+AZN,PASS,raw/Stock_parquet/AZN_1H.parquet,
+AZO,FAIL,raw/Stock_parquet/AZO_1H.parquet,net_to_gross too low: 0.5934103198276454 < 0.6;avg_net_trade_return too low: 4.614499786085011e-05 < 8e-05;turnover_per_day too high: 1.013805174316375 > 1.0;cost_stress_failed sharpe=0.477978789932638
+BXM,FAIL,raw/Indices_parquet/BXM_full_1hour.parquet,avg_net_trade_return too low: 5.465326604090857e-05 < 8e-05
+BXN,FAIL,raw/Indices_parquet/BXN_full_1hour.parquet,turnover_per_day too high: 1.1170933000607524 > 1.0
+CADJPY,FAIL,raw/FX_parquet/CADJPY_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+CHFJPY,FAIL,raw/FX_parquet/CHFJPY_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+CLL,FAIL,raw/Indices_parquet/CLL_full_1hour.parquet,sortino too low: 0.7034242579669284 < 1.0;profit_factor too low: 1.076141776134887 < 1.1;net_to_gross too low: 0.24148134416639042 < 0.6;avg_net_trade_return too low: 2.5956753752078064e-05 < 8e-05;turnover_per_day too high: 4.550161258905899 > 1.0;cost_stress_failed sharpe=-1.8261102965471019
+CXU,FAIL,raw/Indices_parquet/CXU_full_1hour.parquet,tail_kill_switch: cvar_95_over_daily_vol 4.211147682319659 > 2.5;sharpe too low: 0.25101518518803007 < 0.7;sortino too low: 0.19490709642407447 < 0.9;avg_net_trade_return too low: 0.000196064249770129 < 0.0003;cost_stress_failed sharpe=0.14431180814979358
+DJCIAGC,FAIL,raw/Indices_parquet/DJCIAGC_full_1hour.parquet,net_to_gross too low: 0.5815449812866167 < 0.6;turnover_per_day too high: 5.535596762429455 > 1.0
+DJCICC,FAIL,raw/Indices_parquet/DJCICC_full_1hour.parquet,turnover_per_day too high: 1.5178977725303908 > 1.0
+DJCIGC,FAIL,raw/Indices_parquet/DJCIGC_full_1hour.parquet,net_to_gross too low: 0.4077598415524024 < 0.6;avg_net_trade_return too low: 5.7320253768802176e-05 < 8e-05;turnover_per_day too high: 4.58266079083631 > 1.0;cost_stress_failed sharpe=-0.6251696259121978
+DJCIGR,FAIL,raw/Indices_parquet/DJCIGR_full_1hour.parquet,turnover_per_day too high: 4.312909075942271 > 1.0
+DJCIKC,FAIL,raw/Indices_parquet/DJCIKC_full_1hour.parquet,turnover_per_day too high: 1.5915114656323217 > 1.0
+DJCISB,FAIL,raw/Indices_parquet/DJCISB_full_1hour.parquet,turnover_per_day too high: 1.3877324217087361 > 1.0
+DJCISI,FAIL,raw/Indices_parquet/DJCISI_full_1hour.parquet,sharpe too low: -1.6006355486927537 < 0.7;sortino too low: -1.3444646121293908 < 1.0;profit_factor too low: 0.882967375452592 < 1.1;net_to_gross too low: -1.540688842550198 < 0.6;avg_net_trade_return too low: -4.5493124404842974e-05 < 8e-05;turnover_per_day too high: 3.853445056633121 > 1.0;cost_stress_failed sharpe=-4.195817922791378
+DJI,FAIL,raw/Indices_parquet/DJI_full_1hour.parquet,sortino too low: 0.9981855973210079 < 1.0;avg_net_trade_return too low: 4.396082137646018e-05 < 8e-05;cost_stress_failed sharpe=0.4864967137984724
+DJR,PASS,raw/Indices_parquet/DJR_full_1hour.parquet,
+DJX,FAIL,raw/Indices_parquet/DJX_full_1hour.parquet,sharpe too low: 0.648757214148736 < 0.7;sortino too low: 0.44220246229982674 < 1.0;profit_factor too low: 1.054685916881142 < 1.1;net_to_gross too low: 0.45414678496732097 < 0.6;avg_net_trade_return too low: 2.1563064928654118e-05 < 8e-05;cost_stress_failed sharpe=-0.13085541980967966
+DRG,FAIL,raw/Indices_parquet/DRG_full_1hour.parquet,turnover_per_day too high: 1.4759230058582506 > 1.0
+DUX,PASS,raw/Indices_parquet/DUX_full_1hour.parquet,
+DWCF,FAIL,raw/Indices_parquet/DWCF_full_1hour.parquet,turnover_per_day too high: 3.144256092942696 > 1.0
+DWLG,FAIL,raw/Indices_parquet/DWLG_full_1hour.parquet,turnover_per_day too high: 1.8957703113475732 > 1.0
+DXL,FAIL,raw/Indices_parquet/DXL_full_1hour.parquet,avg_net_trade_return too low: 4.558861618925134e-05 < 8e-05
+DXY,FAIL,raw/Indices_parquet/DXY_full_1hour.parquet,sharpe too low: -0.5284837844308364 < 0.7;sortino too low: -0.4054809511868171 < 1.0;profit_factor too low: 0.9529638420785449 < 1.1;net_to_gross too low: -0.2753361587304415 < 0.6;avg_net_trade_return too low: -2.0936833747827086e-05 < 8e-05;turnover_per_day too high: 5.187416123714239 > 1.0;cost_stress_failed sharpe=-2.9574613327212202
+EURAUD,FAIL,raw/FX_parquet/EURAUD_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+EURBRL,FAIL,raw/FX_parquet/EURBRL_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+EURCAD,FAIL,raw/FX_parquet/EURCAD_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+EURCHF,FAIL,raw/FX_parquet/EURCHF_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+EURCNH,FAIL,raw/FX_parquet/EURCNH_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+EURGBP,FAIL,raw/FX_parquet/EURGBP_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+EURHUF,FAIL,raw/FX_parquet/EURHUF_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+EURILS,FAIL,raw/FX_parquet/EURILS_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+EURINR,FAIL,raw/FX_parquet/EURINR_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+EURJPY,FAIL,raw/FX_parquet/EURJPY_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+EURMXN,FAIL,raw/FX_parquet/EURMXN_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+EURNZD,FAIL,raw/FX_parquet/EURNZD_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+EURSGD,FAIL,raw/FX_parquet/EURSGD_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+EURTHB,FAIL,raw/FX_parquet/EURTHB_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+EURTRY,FAIL,raw/FX_parquet/EURTRY_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+EURUSD,FAIL,raw/FX_parquet/EURUSD_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+EURZAR,FAIL,raw/FX_parquet/EURZAR_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+GBPAUD,FAIL,raw/FX_parquet/GBPAUD_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+GBPBRL,FAIL,raw/FX_parquet/GBPBRL_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+GBPCHF,FAIL,raw/FX_parquet/GBPCHF_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+GBPCNH,FAIL,raw/FX_parquet/GBPCNH_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+GBPHUF,FAIL,raw/FX_parquet/GBPHUF_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+GBPILS,FAIL,raw/FX_parquet/GBPILS_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+GBPINR,FAIL,raw/FX_parquet/GBPINR_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+GBPJPY,FAIL,raw/FX_parquet/GBPJPY_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+GBPMXN,FAIL,raw/FX_parquet/GBPMXN_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+GBPSGD,FAIL,raw/FX_parquet/GBPSGD_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+GBPTHB,FAIL,raw/FX_parquet/GBPTHB_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+GBPTRY,FAIL,raw/FX_parquet/GBPTRY_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+GBPUSD,FAIL,raw/FX_parquet/GBPUSD_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+GBPZAR,FAIL,raw/FX_parquet/GBPZAR_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+MID,PASS,raw/Indices_parquet/MID_full_1hour.parquet,
+MIDG,FAIL,raw/Indices_parquet/MIDG_full_1hour.parquet,net_to_gross too low: 0.5845691913316221 < 0.6;avg_net_trade_return too low: 7.169770823748747e-05 < 8e-05;turnover_per_day too high: 2.403342123607668 > 1.0
+MIDV,FAIL,raw/Indices_parquet/MIDV_full_1hour.parquet,sortino too low: 0.741343974554776 < 1.0;profit_factor too low: 1.098761111216345 < 1.1;net_to_gross too low: 0.4814063443604371 < 0.6;avg_net_trade_return too low: 3.903075616726396e-05 < 8e-05;turnover_per_day too high: 1.71056448900544 > 1.0;cost_stress_failed sharpe=-0.07928997957922414
+MRUT,FAIL,raw/Indices_parquet/MRUT_full_1hour.parquet,turnover_per_day too high: 1.3314194966965291 > 1.0
+NQX,FAIL,raw/Indices_parquet/NQX_full_1hour.parquet,sharpe too low: -0.9186156776403008 < 0.7;sortino too low: -0.5741039163969528 < 1.0;profit_factor too low: 0.9163581504471362 < 1.1;net_to_gross too low: -10.953018710791449 < 0.6;avg_net_trade_return too low: -3.6195704340090885e-05 < 8e-05;turnover_per_day too high: 1.7403807917001755 > 1.0;cost_stress_failed sharpe=-1.921386673774174
+NYA,PASS,raw/Indices_parquet/NYA_full_1hour.parquet,
+NYFANG,FAIL,raw/Indices_parquet/NYFANG_full_1hour.parquet,avg_net_trade_return too low: 6.550605716242176e-05 < 8e-05;turnover_per_day too high: 1.6100997992033685 > 1.0
+NZDBRL,FAIL,raw/FX_parquet/NZDBRL_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+NZDCAD,FAIL,raw/FX_parquet/NZDCAD_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+NZDCHF,FAIL,raw/FX_parquet/NZDCHF_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+NZDCNH,FAIL,raw/FX_parquet/NZDCNH_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+NZDHUF,FAIL,raw/FX_parquet/NZDHUF_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+NZDINR,FAIL,raw/FX_parquet/NZDINR_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+NZDJPY,FAIL,raw/FX_parquet/NZDJPY_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+NZDMXN,FAIL,raw/FX_parquet/NZDMXN_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+NZDSGD,FAIL,raw/FX_parquet/NZDSGD_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+NZDTHB,FAIL,raw/FX_parquet/NZDTHB_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+NZDTRY,FAIL,raw/FX_parquet/NZDTRY_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+NZDUSD,FAIL,raw/FX_parquet/NZDUSD_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+NZDZAR,FAIL,raw/FX_parquet/NZDZAR_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+OEX,PASS,raw/Indices_parquet/OEX_full_1hour.parquet,
+RLS,MISSING_PARQUET,,
+RUA,FAIL,raw/Indices_parquet/RUA_full_1hour.parquet,sortino too low: 0.7790276798495732 < 1.0;profit_factor too low: 1.0816496389705827 < 1.1;avg_net_trade_return too low: 3.1537441095706625e-05 < 8e-05;cost_stress_failed sharpe=0.38772492184256296
+RUI,PASS,raw/Indices_parquet/RUI_full_1hour.parquet,
+RUT,FAIL,raw/Indices_parquet/RUT_full_1hour.parquet,net_to_gross too low: 0.5129034238207091 < 0.6;avg_net_trade_return too low: 4.3564328470610396e-05 < 8e-05;turnover_per_day too high: 1.5193281383731134 > 1.0;cost_stress_failed sharpe=0.08635484433182446
+RXM,FAIL,raw/Indices_parquet/RXM_full_1hour.parquet,sharpe too low: -0.5602479120428844 < 0.7;sortino too low: -0.3916024776549952 < 1.0;profit_factor too low: 0.9549151197563143 < 1.1;net_to_gross too low: -0.2725498056766162 < 0.6;avg_net_trade_return too low: -1.9164927576863085e-05 < 8e-05;turnover_per_day too high: 5.005196108413802 > 1.0;cost_stress_failed sharpe=-3.1586292343838203
+SET,FAIL,raw/Indices_parquet/SET_full_1hour.parquet,tail_kill_switch: cvar_95_over_daily_vol 3.273640120425331 > 2.5
+SGX,FAIL,raw/Indices_parquet/SGX_full_1hour.parquet,turnover_per_day too high: 1.0140607685919776 > 1.0
+SKEW,FAIL,raw/Indices_parquet/SKEW_full_1hour.parquet,tail_kill_switch: cvar_95_over_daily_vol 3.4070617800765928 > 2.5
+SMILE,FAIL,raw/Indices_parquet/SMILE_full_1hour.parquet,net_to_gross too low: 0.4938345893985771 < 0.6;avg_net_trade_return too low: 7.913635585869156e-05 < 8e-05;turnover_per_day too high: 4.082208207884314 > 1.0;cost_stress_failed sharpe=-0.05628791624801421
+SMLG,FAIL,raw/Indices_parquet/SMLG_full_1hour.parquet,net_to_gross too low: 0.5077937202375983 < 0.6;avg_net_trade_return too low: 6.162943686934338e-05 < 8e-05;turnover_per_day too high: 2.743446742507856 > 1.0;cost_stress_failed sharpe=0.05827235765218737
+SP500LVOL,FAIL,raw/Indices_parquet/SP500LVOL_full_1hour.parquet,turnover_per_day too high: 3.6580581103759573 > 1.0
+SP600,PASS,raw/Indices_parquet/SP600_full_1hour.parquet,
+SPEN,FAIL,raw/Indices_parquet/SPEN_full_1hour.parquet,tail_kill_switch: cvar_95_over_daily_vol 3.954813803330851 > 2.5;sharpe too low: 0.4580109449911597 < 0.7;sortino too low: 0.3863285156995191 < 1.0;cost_stress_failed sharpe=0.25062184528753023
+SPMPG,FAIL,raw/Indices_parquet/SPMPG_full_1hour.parquet,sharpe too low: 0.5971925843940814 < 0.7;sortino too low: 0.33197971929614284 < 1.0;profit_factor too low: 1.058450789336828 < 1.1;net_to_gross too low: 0.3926571197718952 < 0.6;avg_net_trade_return too low: 2.3475135853245714e-05 < 8e-05;turnover_per_day too high: 1.490042854620598 > 1.0;cost_stress_failed sharpe=-0.32571046678985793
+SPMPV,FAIL,raw/Indices_parquet/SPMPV_full_1hour.parquet,sharpe too low: -0.47018064845018404 < 0.7;sortino too low: -0.3821285792093431 < 1.0;profit_factor too low: 0.9617638112381458 < 1.1;net_to_gross too low: -0.3126733612390119 < 0.6;avg_net_trade_return too low: -1.1865563092783812e-05 < 8e-05;turnover_per_day too high: 2.301872909796975 > 1.0;cost_stress_failed sharpe=-2.4339260203337387
+SPRI,FAIL,raw/Indices_parquet/SPRI_full_1hour.parquet,tail_kill_switch: cvar_95_over_daily_vol 4.15248988782599 > 2.5;sharpe too low: 0.21595662475222846 < 0.7;sortino too low: 0.16932935477857688 < 0.9;net_to_gross too low: 0.3832203465344561 < 0.6;avg_net_trade_return too low: 0.00012676003428177998 < 0.0003;turnover_per_day too high: 0.45067207173886153 > 0.2;cost_stress_failed sharpe=-0.13156012811410284
+SPRO,FAIL,raw/Indices_parquet/SPRO_full_1hour.parquet,tail_kill_switch: cvar_95_over_daily_vol 4.016705772325667 > 2.5;sortino too low: 0.6380210920931718 < 1.0
+SPSPG,FAIL,raw/Indices_parquet/SPSPG_full_1hour.parquet,net_to_gross too low: 0.5696306372334615 < 0.6;avg_net_trade_return too low: 4.947339420084634e-05 < 8e-05;turnover_per_day too high: 1.5790855783647384 > 1.0;cost_stress_failed sharpe=0.39597540865977704
+SPSV,FAIL,raw/Indices_parquet/SPSV_full_1hour.parquet,turnover_per_day too high: 1.5754017467865622 > 1.0
+SPTMI,FAIL,raw/Indices_parquet/SPTMI_full_1hour.parquet,net_to_gross too low: 0.3958163441931163 < 0.6;avg_net_trade_return too low: 3.6868173321372086e-05 < 8e-05;turnover_per_day too high: 2.749880629946321 > 1.0;cost_stress_failed sharpe=-0.6748753449352677
+SPX,PASS,raw/Indices_parquet/SPX_full_1hour.parquet,
+SPXPG,FAIL,raw/Indices_parquet/SPXPG_full_1hour.parquet,net_to_gross too low: 0.587061644272255 < 0.6;avg_net_trade_return too low: 4.0016330056649517e-05 < 8e-05;cost_stress_failed sharpe=0.3859865458520795
+UKX,FAIL,raw/Indices_parquet/UKX_full_1hour.parquet,turnover_per_day too high: 2.8157729734784875 > 1.0
+USDBRL,FAIL,raw/FX_parquet/USDBRL_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+USDCAD,FAIL,raw/FX_parquet/USDCAD_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+USDCHF,FAIL,raw/FX_parquet/USDCHF_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+USDCNH,FAIL,raw/FX_parquet/USDCNH_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+USDDKK,MISSING_PARQUET,,
+USDHKD,FAIL,raw/FX_parquet/USDHKD_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+USDHUF,FAIL,raw/FX_parquet/USDHUF_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+USDILS,FAIL,raw/FX_parquet/USDILS_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+USDINR,FAIL,raw/FX_parquet/USDINR_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+USDJPY,FAIL,raw/FX_parquet/USDJPY_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+USDMXN,FAIL,raw/FX_parquet/USDMXN_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+USDOLLAR,MISSING_PARQUET,,
+USDSGD,FAIL,raw/FX_parquet/USDSGD_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+USDTHB,FAIL,raw/FX_parquet/USDTHB_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+USDTRY,FAIL,raw/FX_parquet/USDTRY_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+USDZAR,FAIL,raw/FX_parquet/USDZAR_1H.parquet,data_load_failed: fx_g1:invalid_1h_data: median_spacing=86400.0 p90_spacing=172800.0
+UTIL,PASS,raw/Indices_parquet/UTIL_full_1hour.parquet,
+UTY,FAIL,raw/Indices_parquet/UTY_full_1hour.parquet,turnover_per_day too high: 1.0777285230963198 > 1.0
+VXTH,FAIL,raw/Indices_parquet/VXTH_full_1hour.parquet,sharpe too low: -0.8078784321892657 < 0.7;sortino too low: -0.49489099445099327 < 1.0;profit_factor too low: 0.9179678402217953 < 1.1;net_to_gross too low: -2.7979913552520284 < 0.6;avg_net_trade_return too low: -3.628876687213925e-05 < 8e-05;turnover_per_day too high: 2.034882634695873 > 1.0;cost_stress_failed sharpe=-1.899185511678861
+W5000,FAIL,raw/Indices_parquet/W5000_full_1hour.parquet,turnover_per_day too high: 2.4411332188384005 > 1.0
+WPUT,FAIL,raw/Indices_parquet/WPUT_full_1hour.parquet,net_to_gross too low: 0.5959336683056723 < 0.6;turnover_per_day too high: 3.93726109969546 > 1.0
+XAX,FAIL,raw/Indices_parquet/XAX_full_1hour.parquet,sortino too low: 0.5192906190206985 < 1.0;profit_factor too low: 1.0709854864398074 < 1.1;net_to_gross too low: 0.3640093766636928 < 0.6;avg_net_trade_return too low: 2.776053011153648e-05 < 8e-05;turnover_per_day too high: 2.1652251877585753 > 1.0;cost_stress_failed sharpe=-0.5553265319812858
+XDA,FAIL,raw/Indices_parquet/XDA_full_1hour.parquet,sharpe too low: -0.606124129866762 < 0.7;sortino too low: -0.3531602045358874 < 1.0;profit_factor too low: 0.9457262482947303 < 1.1;net_to_gross too low: -2.440514032198519 < 0.6;avg_net_trade_return too low: -1.9014311468038428e-05 < 8e-05;cost_stress_failed sharpe=-1.45470858318062
+XDB,FAIL,raw/Indices_parquet/XDB_full_1hour.parquet,sharpe too low: -0.9999961131244258 < 0.7;sortino too low: -0.579772686327008 < 1.0;profit_factor too low: 0.893298967503747 < 1.1;avg_net_trade_return too low: -4.4192934385304095e-05 < 8e-05;turnover_per_day too high: 1.9244632728203064 > 1.0;cost_stress_failed sharpe=-1.97746134309805
+XEO,PASS,raw/Indices_parquet/XEO_full_1hour.parquet,
+XMI,FAIL,raw/Indices_parquet/XMI_full_1hour.parquet,avg_net_trade_return too low: 7.070355635711801e-05 < 8e-05;turnover_per_day too high: 1.1120311867290469 > 1.0
+XNDX,FAIL,raw/Indices_parquet/XNDX_full_1hour.parquet,net_to_gross too low: 0.47267398353628876 < 0.6;avg_net_trade_return too low: 6.699524148801039e-05 < 8e-05;turnover_per_day too high: 3.9517702053249604 > 1.0;cost_stress_failed sharpe=-0.30153920063844303
+XSP,FAIL,raw/Indices_parquet/XSP_full_1hour.parquet,avg_net_trade_return too low: 5.395734540775521e-05 < 8e-05
+XSR,FAIL,raw/Indices_parquet/XSR_full_1hour.parquet,tail_kill_switch: cvar_95_over_daily_vol 4.654073704911044 > 2.5;sortino too low: 0.6286999947225043 < 0.9

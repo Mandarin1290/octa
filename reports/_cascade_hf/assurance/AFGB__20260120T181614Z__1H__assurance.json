@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-20T20:32:54.138421+00:00",
+  "symbol": "AFGB",
+  "run_id": "20260120T181614Z__1H",
+  "snapshot_id": "34650d1786b7a0517d1800a152777ba76c80d04b8729745faf814122044cb669",
+  "attestation_hash": "cee4c934ce02ed01de0f8cf036a638620dc1d791e59a25ca22ae497ab792838a",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-20T20:32:54.138647+00:00",
+      "action": "snapshot_taken",
+      "id": "34650d1786b7a0517d1800a152777ba76c80d04b8729745faf814122044cb669",
+      "name": "training_run",
+      "evidence_hash": "34650d1786b7a0517d1800a152777ba76c80d04b8729745faf814122044cb669"
+    },
+    {
+      "ts": "2026-01-20T20:32:54.139236+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "cee4c934ce02ed01de0f8cf036a638620dc1d791e59a25ca22ae497ab792838a"
+    },
+    {
+      "ts": "2026-01-20T20:32:54.139257+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "e2f500cfd5001034ccee8aad859da51719368002e21d7696a34932c06b46db81"
+    }
+  ]
+}

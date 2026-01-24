@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-20T23:07:33.857974+00:00",
+  "symbol": "USDTHB",
+  "run_id": "20260120T181614Z__1H",
+  "snapshot_id": "d1edbbfd2458f49ede441845b70beceb32af6004ace55348189a456658fe509d",
+  "attestation_hash": "c9ea15f549b5e990bf19499ac04875eda83734396ca3a7965c0a68c29a0c8fde",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-20T23:07:33.858097+00:00",
+      "action": "snapshot_taken",
+      "id": "d1edbbfd2458f49ede441845b70beceb32af6004ace55348189a456658fe509d",
+      "name": "training_run",
+      "evidence_hash": "d1edbbfd2458f49ede441845b70beceb32af6004ace55348189a456658fe509d"
+    },
+    {
+      "ts": "2026-01-20T23:07:33.858309+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "c9ea15f549b5e990bf19499ac04875eda83734396ca3a7965c0a68c29a0c8fde"
+    },
+    {
+      "ts": "2026-01-20T23:07:33.858329+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "d182d3b823e3739a9c0371a65ae2fa3671f777d78da9352175950ecf3147efdb"
+    }
+  ]
+}

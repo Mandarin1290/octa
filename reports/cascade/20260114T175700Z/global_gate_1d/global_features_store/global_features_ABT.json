@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/ABT_1D.parquet",
+  "n": 6539,
+  "vol_ann": 0.23918113570773208,
+  "max_drawdown": -0.46273716615464855,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

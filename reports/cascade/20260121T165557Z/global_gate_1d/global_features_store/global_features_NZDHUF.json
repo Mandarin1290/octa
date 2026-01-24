@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/NZDHUF_1D.parquet",
+  "n": 4150,
+  "vol_ann": 0.11652307320124564,
+  "max_drawdown": -0.28237142801714943,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

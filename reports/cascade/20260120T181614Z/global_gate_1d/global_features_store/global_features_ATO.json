@@ -1,0 +1,49 @@
+{
+  "path": "raw/Stock_parquet/ATO_1D.parquet",
+  "n": 6539,
+  "vol_ann": 0.22091352073663856,
+  "max_drawdown": -0.32910282737264696,
+  "fred": {
+    "enabled": true,
+    "series": [
+      "FEDFUNDS",
+      "DGS10",
+      "DGS2",
+      "UNRATE"
+    ],
+    "window": {
+      "start_ts": "2024-12-28 00:00:00+00:00",
+      "end_ts": "2026-01-02 00:00:00+00:00"
+    },
+    "data": {
+      "FEDFUNDS": {
+        "last": 3.72,
+        "last_date": "2025-12-01 00:00:00+00:00",
+        "d30": -0.1599999999999997
+      },
+      "DGS10": {
+        "last": 4.19,
+        "last_date": "2026-01-02 00:00:00+00:00",
+        "d30": 0.13000000000000078
+      },
+      "DGS2": {
+        "last": 3.47,
+        "last_date": "2026-01-02 00:00:00+00:00",
+        "d30": -0.020000000000000018
+      },
+      "UNRATE": {
+        "last": 4.4,
+        "last_date": "2025-12-01 00:00:00+00:00",
+        "d30": -0.09999999999999964
+      }
+    }
+  },
+  "edgar": {
+    "enabled": true,
+    "user_agent_configured": true,
+    "cik": "0000731802",
+    "recent_10k": 12,
+    "recent_10q": 35,
+    "last_filing_date": "2026-01-05"
+  }
+}

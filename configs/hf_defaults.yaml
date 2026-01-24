@@ -1,0 +1,151 @@
+# Central Tier-1 defaults (institutional / risk-first)
+# Purpose: provide GLOBAL HF-style gates and bounded tuning defaults.
+# Notes:
+# - These are gates, not optimization targets.
+# - Asset-class overlays may tighten thresholds but must not relax global floors.
+
+gates:
+  # Governance: versioned global HF gate policy.
+  version: "hf_gate_2026-01-03_v1"
+
+  # Hard kill-switches (common across timeframes).
+  # If any of these conditions fail, the run is failed immediately.
+  hard_kill_switches:
+    leakage: true
+    cost_model: true
+    walk_forward: true
+    nondeterminism_check: true
+
+  # Global-by-timeframe parameters (IDENTICAL across assets; differs ONLY by timeframe).
+  # These are MINIMUM tradeability filters, not optimization targets.
+  global_by_timeframe:
+    "1D":
+      sharpe_min: 0.70
+      sortino_min: 0.90
+      profit_factor_min: 1.10
+      max_drawdown_max: 0.20
+      min_trades: 30
+      sharpe_wf_std_max: 0.60
+      sharpe_oos_over_is_min: 0.55
+      net_to_gross_min: 0.60
+      turnover_per_day_max: 0.20
+      avg_net_trade_return_min: 0.0003  # 0.03%
+      cvar_95_over_daily_vol_max: 2.5
+
+    "1H":
+      sharpe_min: 0.70
+      sortino_min: 1.00
+      profit_factor_min: 1.10
+      max_drawdown_max: 0.20
+      min_trades: 60
+      sharpe_wf_std_max: 5.00
+      sharpe_oos_over_is_min: 0.40
+      net_to_gross_min: 0.30
+      turnover_per_day_max: 20.00
+      avg_net_trade_return_min: 0.00004  # 0.004%
+      cvar_95_over_daily_vol_max: 2.5
+
+    "30m":
+      sharpe_min: 1.00
+      sortino_min: 1.20
+      profit_factor_min: 1.15
+      max_drawdown_max: 0.20
+      min_trades: 100
+      sharpe_wf_std_max: 0.75
+      sharpe_oos_over_is_min: 0.55
+      net_to_gross_min: 0.65
+      turnover_per_day_max: 0.80
+      avg_net_trade_return_min: 0.00010  # 0.010%
+      cvar_95_over_daily_vol_max: 2.5
+
+    "5m":
+      sharpe_min: 1.20
+      sortino_min: 1.40
+      profit_factor_min: 1.18
+      max_drawdown_max: 0.20
+      min_trades: 200
+      sharpe_wf_std_max: 1.00
+      sharpe_oos_over_is_min: 0.55
+      net_to_gross_min: 0.70
+      turnover_per_day_max: 2.00
+      avg_net_trade_return_min: 0.00005  # 0.005%
+      cvar_95_over_daily_vol_max: 2.5
+
+    "1m":
+      sharpe_min: 1.20
+      sortino_min: 1.40
+      profit_factor_min: 1.18
+      max_drawdown_max: 0.20
+      min_trades: 200
+      sharpe_wf_std_max: 1.00
+      sharpe_oos_over_is_min: 0.55
+      net_to_gross_min: 0.70
+      turnover_per_day_max: 3.00
+      avg_net_trade_return_min: 0.00005  # 0.005%
+      cvar_95_over_daily_vol_max: 2.5
+
+  # Robustness defaults (aligned with code defaults)
+  # Phase-1 semantics:
+  # - If evidence is insufficient for certain robustness tests, the symbol becomes PASS_LIMITED_STATISTICAL_CONFIDENCE
+  #   rather than failing.
+  robustness:
+    robustness_permutation_auc_max: 0.55
+    robustness_subwindow_min_sharpe_ratio: 0.5
+    robustness_subwindow_abs_sharpe_min: 0.5
+    # Minimum observations required to evaluate subwindow stability (otherwise: insufficient evidence)
+    robustness_subwindow_min_obs: 252
+    robustness_stress_min_sharpe: 0.5
+    robustness_regime_top_quantile: 0.8
+    robustness_regime_max_drawdown: 0.5
+
+    # Post-global gate: deterministic block-bootstrap "MC" robustness.
+    # Enabled because thresholds are set; if returns/trades are insufficient, test is skipped (PASS_LIMITED upstream).
+    bootstrap_min_obs: 252
+    # Optional; if omitted, code uses max(60, 2 * min_trades)
+    bootstrap_min_trades: null
+    bootstrap_sharpe_floor: 0.0
+    bootstrap_sharpe_p05_min: 0.0
+    bootstrap_maxdd_p95_max: 0.50
+    bootstrap_prob_sharpe_below_max: 0.35
+    bootstrap_n: 300
+    bootstrap_block: 10
+    bootstrap_seed: 1337
+
+  # Statistical sufficiency layer for fold-based checks
+  sufficiency:
+    folds_min_evaluable: 3
+    sharpe_wf_std_min_folds: 3
+    sharpe_oos_over_is_min_folds: 1
+    # If set, folds must have at least this many trades to be counted as evaluable.
+    # If null, code uses min_trades.
+    fold_min_trades: null
+
+# Bounded per-symbol hyperparameter tuning defaults.
+# These bounds are intentionally narrow to reduce overfitting risk.
+# You can tighten further per asset class in configs/asset/*.yaml if needed.
+tuning:
+  # Optional bounded search-space hints consumed by octa_training.core.optuna_tuner
+  search_space:
+    lightgbm:
+      learning_rate: {type: log_float, low: 0.01, high: 0.10}
+      num_leaves: {type: int, low: 16, high: 64}
+      min_child_samples: {type: int, low: 20, high: 120}
+      subsample: {type: float, low: 0.70, high: 1.00}
+      colsample_bytree: {type: float, low: 0.60, high: 1.00}
+      reg_lambda: {type: log_float, low: 0.1, high: 10.0}
+    xgboost:
+      eta: {type: log_float, low: 0.01, high: 0.10}
+      max_depth: {type: int, low: 3, high: 8}
+      subsample: {type: float, low: 0.70, high: 1.00}
+      colsample_bytree: {type: float, low: 0.60, high: 1.00}
+      lambda: {type: log_float, low: 0.1, high: 10.0}
+    catboost:
+      learning_rate: {type: log_float, low: 0.01, high: 0.10}
+      depth: {type: int, low: 4, high: 8}
+      l2_leaf_reg: {type: log_float, low: 0.1, high: 10.0}
+      border_count: {type: int, low: 32, high: 255}
+    hgb:
+      learning_rate: {type: log_float, low: 0.01, high: 0.10}
+      max_iter: {type: int, low: 100, high: 400}
+      max_leaf_nodes: {type: int, low: 15, high: 63}
+      min_samples_leaf: {type: int, low: 10, high: 80}

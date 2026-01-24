@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/AFRI_1D.parquet",
+  "n": 889,
+  "vol_ann": 0.3695125283013901,
+  "max_drawdown": -0.4002006018054163,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

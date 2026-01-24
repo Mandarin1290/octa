@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-14T20:00:24.776552+00:00",
+  "symbol": "USDILS",
+  "run_id": "20260114T184215Z__1H",
+  "snapshot_id": "02ee2d96028a3fd0427ac8fa65d596c20ad65a1d1a901ffa2d760ef5b292c589",
+  "attestation_hash": "fee74f3739000617f81a21b110aa556d45945988328e69c0e566bf45dc154712",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-14T20:00:24.776688+00:00",
+      "action": "snapshot_taken",
+      "id": "02ee2d96028a3fd0427ac8fa65d596c20ad65a1d1a901ffa2d760ef5b292c589",
+      "name": "training_run",
+      "evidence_hash": "02ee2d96028a3fd0427ac8fa65d596c20ad65a1d1a901ffa2d760ef5b292c589"
+    },
+    {
+      "ts": "2026-01-14T20:00:24.776917+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "fee74f3739000617f81a21b110aa556d45945988328e69c0e566bf45dc154712"
+    },
+    {
+      "ts": "2026-01-14T20:00:24.776937+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "f34ffe74f1d5367c57dca43ccedb23a941c258e157ae30a5ff0af174b4678afb"
+    }
+  ]
+}

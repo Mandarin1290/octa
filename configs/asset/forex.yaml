@@ -1,0 +1,16 @@
+# Asset-class overlay: forex
+# Purpose: separate defaults for FX training/evaluation.
+
+signal:
+  # FX is typically lower vol per bar; keep conservative vol target.
+  vol_target: 0.08
+
+broker:
+  # Still IBKR-only, but spreads tend to be lower for liquid majors.
+  cost_bps: 1.5
+  spread_bps: 0.7
+  stress_cost_multiplier: 3.0
+
+features:
+  # Shorter horizons are more sensible intraday for FX.
+  horizons: [1, 3]

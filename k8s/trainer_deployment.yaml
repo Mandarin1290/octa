@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: octa-trainer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: octa-trainer
+  template:
+    metadata:
+      labels:
+        app: octa-trainer
+    spec:
+      containers:
+      - name: trainer
+        image: octa-trainer:latest
+        command: ["python3","-m","scripts.train_and_save","--parquet","/data/sample_parquet.parquet","--target","target","--version","k8s-deploy-run"]
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+          limits:
+            cpu: "2"
+            memory: "4Gi"
+      volumes:
+      - name: data
+        hostPath:
+          path: /workspace/tests/data
+      containers: []

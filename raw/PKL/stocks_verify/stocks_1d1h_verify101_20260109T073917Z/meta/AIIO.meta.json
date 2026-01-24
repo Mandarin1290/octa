@@ -1,0 +1,45 @@
+{
+  "symbol": "AIIO",
+  "asset_profile": "stock",
+  "run_id": "stocks_1d1h_verify101_20260109T073917Z",
+  "created_utc": "2026-01-09T07:39:36.082126+00:00",
+  "gate_version": "hf_gate_2026-01-03_v1",
+  "timeframe_status": {
+    "1D": "ERROR",
+    "1H": "SKIP_H1_NOT_ELIGIBLE"
+  },
+  "limited": {
+    "1D": false,
+    "1H": false
+  },
+  "datasets": {
+    "1D": {
+      "path": "raw/Stock_parquet/AIIO_1D.parquet",
+      "sha256": "d04cf78b0d51d9074a0fe146e068e0f85e5f71e9b025a94f9a3aa03b763d9cd8",
+      "rows": 785,
+      "start": "2022-11-15 00:00:00+00:00",
+      "end": "2026-01-02 00:00:00+00:00"
+    }
+  },
+  "models": {
+    "1D": {
+      "pkl": null,
+      "sha256": null
+    },
+    "1H": null
+  },
+  "gates": {
+    "1D": {
+      "passed": false,
+      "status": "ERROR",
+      "gate_version": null,
+      "reasons": [
+        "missing_gate"
+      ],
+      "passed_checks": [],
+      "insufficient_evidence": []
+    },
+    "1H": null
+  },
+  "armed": false
+}

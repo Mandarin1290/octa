@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-21T10:57:23.392724+00:00",
+  "symbol": "SPRI",
+  "run_id": "diag_1H_20260121T092943Z__SPRI",
+  "snapshot_id": "e5ab54fc740fff25b80b42beac077e28bbd8f33105410dfe0ef13f4524d9af86",
+  "attestation_hash": "d53189c171cec8d8d40b6dca577f638248cef2d57941b6fe5a41e4e7b127c34f",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T10:57:23.392872+00:00",
+      "action": "snapshot_taken",
+      "id": "e5ab54fc740fff25b80b42beac077e28bbd8f33105410dfe0ef13f4524d9af86",
+      "name": "training_run",
+      "evidence_hash": "e5ab54fc740fff25b80b42beac077e28bbd8f33105410dfe0ef13f4524d9af86"
+    },
+    {
+      "ts": "2026-01-21T10:57:23.393169+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "d53189c171cec8d8d40b6dca577f638248cef2d57941b6fe5a41e4e7b127c34f"
+    },
+    {
+      "ts": "2026-01-21T10:57:23.393188+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "a24af4d607402dae9a1a7ea86daf68cf98190eef53355e7297d2d6ea5620fdc9"
+    }
+  ]
+}

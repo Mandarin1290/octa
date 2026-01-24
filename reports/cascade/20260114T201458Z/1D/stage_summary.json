@@ -1,0 +1,7 @@
+{
+  "timeframe": "1D",
+  "source": "global_gate_1d",
+  "input_passlist": "reports/cascade/20260114T201458Z/global_gate_1d/pass_symbols_1d.txt",
+  "n_pass": 42,
+  "passlist": "reports/cascade/20260114T201458Z/1D/pass_1d.txt"
+}

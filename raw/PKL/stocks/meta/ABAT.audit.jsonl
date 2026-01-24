@@ -1,0 +1,29 @@
+{"type": "START", "ts_utc": "2026-01-08T14:49:57.239806+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ABAT", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-08T14:49:57.240938+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ABAT", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ABAT_1D.parquet", "parquet_sha256": "7a84e270f5b5c351af3f52fa1561d3289a582b40c94243e27a6c106588c9bd07"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T14:49:57.241293+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ABAT", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T14:50:09.167280+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ABAT", "tf": "1D", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T14:50:09.174926+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ABAT", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks/meta/ABAT.meta.json"}
+{"type": "START", "ts_utc": "2026-01-08T15:42:52.882518+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ABAT", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-08T15:42:52.884558+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ABAT", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ABAT_1D.parquet", "parquet_sha256": "7a84e270f5b5c351af3f52fa1561d3289a582b40c94243e27a6c106588c9bd07"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T15:42:52.885135+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ABAT", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T15:43:17.403922+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ABAT", "tf": "1D", "passed": false, "error": null}
+{"type": "LOAD", "ts_utc": "2026-01-08T15:43:17.425381+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ABAT", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ABAT_1H.parquet", "parquet_sha256": "b05f03ea268cb2d89e569aecb653c4333d814b9095432a009a68a65256c1deef"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T15:43:17.504672+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ABAT", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T15:45:20.574632+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ABAT", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T15:45:20.581096+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ABAT", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks/meta/ABAT.meta.json"}
+{"type": "START", "ts_utc": "2026-01-08T16:09:42.497400+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ABAT", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-08T16:09:42.502665+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ABAT", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ABAT_1D.parquet", "parquet_sha256": "7a84e270f5b5c351af3f52fa1561d3289a582b40c94243e27a6c106588c9bd07"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T16:09:42.505372+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ABAT", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T16:10:05.699324+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ABAT", "tf": "1D", "passed": false, "error": null}
+{"type": "LOAD", "ts_utc": "2026-01-08T16:10:05.734928+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ABAT", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ABAT_1H.parquet", "parquet_sha256": "b05f03ea268cb2d89e569aecb653c4333d814b9095432a009a68a65256c1deef"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T16:10:05.806000+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ABAT", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T16:12:08.104529+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ABAT", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T16:12:08.106375+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ABAT", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks/meta/ABAT.meta.json"}
+{"type": "START", "ts_utc": "2026-01-08T16:37:48.212004+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ABAT", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-08T16:37:48.214650+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ABAT", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ABAT_1D.parquet", "parquet_sha256": "7a84e270f5b5c351af3f52fa1561d3289a582b40c94243e27a6c106588c9bd07"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T16:37:48.216923+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ABAT", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T16:38:13.167470+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ABAT", "tf": "1D", "passed": false, "error": null}
+{"type": "LOAD", "ts_utc": "2026-01-08T16:38:13.194850+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ABAT", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ABAT_1H.parquet", "parquet_sha256": "b05f03ea268cb2d89e569aecb653c4333d814b9095432a009a68a65256c1deef"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T16:38:13.235636+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ABAT", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T16:40:20.168282+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ABAT", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T16:40:20.173381+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ABAT", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks/meta/ABAT.meta.json"}

@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/USDJPY_1D.parquet",
+  "n": 4154,
+  "vol_ann": 0.0919665589362724,
+  "max_drawdown": -0.20459360017839223,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

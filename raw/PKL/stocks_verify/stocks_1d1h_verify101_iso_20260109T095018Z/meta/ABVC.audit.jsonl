@@ -1,0 +1,5 @@
+{"type": "START", "ts_utc": "2026-01-09T10:00:19.417969+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "ABVC", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-09T10:00:19.423777+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "ABVC", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ABVC_1D.parquet", "parquet_sha256": "ee10d821600ba522226787fb9c1c20a3e4c89cb93d96571f48effb218b98c9bc"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-09T10:00:19.424218+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "ABVC", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-09T10:00:58.729326+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "ABVC", "tf": "1D", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-09T10:00:58.746828+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "ABVC", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_verify/stocks_1d1h_verify101_iso_20260109T095018Z/meta/ABVC.meta.json"}

@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/XEO_full_1day.parquet",
+  "n": 4529,
+  "vol_ann": 0.19899667439705016,
+  "max_drawdown": -0.5235609063479856,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

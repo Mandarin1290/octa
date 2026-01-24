@@ -1,0 +1,49 @@
+{
+  "path": "raw/Stock_parquet/AEAE_1D.parquet",
+  "n": 449,
+  "vol_ann": 0.15679439191769617,
+  "max_drawdown": -0.1291866028708133,
+  "fred": {
+    "enabled": true,
+    "series": [
+      "FEDFUNDS",
+      "DGS10",
+      "DGS2",
+      "UNRATE"
+    ],
+    "window": {
+      "start_ts": "2024-11-13 00:00:00+00:00",
+      "end_ts": "2025-11-18 00:00:00+00:00"
+    },
+    "data": {
+      "FEDFUNDS": {
+        "last": 3.88,
+        "last_date": "2025-11-01 00:00:00+00:00",
+        "d30": 0.0
+      },
+      "DGS10": {
+        "last": 4.12,
+        "last_date": "2025-11-18 00:00:00+00:00",
+        "d30": 0.1200000000000001
+      },
+      "DGS2": {
+        "last": 3.58,
+        "last_date": "2025-11-18 00:00:00+00:00",
+        "d30": 0.1200000000000001
+      },
+      "UNRATE": {
+        "last": 4.5,
+        "last_date": "2025-11-01 00:00:00+00:00",
+        "d30": 0.0
+      }
+    }
+  },
+  "edgar": {
+    "enabled": true,
+    "user_agent_configured": true,
+    "cik": "0001852016",
+    "recent_10k": 4,
+    "recent_10q": 13,
+    "last_filing_date": "2026-01-08"
+  }
+}

@@ -1,0 +1,35 @@
+{"type": "START", "ts_utc": "2026-01-08T14:55:31.348288+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ATLN", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-08T14:55:31.349945+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ATLN", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ATLN_1D.parquet", "parquet_sha256": "121adb99d4eaa8d9b1471c2583e4ab4cf080bebc5fbd3403dd18c1e27cff8668"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T14:55:31.350476+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ATLN", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T14:55:56.361618+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ATLN", "tf": "1D", "passed": true, "error": null}
+{"type": "WRITE_PKL", "ts_utc": "2026-01-08T14:55:56.370666+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ATLN", "tf": "1D", "pkl": "/home/n-b/Octa/raw/PKL/stocks/1D/ATLN.pkl", "pkl_sha256": "b396f42d5c9634ee1e4715eee5fe6a1836e0125477ed05ff3718b64f9c649dff"}
+{"type": "LOAD", "ts_utc": "2026-01-08T14:55:56.372504+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ATLN", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ATLN_1H.parquet", "parquet_sha256": "822bde4e49c2a2653f9e7378623b337aca4ddfb41d71e442c5f8981ec3cc3f1b"}
+{"type": "SKIP", "ts_utc": "2026-01-08T14:55:56.400410+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ATLN", "tf": "1H", "reason": "not_hourly_like"}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T14:55:56.401121+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ATLN", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks/meta/ATLN.meta.json"}
+{"type": "ARMED", "ts_utc": "2026-01-08T14:55:56.401423+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ATLN", "ok": true, "armed": "/home/n-b/Octa/raw/PKL/stocks/ARMED/ATLN.ok"}
+{"type": "START", "ts_utc": "2026-01-08T16:04:53.286933+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ATLN", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-08T16:04:53.294220+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ATLN", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ATLN_1D.parquet", "parquet_sha256": "121adb99d4eaa8d9b1471c2583e4ab4cf080bebc5fbd3403dd18c1e27cff8668"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T16:04:53.294797+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ATLN", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T16:04:53.357857+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ATLN", "tf": "1D", "passed": true, "error": null}
+{"type": "LOAD", "ts_utc": "2026-01-08T16:04:53.383246+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ATLN", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ATLN_1H.parquet", "parquet_sha256": "822bde4e49c2a2653f9e7378623b337aca4ddfb41d71e442c5f8981ec3cc3f1b"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T16:04:53.419613+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ATLN", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T16:07:10.916129+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ATLN", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T16:07:10.920470+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ATLN", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks/meta/ATLN.meta.json"}
+{"type": "DISARM", "ts_utc": "2026-01-08T16:07:10.921014+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ATLN", "ok": true, "armed": "/home/n-b/Octa/raw/PKL/stocks/ARMED/ATLN.ok"}
+{"type": "START", "ts_utc": "2026-01-08T16:31:52.083751+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ATLN", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-08T16:31:52.085194+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ATLN", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ATLN_1D.parquet", "parquet_sha256": "121adb99d4eaa8d9b1471c2583e4ab4cf080bebc5fbd3403dd18c1e27cff8668"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T16:31:52.085574+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ATLN", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T16:31:52.107187+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ATLN", "tf": "1D", "passed": true, "error": null}
+{"type": "LOAD", "ts_utc": "2026-01-08T16:31:52.116496+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ATLN", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ATLN_1H.parquet", "parquet_sha256": "822bde4e49c2a2653f9e7378623b337aca4ddfb41d71e442c5f8981ec3cc3f1b"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T16:31:52.129015+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ATLN", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T16:33:59.792249+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ATLN", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T16:33:59.793846+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ATLN", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks/meta/ATLN.meta.json"}
+{"type": "START", "ts_utc": "2026-01-08T17:03:51.664224+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ATLN", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-08T17:03:51.668229+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ATLN", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ATLN_1D.parquet", "parquet_sha256": "121adb99d4eaa8d9b1471c2583e4ab4cf080bebc5fbd3403dd18c1e27cff8668"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T17:03:51.668899+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ATLN", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T17:04:46.070369+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ATLN", "tf": "1D", "passed": true, "error": null}
+{"type": "WRITE_PKL", "ts_utc": "2026-01-08T17:04:46.086594+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ATLN", "tf": "1D", "pkl": "/home/n-b/Octa/raw/PKL/stocks/1D/ATLN.pkl", "pkl_sha256": "28dbca0bd061b8e224061744f56eb85be59572afb871dbede214aa7c226dd7d6"}
+{"type": "LOAD", "ts_utc": "2026-01-08T17:04:46.088658+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ATLN", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ATLN_1H.parquet", "parquet_sha256": "822bde4e49c2a2653f9e7378623b337aca4ddfb41d71e442c5f8981ec3cc3f1b"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T17:04:46.145359+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ATLN", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T17:06:54.797245+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ATLN", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T17:06:54.800565+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ATLN", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks/meta/ATLN.meta.json"}

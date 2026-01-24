@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/ARMN_1D.parquet",
+  "n": 578,
+  "vol_ann": 0.5174349935703285,
+  "max_drawdown": -0.3445544554455445,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

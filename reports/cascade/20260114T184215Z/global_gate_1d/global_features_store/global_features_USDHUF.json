@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/USDHUF_1D.parquet",
+  "n": 4049,
+  "vol_ann": 0.12796095103488253,
+  "max_drawdown": -0.2675590020229265,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

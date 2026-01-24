@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/AROW_1D.parquet",
+  "n": 6534,
+  "vol_ann": 0.3247083503715876,
+  "max_drawdown": -0.5053969041217469,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

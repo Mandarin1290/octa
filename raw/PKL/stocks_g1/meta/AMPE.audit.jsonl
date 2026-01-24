@@ -1,0 +1,21 @@
+{"type": "START", "ts_utc": "2026-01-08T18:55:46.385251+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "AMPE", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-08T18:55:46.386186+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "AMPE", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/AMPE_1H.parquet", "parquet_sha256": "ab96459c10a8112d96f22b6d34db74520f10949afbf484af56e289a3eef2e73f"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T18:55:46.420462+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "AMPE", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T18:59:26.737516+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "AMPE", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T18:59:26.738752+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "AMPE", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/AMPE.meta.json"}
+{"type": "START", "ts_utc": "2026-01-08T20:58:20.098053+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "AMPE", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-08T20:58:20.099662+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "AMPE", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/AMPE_1H.parquet", "parquet_sha256": "ab96459c10a8112d96f22b6d34db74520f10949afbf484af56e289a3eef2e73f"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T20:58:20.141828+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "AMPE", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T21:02:41.437857+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "AMPE", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T21:02:41.439087+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "AMPE", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/AMPE.meta.json"}
+{"type": "START", "ts_utc": "2026-01-08T21:32:47.583704+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "AMPE", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-08T21:32:47.586090+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "AMPE", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/AMPE_1H.parquet", "parquet_sha256": "ab96459c10a8112d96f22b6d34db74520f10949afbf484af56e289a3eef2e73f"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T21:32:47.623311+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "AMPE", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T21:34:20.826129+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "AMPE", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T21:34:20.827555+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "AMPE", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/AMPE.meta.json"}
+{"type": "START", "ts_utc": "2026-01-09T06:40:54.929150+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AMPE", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-09T06:40:54.930627+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AMPE", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/AMPE_1H.parquet", "parquet_sha256": "ab96459c10a8112d96f22b6d34db74520f10949afbf484af56e289a3eef2e73f"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-09T06:40:54.970400+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AMPE", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-09T06:42:55.410645+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AMPE", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_PKL_DEBUG_FAIL", "ts_utc": "2026-01-09T06:42:55.414903+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AMPE", "tf": "1H", "pkl": "/home/n-b/Octa/raw/PKL/stocks_g1/1H_DEBUG_FAIL/AMPE.pkl", "pkl_sha256": "cf891cffb5bf18679ad98f346f19c7e1d3819f0c6f4a445355115f07ad07fa2c", "artifact_kind": "debug"}
+{"type": "WRITE_META", "ts_utc": "2026-01-09T06:42:55.415602+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AMPE", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/AMPE.meta.json"}

@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/AQNB_1D.parquet",
+  "n": 1661,
+  "vol_ann": 0.19263879298300976,
+  "max_drawdown": -0.43476843551353994,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

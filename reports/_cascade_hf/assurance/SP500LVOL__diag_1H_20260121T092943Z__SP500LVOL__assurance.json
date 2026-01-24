@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-21T10:55:16.653457+00:00",
+  "symbol": "SP500LVOL",
+  "run_id": "diag_1H_20260121T092943Z__SP500LVOL",
+  "snapshot_id": "9b3232bcb0b3563b36d43ce99bd9dbcf96528112ca384248a45125301457c562",
+  "attestation_hash": "e4f04c1bb69532d2347c1de6696401bd926fedede62ba69870cc185f5c1d733b",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T10:55:16.653600+00:00",
+      "action": "snapshot_taken",
+      "id": "9b3232bcb0b3563b36d43ce99bd9dbcf96528112ca384248a45125301457c562",
+      "name": "training_run",
+      "evidence_hash": "9b3232bcb0b3563b36d43ce99bd9dbcf96528112ca384248a45125301457c562"
+    },
+    {
+      "ts": "2026-01-21T10:55:16.653916+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "e4f04c1bb69532d2347c1de6696401bd926fedede62ba69870cc185f5c1d733b"
+    },
+    {
+      "ts": "2026-01-21T10:55:16.653947+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "e34c1d79c25867aba8ed1c07914a4ea0672d269f0b5f5a848fe018a02c8de6ac"
+    }
+  ]
+}

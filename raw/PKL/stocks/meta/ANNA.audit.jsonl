@@ -1,0 +1,35 @@
+{"type": "START", "ts_utc": "2026-01-08T14:52:55.306041+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ANNA", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-08T14:52:55.307913+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ANNA", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ANNA_1D.parquet", "parquet_sha256": "e3464a37c3a0b39ec1f41799e46d7944da2d41fce30d377cd210dc9ae690eab8"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T14:52:55.308307+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ANNA", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T14:53:09.234688+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ANNA", "tf": "1D", "passed": true, "error": null}
+{"type": "WRITE_PKL", "ts_utc": "2026-01-08T14:53:09.247662+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ANNA", "tf": "1D", "pkl": "/home/n-b/Octa/raw/PKL/stocks/1D/ANNA.pkl", "pkl_sha256": "e0a648f680e2e882b94f6120daef9ab1a5e071051b0bf11590b7f321de90a86a"}
+{"type": "LOAD", "ts_utc": "2026-01-08T14:53:09.248786+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ANNA", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ANNA_1H.parquet", "parquet_sha256": "b03df75d9cf9ed4e01d168841d177848837ccb294f1e5e6b820c727586215786"}
+{"type": "SKIP", "ts_utc": "2026-01-08T14:53:09.277352+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ANNA", "tf": "1H", "reason": "not_hourly_like"}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T14:53:09.277998+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ANNA", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks/meta/ANNA.meta.json"}
+{"type": "ARMED", "ts_utc": "2026-01-08T14:53:09.278227+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ANNA", "ok": true, "armed": "/home/n-b/Octa/raw/PKL/stocks/ARMED/ANNA.ok"}
+{"type": "START", "ts_utc": "2026-01-08T15:55:51.378504+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ANNA", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-08T15:55:51.384971+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ANNA", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ANNA_1D.parquet", "parquet_sha256": "e3464a37c3a0b39ec1f41799e46d7944da2d41fce30d377cd210dc9ae690eab8"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T15:55:51.386212+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ANNA", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T15:55:51.455149+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ANNA", "tf": "1D", "passed": true, "error": null}
+{"type": "LOAD", "ts_utc": "2026-01-08T15:55:51.480059+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ANNA", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ANNA_1H.parquet", "parquet_sha256": "b03df75d9cf9ed4e01d168841d177848837ccb294f1e5e6b820c727586215786"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T15:55:51.511257+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ANNA", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T15:59:25.513197+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ANNA", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T15:59:25.518087+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ANNA", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks/meta/ANNA.meta.json"}
+{"type": "DISARM", "ts_utc": "2026-01-08T15:59:25.518273+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ANNA", "ok": true, "armed": "/home/n-b/Octa/raw/PKL/stocks/ARMED/ANNA.ok"}
+{"type": "START", "ts_utc": "2026-01-08T16:22:35.229351+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ANNA", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-08T16:22:35.236120+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ANNA", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ANNA_1D.parquet", "parquet_sha256": "e3464a37c3a0b39ec1f41799e46d7944da2d41fce30d377cd210dc9ae690eab8"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T16:22:35.236724+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ANNA", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T16:22:35.291566+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ANNA", "tf": "1D", "passed": true, "error": null}
+{"type": "LOAD", "ts_utc": "2026-01-08T16:22:35.304359+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ANNA", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ANNA_1H.parquet", "parquet_sha256": "b03df75d9cf9ed4e01d168841d177848837ccb294f1e5e6b820c727586215786"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T16:22:35.340132+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ANNA", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T16:26:12.518242+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ANNA", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T16:26:12.520899+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ANNA", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks/meta/ANNA.meta.json"}
+{"type": "START", "ts_utc": "2026-01-08T16:52:31.937080+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ANNA", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-08T16:52:31.940480+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ANNA", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ANNA_1D.parquet", "parquet_sha256": "e3464a37c3a0b39ec1f41799e46d7944da2d41fce30d377cd210dc9ae690eab8"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T16:52:31.941472+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ANNA", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T16:52:58.785288+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ANNA", "tf": "1D", "passed": true, "error": null}
+{"type": "WRITE_PKL", "ts_utc": "2026-01-08T16:52:58.809486+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ANNA", "tf": "1D", "pkl": "/home/n-b/Octa/raw/PKL/stocks/1D/ANNA.pkl", "pkl_sha256": "db35cf46edd3dd7c073a397a31cec8bf0a286b26753596a9247d3afb94b93940"}
+{"type": "LOAD", "ts_utc": "2026-01-08T16:52:58.810748+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ANNA", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ANNA_1H.parquet", "parquet_sha256": "b03df75d9cf9ed4e01d168841d177848837ccb294f1e5e6b820c727586215786"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T16:52:58.855635+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ANNA", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T16:56:36.507806+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ANNA", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T16:56:36.510306+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ANNA", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks/meta/ANNA.meta.json"}

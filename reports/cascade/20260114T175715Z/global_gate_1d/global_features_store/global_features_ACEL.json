@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/ACEL_1D.parquet",
+  "n": 1943,
+  "vol_ann": 0.3940881904856468,
+  "max_drawdown": -0.5783132530120483,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

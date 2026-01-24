@@ -1,0 +1,5 @@
+{"type": "START", "ts_utc": "2026-01-09T09:50:48.600807+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AATC", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-09T09:50:48.603509+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AATC", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/AATC_1D.parquet", "parquet_sha256": "f7c70bd0cb2f75c9e874bba68c430da7bbe2bc94eed52603a0269b654cf878e5"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-09T09:50:48.604409+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AATC", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-09T09:50:59.102554+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AATC", "tf": "1D", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-09T09:50:59.109265+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AATC", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_verify/stocks_1d1h_verify101_iso_20260109T095018Z/meta/AATC.meta.json"}

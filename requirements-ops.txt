@@ -1,0 +1,4 @@
+duckdb
+dagster
+typer
+pyarrow

@@ -1,0 +1,5 @@
+mode: DEV
+env: dev
+service_name: octa-foundation-dev
+broker:
+  requires_secret: false

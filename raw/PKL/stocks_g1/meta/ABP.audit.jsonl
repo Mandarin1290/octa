@@ -1,0 +1,21 @@
+{"type": "START", "ts_utc": "2026-01-08T18:25:54.218282+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "ABP", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-08T18:25:54.219485+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "ABP", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ABP_1H.parquet", "parquet_sha256": "b60de865a8b0e6686873fa6e5a034315f589f3f9bb020d66b81927d7d7f53c4d"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T18:25:54.250409+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "ABP", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T18:29:38.554862+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "ABP", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T18:29:38.556101+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "ABP", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/ABP.meta.json"}
+{"type": "START", "ts_utc": "2026-01-08T20:26:04.992093+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "ABP", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-08T20:26:04.994077+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "ABP", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ABP_1H.parquet", "parquet_sha256": "b60de865a8b0e6686873fa6e5a034315f589f3f9bb020d66b81927d7d7f53c4d"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T20:26:05.034338+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "ABP", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T20:29:45.150318+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "ABP", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T20:29:45.151494+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "ABP", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/ABP.meta.json"}
+{"type": "START", "ts_utc": "2026-01-08T21:24:50.491972+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "ABP", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-08T21:24:50.493812+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "ABP", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ABP_1H.parquet", "parquet_sha256": "b60de865a8b0e6686873fa6e5a034315f589f3f9bb020d66b81927d7d7f53c4d"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T21:24:50.528666+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "ABP", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T21:25:45.318328+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "ABP", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T21:25:45.319496+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "ABP", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/ABP.meta.json"}
+{"type": "START", "ts_utc": "2026-01-09T06:30:02.378372+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "ABP", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-09T06:30:02.380232+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "ABP", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ABP_1H.parquet", "parquet_sha256": "b60de865a8b0e6686873fa6e5a034315f589f3f9bb020d66b81927d7d7f53c4d"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-09T06:30:02.436704+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "ABP", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-09T06:31:12.023039+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "ABP", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_PKL_DEBUG_FAIL", "ts_utc": "2026-01-09T06:31:12.036775+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "ABP", "tf": "1H", "pkl": "/home/n-b/Octa/raw/PKL/stocks_g1/1H_DEBUG_FAIL/ABP.pkl", "pkl_sha256": "db289da506201e3b16b33b08fb39edb4d74a89ced876d682a91fa413710d87c6", "artifact_kind": "debug"}
+{"type": "WRITE_META", "ts_utc": "2026-01-09T06:31:12.037651+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "ABP", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/ABP.meta.json"}

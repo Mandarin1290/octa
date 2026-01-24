@@ -1,0 +1,13 @@
+# Asset-class overlay: options
+
+signal:
+  vol_target: 0.10
+
+broker:
+  # Options are usually more expensive to trade.
+  cost_bps: 4.0
+  spread_bps: 2.0
+  stress_cost_multiplier: 3.0
+
+features:
+  horizons: [1]

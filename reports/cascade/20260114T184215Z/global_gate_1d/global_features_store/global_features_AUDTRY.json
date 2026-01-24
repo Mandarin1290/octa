@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/AUDTRY_1D.parquet",
+  "n": 3262,
+  "vol_ann": 0.17637511534300743,
+  "max_drawdown": -0.338714943634864,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

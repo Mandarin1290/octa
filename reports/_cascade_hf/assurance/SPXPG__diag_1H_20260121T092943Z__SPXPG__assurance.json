@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-21T11:00:21.026724+00:00",
+  "symbol": "SPXPG",
+  "run_id": "diag_1H_20260121T092943Z__SPXPG",
+  "snapshot_id": "f9eef0f935660733abf543d171dc216e3d43a6b4b6154db7c021cf20792eff3d",
+  "attestation_hash": "a62bfd516c83d4bec75db2b8e86c014f6f6f63c36156dc916d49f3fcfe3d332c",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T11:00:21.026877+00:00",
+      "action": "snapshot_taken",
+      "id": "f9eef0f935660733abf543d171dc216e3d43a6b4b6154db7c021cf20792eff3d",
+      "name": "training_run",
+      "evidence_hash": "f9eef0f935660733abf543d171dc216e3d43a6b4b6154db7c021cf20792eff3d"
+    },
+    {
+      "ts": "2026-01-21T11:00:21.027192+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "a62bfd516c83d4bec75db2b8e86c014f6f6f63c36156dc916d49f3fcfe3d332c"
+    },
+    {
+      "ts": "2026-01-21T11:00:21.027211+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "a72de80b65ad37c9a100e25e00555c0a3d18713308117a30e7fe075059f29a1c"
+    }
+  ]
+}

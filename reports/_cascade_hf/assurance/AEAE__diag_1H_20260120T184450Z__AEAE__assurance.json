@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-20T18:59:37.195688+00:00",
+  "symbol": "AEAE",
+  "run_id": "diag_1H_20260120T184450Z__AEAE",
+  "snapshot_id": "767a8804b24804692526e134d6b3fb14826af7f7467c5017c9d6348dc10aee31",
+  "attestation_hash": "95939ceaf47a2809f705f0dc1223beb3c59ea3743434f6e091ed16b0963b7e44",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-20T18:59:37.195875+00:00",
+      "action": "snapshot_taken",
+      "id": "767a8804b24804692526e134d6b3fb14826af7f7467c5017c9d6348dc10aee31",
+      "name": "training_run",
+      "evidence_hash": "767a8804b24804692526e134d6b3fb14826af7f7467c5017c9d6348dc10aee31"
+    },
+    {
+      "ts": "2026-01-20T18:59:37.196279+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "95939ceaf47a2809f705f0dc1223beb3c59ea3743434f6e091ed16b0963b7e44"
+    },
+    {
+      "ts": "2026-01-20T18:59:37.196305+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "PASS",
+      "evidence_hash": "8181e988482ab347a6f0fad3869558b991927d9d5931ae73b203ed20d3cc4d8b"
+    }
+  ]
+}

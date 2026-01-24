@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-14T17:56:32.888911+00:00",
+  "symbol": "AATC",
+  "run_id": "20260114T175446Z__1H",
+  "snapshot_id": "465f91daceb1667c1e9fde9a134370d5a8745b87a7fc645c8f64139d9074659e",
+  "attestation_hash": "636ea6064197225caab8779748ebe92ea2b08a16a963368ca9abfe8c08fa6a55",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-14T17:56:32.889136+00:00",
+      "action": "snapshot_taken",
+      "id": "465f91daceb1667c1e9fde9a134370d5a8745b87a7fc645c8f64139d9074659e",
+      "name": "training_run",
+      "evidence_hash": "465f91daceb1667c1e9fde9a134370d5a8745b87a7fc645c8f64139d9074659e"
+    },
+    {
+      "ts": "2026-01-14T17:56:32.889609+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "636ea6064197225caab8779748ebe92ea2b08a16a963368ca9abfe8c08fa6a55"
+    },
+    {
+      "ts": "2026-01-14T17:56:32.889641+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "ba49a4a05800b2c8f08e26d824988817bc1cc5cd11ee0c9d7d19993fb73c1fe2"
+    }
+  ]
+}

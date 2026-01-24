@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-20T21:57:26.364139+00:00",
+  "symbol": "ATMU",
+  "run_id": "20260120T181614Z__1H",
+  "snapshot_id": "fb4ce654095c5831be1ff597fd24ebc6187315968d20b1aac80631562af3a8c2",
+  "attestation_hash": "8187699333ffa73132504566e444a9c8e5d78d410ec237bd844dcf4abbd81283",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-20T21:57:26.364376+00:00",
+      "action": "snapshot_taken",
+      "id": "fb4ce654095c5831be1ff597fd24ebc6187315968d20b1aac80631562af3a8c2",
+      "name": "training_run",
+      "evidence_hash": "fb4ce654095c5831be1ff597fd24ebc6187315968d20b1aac80631562af3a8c2"
+    },
+    {
+      "ts": "2026-01-20T21:57:26.365106+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "8187699333ffa73132504566e444a9c8e5d78d410ec237bd844dcf4abbd81283"
+    },
+    {
+      "ts": "2026-01-20T21:57:26.365133+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "6e87fd89f38ba23a49c130383e807376707d00137c3255cbef6c30b8edc2b8cb"
+    }
+  ]
+}

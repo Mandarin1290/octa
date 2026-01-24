@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/RXM_full_1day.parquet",
+  "n": 2113,
+  "vol_ann": 0.13016128380443107,
+  "max_drawdown": -0.26514623805715365,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

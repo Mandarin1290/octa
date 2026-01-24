@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/DJI_full_1day.parquet",
+  "n": 6311,
+  "vol_ann": 0.18297304889762211,
+  "max_drawdown": -0.5377855813076748,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-20T19:13:33.851757+00:00",
+  "symbol": "AIZN",
+  "run_id": "diag_1H_20260120T184450Z__AIZN",
+  "snapshot_id": "c7c1d28a990096f6e33ff8585440c53611ba88fab609b9963a4b48aad8de110b",
+  "attestation_hash": "46918a69ca067490af280609ca8032415cf499244b2086a50304c86f58f25293",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-20T19:13:33.851905+00:00",
+      "action": "snapshot_taken",
+      "id": "c7c1d28a990096f6e33ff8585440c53611ba88fab609b9963a4b48aad8de110b",
+      "name": "training_run",
+      "evidence_hash": "c7c1d28a990096f6e33ff8585440c53611ba88fab609b9963a4b48aad8de110b"
+    },
+    {
+      "ts": "2026-01-20T19:13:33.852204+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "46918a69ca067490af280609ca8032415cf499244b2086a50304c86f58f25293"
+    },
+    {
+      "ts": "2026-01-20T19:13:33.852224+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "d2eee81a22c817916bdc2b070b47e17b61b228872b6a11262aa785b58fc01039"
+    }
+  ]
+}

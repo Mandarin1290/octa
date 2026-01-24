@@ -1,0 +1,45 @@
+{
+  "symbol": "ANNA",
+  "asset_profile": "stock",
+  "run_id": "stocks_1d1h_verify101_20260109T073917Z",
+  "created_utc": "2026-01-09T07:39:42.301499+00:00",
+  "gate_version": "hf_gate_2026-01-03_v1",
+  "timeframe_status": {
+    "1D": "ERROR",
+    "1H": "SKIP_H1_NOT_ELIGIBLE"
+  },
+  "limited": {
+    "1D": false,
+    "1H": false
+  },
+  "datasets": {
+    "1D": {
+      "path": "raw/Stock_parquet/ANNA_1D.parquet",
+      "sha256": "e3464a37c3a0b39ec1f41799e46d7944da2d41fce30d377cd210dc9ae690eab8",
+      "rows": 665,
+      "start": "2022-02-22 00:00:00+00:00",
+      "end": "2026-01-02 00:00:00+00:00"
+    }
+  },
+  "models": {
+    "1D": {
+      "pkl": null,
+      "sha256": null
+    },
+    "1H": null
+  },
+  "gates": {
+    "1D": {
+      "passed": false,
+      "status": "ERROR",
+      "gate_version": null,
+      "reasons": [
+        "missing_gate"
+      ],
+      "passed_checks": [],
+      "insufficient_evidence": []
+    },
+    "1H": null
+  },
+  "armed": false
+}

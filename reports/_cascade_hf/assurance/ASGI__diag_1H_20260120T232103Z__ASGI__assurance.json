@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-21T00:12:11.839920+00:00",
+  "symbol": "ASGI",
+  "run_id": "diag_1H_20260120T232103Z__ASGI",
+  "snapshot_id": "6906b730808ab29b2ec15b700b759ba218dbd351b6d8196c812d36c313449026",
+  "attestation_hash": "55c0b595f424a173199ed627336ee3d08aad475318418e6bb343cdb938d5e4dc",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T00:12:11.840059+00:00",
+      "action": "snapshot_taken",
+      "id": "6906b730808ab29b2ec15b700b759ba218dbd351b6d8196c812d36c313449026",
+      "name": "training_run",
+      "evidence_hash": "6906b730808ab29b2ec15b700b759ba218dbd351b6d8196c812d36c313449026"
+    },
+    {
+      "ts": "2026-01-21T00:12:11.840378+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "55c0b595f424a173199ed627336ee3d08aad475318418e6bb343cdb938d5e4dc"
+    },
+    {
+      "ts": "2026-01-21T00:12:11.840397+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "6fa88d4669978e5f33891bb56b3e64326d801d73ebd9f560a6646828199a09cf"
+    }
+  ]
+}

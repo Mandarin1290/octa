@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-21T09:45:30.686529+00:00",
+  "symbol": "AFBI",
+  "run_id": "diag_1H_20260121T092943Z__AFBI",
+  "snapshot_id": "89e7a73ec3a6fba3fbebf104f7580e2995fb886ded78e9539437a35b2f0a41a7",
+  "attestation_hash": "a1d8e0dc6575396d0698136004bd4bf89a08f1d0115bec9a5ff3a91e7cf17127",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T09:45:30.686668+00:00",
+      "action": "snapshot_taken",
+      "id": "89e7a73ec3a6fba3fbebf104f7580e2995fb886ded78e9539437a35b2f0a41a7",
+      "name": "training_run",
+      "evidence_hash": "89e7a73ec3a6fba3fbebf104f7580e2995fb886ded78e9539437a35b2f0a41a7"
+    },
+    {
+      "ts": "2026-01-21T09:45:30.686976+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "a1d8e0dc6575396d0698136004bd4bf89a08f1d0115bec9a5ff3a91e7cf17127"
+    },
+    {
+      "ts": "2026-01-21T09:45:30.686997+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "PASS",
+      "evidence_hash": "2367f6d9ae78fc7847b29edfa4c58f4417dbd1890a10027a354280faed8bd88d"
+    }
+  ]
+}

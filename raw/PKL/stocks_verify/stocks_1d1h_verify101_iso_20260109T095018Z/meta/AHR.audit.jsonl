@@ -1,0 +1,5 @@
+{"type": "START", "ts_utc": "2026-01-09T10:19:18.857731+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AHR", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-09T10:19:18.860643+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AHR", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/AHR_1D.parquet", "parquet_sha256": "9cd1f19f0269482fc34aa0140f398dd04fda7393eed429c69793b65209402484"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-09T10:19:18.861144+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AHR", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-09T10:19:50.103264+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AHR", "tf": "1D", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-09T10:19:50.130431+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AHR", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_verify/stocks_1d1h_verify101_iso_20260109T095018Z/meta/AHR.meta.json"}

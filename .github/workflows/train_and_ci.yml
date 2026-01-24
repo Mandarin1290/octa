@@ -1,0 +1,50 @@
+name: Train CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Create synthetic parquet sample
+        run: |
+          python - <<'PY'
+import pandas as pd
+df = pd.DataFrame({'feat1':[1,2,3,4,5],'feat2':[10,20,30,40,50],'target':[0,1,0,1,0]})
+df.to_parquet('sample.parquet')
+print('wrote sample.parquet')
+PY
+
+      - name: Run trainer
+        run: |
+          python3 scripts/train_and_save.py --parquet sample.parquet --target target --version ci-1
+
+      - name: Assert model artifact exists
+        run: |
+          test -f artifacts/models/demo_model/regression/ci-1/model.pkl || (echo 'model not found' && exit 1)
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-model-ci
+          path: artifacts/models/demo_model/regression/ci-1/
+
+      - name: Run canary gate (no promote)
+        run: |
+          python3 scripts/canary_eval_and_promote.py --model-name demo_model --no-promote || (echo 'canary gate failed' && exit 1)

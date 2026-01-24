@@ -1,0 +1,46 @@
+{
+  "path": "raw/Indices_parquet/W5000_full_1day.parquet",
+  "n": 4535,
+  "vol_ann": 0.20040775714740186,
+  "max_drawdown": -0.566105897812515,
+  "fred": {
+    "enabled": true,
+    "series": [
+      "FEDFUNDS",
+      "DGS10",
+      "DGS2",
+      "UNRATE"
+    ],
+    "window": {
+      "start_ts": "2022-05-26 00:00:00+00:00",
+      "end_ts": "2023-05-31 00:00:00+00:00"
+    },
+    "data": {
+      "FEDFUNDS": {
+        "last": 5.06,
+        "last_date": "2023-05-01 00:00:00+00:00",
+        "d30": 0.22999999999999954
+      },
+      "DGS10": {
+        "last": 3.64,
+        "last_date": "2023-05-31 00:00:00+00:00",
+        "d30": 0.050000000000000266
+      },
+      "DGS2": {
+        "last": 4.4,
+        "last_date": "2023-05-31 00:00:00+00:00",
+        "d30": 0.2600000000000007
+      },
+      "UNRATE": {
+        "last": 3.6,
+        "last_date": "2023-05-01 00:00:00+00:00",
+        "d30": 0.20000000000000018
+      }
+    }
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true,
+    "reason": "ticker_not_mapped"
+  }
+}

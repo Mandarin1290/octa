@@ -1,0 +1,18 @@
+# Asset-class overlay: bonds
+
+signal:
+  # Bonds / rates tend to be lower vol; keep conservative.
+  vol_target: 0.06
+
+broker:
+  cost_bps: 2.0
+  spread_bps: 1.0
+  stress_cost_multiplier: 3.0
+
+features:
+  # Enable macro features for bonds by default (still requires FRED_API_KEY or cached parquet).
+  macro:
+    enabled: true
+    source: auto
+    series: ["FEDFUNDS", "DGS10", "DGS2", "UNRATE"]
+    shift_bars: 1

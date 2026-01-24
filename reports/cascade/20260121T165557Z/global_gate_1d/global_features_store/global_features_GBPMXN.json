@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/GBPMXN_1D.parquet",
+  "n": 4185,
+  "vol_ann": 0.12290983475862115,
+  "max_drawdown": -0.331403589000133,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

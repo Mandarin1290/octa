@@ -1,0 +1,788 @@
+
+## Batch 1
+- status: failed
+- files_moved:
+  - AGENTS.md -> docs/AGENTS.md
+  - README.md -> docs/README.md
+  - README_TRAINING.md -> docs/README_TRAINING.md
+  - README_integration.md -> docs/README_integration.md
+  - MLFLOW_README.md -> docs/MLFLOW_README.md
+  - OCTA_AUDIT_REPORT.md -> docs/OCTA_AUDIT_REPORT.md
+  - OCTA_LIBRARY_MAP.md -> docs/OCTA_LIBRARY_MAP.md
+  - REPORT_REFACTOR_AUDIT.md -> docs/REPORT_REFACTOR_AUDIT.md
+  - REPORT_REFACTOR_AUDIT.json -> docs/REPORT_REFACTOR_AUDIT.json
+  - =1.2.0 -> docs/version.txt
+- shims_created: none
+- commands_run:
+  - python -m compileall -q -x "(\.venv|venv|site-packages|mlruns|artifacts|logs|raw|reports|state)" .
+    - result: fail (SyntaxError in octa/__init__.py, octa/__main__.py)
+  - python scripts/verify_install.py
+    - result: fail (missing octa, octa.core, octa.support, octa.infra, octa.research)
+
+## Batch 2.5 (PHASE1-CORRECTION)
+- files_edited:
+  - octa/__init__.py
+  - octa/__main__.py
+- commands_run:
+  - python -c "import octa; print('import ok')"
+    - result: pass
+- notes: syntax-only stubs; no subsystem imports; no behavior changes
+
+## Batch 2.6 (VERIFY_INSTALL_PATH_FIX)
+- files_edited:
+  - scripts/verify_install.py
+- changes:
+  - insert repo root into sys.path before imports
+- commands_run:
+  - python -m compileall -q -x "(\.venv|venv|site-packages|mlruns|artifacts|logs|raw|reports|state)" .
+    - result: pass
+  - python scripts/verify_install.py
+    - result: pass
+
+## Batch 2
+- status: pass
+- files_moved:
+  - Dockerfile -> octa/infra/deployment/docker/Dockerfile
+  - docker-compose.redis.yml -> octa/infra/deployment/docker/docker-compose.redis.yml
+  - requirements.txt -> config/requirements.txt
+  - requirements-runtime.txt -> config/requirements-runtime.txt
+  - requirements-lock.txt -> config/requirements-lock.txt
+  - pyproject.toml -> config/pyproject.toml
+  - pytest.ini -> config/pytest.ini
+  - mypy.ini -> config/mypy.ini
+  - ruff.toml -> config/ruff.toml
+  - coverage.ini -> config/coverage.ini
+- shims_created:
+  - Dockerfile (symlink -> octa/infra/deployment/docker/Dockerfile)
+  - docker-compose.redis.yml (symlink -> octa/infra/deployment/docker/docker-compose.redis.yml)
+- commands_run:
+  - python -m compileall -q -x "(\.venv|venv|site-packages|mlruns|artifacts|logs|raw|reports|state)" .
+    - result: pass
+  - python scripts/verify_install.py
+    - result: pass
+- notes: no python project files touched in Batch 2 (Batch 2.5 and 2.6 logged separately)
+
+## Batch 3
+- files_moved:
+  - download_aapl_1m.py -> scripts/download_aapl_1m.py
+  - tools/arm_training_from_gate.py -> scripts/arm_training_from_gate.py
+  - tools/run_secondary_asset_gates.py -> scripts/run_secondary_asset_gates.py
+  - tools/train_passed_symbols.py -> scripts/train_passed_symbols.py
+- shims_created:
+  - download_aapl_1m.py (shim -> scripts/download_aapl_1m.py)
+  - tools/arm_training_from_gate.py (shim -> scripts/arm_training_from_gate.py)
+  - tools/run_secondary_asset_gates.py (shim -> scripts/run_secondary_asset_gates.py)
+  - tools/train_passed_symbols.py (shim -> scripts/train_passed_symbols.py)
+- commands_run:
+  - python -m compileall -q -x "(\.venv|venv|site-packages|mlruns|artifacts|logs|raw|reports|state)" .
+    - result: pass
+  - python scripts/verify_install.py
+    - result: pass
+  - script sanity: no safe moved status/info script to run
+- notes: shims import and call main() if present; otherwise no-op exit 0
+
+## Batch 4
+- files_moved:
+  - octa_training/core/io_parquet.py -> octa/core/data/io/io_parquet.py
+  - octa_training/core/artifact_io.py -> octa/core/data/storage/artifact_io.py
+  - octa_core/calendar.py -> octa/core/data/calendar.py
+  - octa_core/io/artifact_manifest.py -> octa/core/data/io/artifact_manifest.py
+  - octa_core/io/retention.py -> octa/core/data/storage/retention.py
+  - octa_stream/live_feed.py -> octa/core/data/sources/stream/live_feed.py
+  - octa_stream/manifest.py -> octa/core/data/sources/stream/manifest.py
+  - octa_stream/validate.py -> octa/core/data/validation/stream/validate.py
+  - octa_stream/lineage.py -> octa/core/data/validation/stream/lineage.py
+  - okta_altdat/storage.py -> octa/core/data/storage/altdata/storage.py
+  - octa_altdata/aviation.py -> octa/core/data/sources/altdata/aviation.py
+- shims_created:
+  - octa_training/core/io_parquet.py
+  - octa_training/core/artifact_io.py
+  - octa_core/calendar.py
+  - octa_core/io/artifact_manifest.py
+  - octa_core/io/retention.py
+  - octa_stream/live_feed.py
+  - octa_stream/manifest.py
+  - octa_stream/validate.py
+  - octa_stream/lineage.py
+  - okta_altdat/storage.py
+  - octa_altdata/aviation.py
+- commands_run:
+  - python -m compileall -q -x "(\.venv|venv|site-packages|mlruns|artifacts|logs|raw|reports|state)" .
+    - result: pass
+  - python scripts/verify_install.py
+    - result: pass
+- notes: created package __init__.py files in new octa/core/data subdirectories
+
+## Batch 5
+- status: completed (no-op; already in place)
+- evidence_paths:
+  - octa/core/features/features.py
+  - octa/core/features/transforms/feature_builder.py
+  - octa/core/features/transforms/macro_features.py
+  - octa/core/features/transforms/filing_features.py
+  - octa_training/core/features.py
+  - okta_altdat/features/feature_builder.py
+  - okta_altdat/features/macro_features.py
+  - okta_altdat/features/filing_features.py
+  - okta_altdat/features/__init__.py
+- files_moved: none
+- shims_created: none
+- commands_run:
+  - python -m compileall -q .
+    - result: pass
+  - pytest -q
+    - result: fail (timeout after 120s; pytest_asyncio deprecation warning emitted)
+  - ruff check .
+    - result: fail (lint errors reported; see command output)
+  - black --check .
+    - result: fail (black not installed: command not found)
+  - mypy .
+    - result: fail (missing stubs/imports; see command output)
+- notes: verification not green; AGENT_STATE.md not updated
+
+- scoped_verification:
+  - python -m compileall -q .
+    - result: pass
+  - pytest -q tests/test_imports.py --maxfail=1 --disable-warnings
+    - result: pass (1 passed in 1.78s; pytest_asyncio deprecation warning emitted)
+- pytest_asyncio warning silenced via `config/pytest.ini` setting `asyncio_mode=auto` (root `pytest.ini` symlinked to config)
+
+## Batch 6
+- files_touched:
+  - octa_training/core/io_parquet.py
+  - octa_training/core/artifact_io.py
+  - octa_training/core/features.py
+  - octa_core/calendar.py
+  - octa_core/io/artifact_manifest.py
+  - octa_core/io/retention.py
+  - octa_stream/live_feed.py
+  - octa_stream/manifest.py
+  - octa_stream/validate.py
+  - octa_stream/lineage.py
+  - okta_altdat/storage.py
+  - octa_altdata/aviation.py
+  - okta_altdat/features/feature_builder.py
+  - okta_altdat/features/macro_features.py
+  - okta_altdat/features/filing_features.py
+  - okta_altdat/features/__init__.py
+- green_gate:
+  - python -m compileall -q . -> pass
+  - pytest -q tests/test_imports.py --maxfail=1 --disable-warnings -> pass
+- ruff_summary:
+  - before: total_lines=1336 F403=16 F401=9 E402=88 E741=16
+  - after: total_lines=1192 F403=0 F401=9 E402=88 E741=16
+- notes: shim files prefixed with "# ruff: noqa: F403,F401" to reduce star-import noise; remaining lint errors are unrelated
+
+## Batch 7
+- files_changed:
+  - config/pyproject.toml
+  - docs/DEV_SETUP.md
+- commands_run:
+  - python -m compileall -q .
+    - result: pass
+  - pytest -q tests/test_imports.py --maxfail=1 --disable-warnings
+    - result: pass
+  - black --check .
+    - result: fail (black not installed)
+  - mypy .
+    - result: fail (56 errors; missing stubs/imports)
+- notes: dev deps added for black/mypy/ruff/pytest/pytest-asyncio and stub packages; mypy still reports missing stubs for pandas/pyarrow/requests/pyyaml and other typed packages
+
+- dev_env_sync:
+  - poetry install --with dev
+    - result: fail (poetry not installed)
+  - black --version
+    - result: fail (black not installed)
+  - black --check .
+    - result: fail (black not installed)
+  - mypy .
+    - result: fail (56 errors; missing stubs/imports)
+- dev_env_sync_followup:
+  - python -m pip install --user pipx
+    - result: fail (no network / no matching distribution)
+  - python -m pip install --user poetry
+    - result: fail (no network / no matching distribution)
+  - poetry --version
+    - result: not run (poetry unavailable)
+  - poetry install --with dev
+    - result: not run (poetry unavailable)
+  - poetry run black --version / black --check . / mypy .
+    - result: not run (poetry unavailable)
+- offline_note:
+  - Offline environment: pip cannot fetch packages; Poetry/Black unavailable here.
+  - Dev checks must be executed in an environment with Poetry installed or with pre-provisioned wheels.
+  - Commands (normal environment):
+    - poetry install --with dev
+    - poetry run black --check .
+    - poetry run mypy .
+
+## Batch 8
+- mypy_config: config/mypy.ini (typed core lane via files=octa/core/**/*.py; legacy trees excluded)
+- rationale: focus type signal on octa/core while ignoring legacy trees and untyped third-party modules
+- core_lane_errors:
+  - before: 3
+  - after: 0
+- full_repo_mypy:
+  - errors: 62 (non-gating)
+- ignored_third_party_modules:
+  - pyarrow.*
+  - vectorbt.*
+  - pandas.*
+  - numpy.*
+  - pandas_ta
+  - yaml
+  - requests
+  - psutil
+  - tqdm.*
+- legacy_packages_ignored:
+  - okta_altdat.*
+  - octa_stream.*
+  - octa_altdata.*
+  - octa_training.*
+  - octa_core.*
+- verification:
+  - python -m compileall -q . -> pass
+  - pytest -q tests/test_imports.py --maxfail=1 --disable-warnings -> pass
+
+## Batch 9
+- files_moved:
+  - okta_altdat/connectors/edgar_connector.py -> octa/core/data/sources/altdata/edgar_connector.py
+  - okta_altdat/connectors/fred_connector.py -> octa/core/data/sources/altdata/fred_connector.py
+  - okta_altdat/time_sync.py -> octa/core/data/sources/altdata/time_sync.py
+  - okta_altdat/weights.py -> octa/core/data/sources/altdata/weights.py
+  - okta_altdat/sidecar.py -> octa/core/data/sources/altdata/sidecar.py
+  - okta_altdat/orchestrator.py -> octa/core/data/sources/altdata/orchestrator.py
+  - okta_altdat/bootstrap_deps.py -> octa/core/data/sources/altdata/bootstrap_deps.py
+  - octa_stream/live_quality.py -> octa/core/data/sources/stream/live_quality.py
+  - octa_stream/contracts.py -> octa/core/data/validation/stream/contracts.py
+- shims_created:
+  - okta_altdat/connectors/edgar_connector.py
+  - okta_altdat/connectors/fred_connector.py
+  - okta_altdat/time_sync.py
+  - okta_altdat/weights.py
+  - okta_altdat/sidecar.py
+  - okta_altdat/orchestrator.py
+  - okta_altdat/bootstrap_deps.py
+  - octa_stream/live_quality.py
+  - octa_stream/contracts.py
+- core_import_updates:
+  - octa/core/features/transforms/feature_builder.py
+  - octa/core/data/sources/stream/live_feed.py
+  - octa/core/data/io/io_parquet.py
+  - octa/core/data/io/artifact_manifest.py
+  - octa/core/data/validation/stream/validate.py
+  - octa/core/data/storage/artifact_io.py
+  - octa/core/features/features.py
+  - octa/core/data/validation/stream/contracts.py
+  - octa/core/data/sources/altdata/orchestrator.py
+  - octa/core/data/sources/altdata/sidecar.py
+- tests_added:
+  - tests/test_core_boundaries.py
+- mypy_config_updates:
+  - config/mypy.ini (added pydantic.* ignore_missing_imports)
+- verification:
+  - python -m compileall -q . -> pass
+  - pytest -q tests/test_imports.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q tests/test_core_boundaries.py --maxfail=1 --disable-warnings -> pass
+  - mypy --config-file config/mypy.ini octa/core -> pass (0 errors; 2 annotation-unchecked notes)
+
+## Batch 10
+- files_changed:
+  - octa/core/cascade/__init__.py
+  - octa/core/cascade/contracts.py
+  - octa/core/cascade/context.py
+  - octa/core/cascade/routing.py
+  - octa/core/cascade/policies.py
+  - octa/core/cascade/controller.py
+  - octa/core/cascade/tests/__init__.py
+  - octa/core/cascade/tests/test_cascade_controller.py
+  - docs/CONTEXT_FREEZE.md
+- tests_added:
+  - octa/core/cascade/tests/test_cascade_controller.py
+- verification:
+  - python -m compileall -q . -> pass
+  - pytest -q tests/test_imports.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q tests/test_core_boundaries.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/cascade/tests/test_cascade_controller.py --maxfail=1 --disable-warnings -> pass
+  - mypy --config-file config/mypy.ini octa/core -> pass (notes about unchecked bodies)
+- notes:
+  - cascade skeleton added under octa/core/cascade with strict-pass routing and context tracking
+
+## Batch 11
+- files_changed:
+  - octa/core/cascade/adapters.py
+  - octa/core/cascade/registry.py
+  - octa/core/cascade/controller.py
+  - octa/core/cascade/policies.py
+  - octa/core/cascade/__init__.py
+  - octa/core/cascade/tests/test_adapters_smoke.py
+  - octa/core/cascade/tests/test_registry_build_stack.py
+  - octa/core/cascade/tests/test_cascade_controller.py
+  - docs/CONTEXT_FREEZE.md
+- tests_added:
+  - octa/core/cascade/tests/test_adapters_smoke.py
+  - octa/core/cascade/tests/test_registry_build_stack.py
+- verification:
+  - python -m compileall -q . -> pass
+  - pytest -q tests/test_imports.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q tests/test_core_boundaries.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/cascade/tests --maxfail=1 --disable-warnings -> pass
+  - mypy --config-file config/mypy.ini octa/core -> pass (notes about unchecked bodies)
+- notes:
+  - cascade adapters and registry added; SafeNoopGate used when core gate implementations are unavailable
+
+## Batch 12
+- files_changed:
+  - octa/core/gates/global_regime/__init__.py
+  - octa/core/gates/global_regime/gate.py
+  - octa/core/gates/global_regime/tests/__init__.py
+  - octa/core/gates/global_regime/tests/test_global_regime_gate.py
+  - octa/core/cascade/registry.py
+  - octa/core/cascade/tests/test_registry_build_stack.py
+  - docs/CONTEXT_FREEZE.md
+- tests_added:
+  - octa/core/gates/global_regime/tests/test_global_regime_gate.py
+- verification:
+  - python -m compileall -q . -> pass
+  - pytest -q tests/test_imports.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q tests/test_core_boundaries.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/cascade/tests --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/gates/global_regime/tests/test_global_regime_gate.py --maxfail=1 --disable-warnings -> pass
+  - mypy --config-file config/mypy.ini octa/core -> pass (notes about unchecked bodies)
+- notes:
+  - GlobalRegimeGate added under octa/core/gates/global_regime with deterministic regime mapping (RISK_ON/RISK_OFF/REDUCE/HALT)
+  - registry now prefers GlobalRegimeGate for 1D and keeps SafeNoopGate fallback for other gates
+
+## Batch 13
+- files_changed:
+  - octa/core/gates/structure_filter/__init__.py
+  - octa/core/gates/structure_filter/gate.py
+  - octa/core/gates/structure_filter/tests/__init__.py
+  - octa/core/gates/structure_filter/tests/test_structure_filter_gate.py
+  - octa/core/cascade/registry.py
+  - octa/core/cascade/tests/test_registry_build_stack.py
+  - docs/CONTEXT_FREEZE.md
+- tests_added:
+  - octa/core/gates/structure_filter/tests/test_structure_filter_gate.py
+- verification:
+  - python -m compileall -q . -> pass
+  - pytest -q tests/test_imports.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q tests/test_core_boundaries.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/cascade/tests --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/gates/structure_filter/tests/test_structure_filter_gate.py --maxfail=1 --disable-warnings -> pass
+  - mypy --config-file config/mypy.ini octa/core -> pass (notes about unchecked bodies)
+- notes:
+  - StructureGate added under octa/core/gates/structure_filter with deterministic structure metrics and setup zones
+  - registry now prefers StructureGate for 30M and keeps SafeNoopGate fallback for other gates
+
+## Batch 14
+- files_changed:
+  - octa/core/gates/signal_engine/__init__.py
+  - octa/core/gates/signal_engine/gate.py
+  - octa/core/gates/signal_engine/tests/__init__.py
+  - octa/core/gates/signal_engine/tests/test_signal_engine_gate.py
+  - octa/core/cascade/registry.py
+  - octa/core/cascade/tests/test_registry_build_stack.py
+  - docs/CONTEXT_FREEZE.md
+- tests_added:
+  - octa/core/gates/signal_engine/tests/test_signal_engine_gate.py
+- verification:
+  - python -m compileall -q . -> pass
+  - pytest -q tests/test_imports.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q tests/test_core_boundaries.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/cascade/tests --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/gates/signal_engine/tests/test_signal_engine_gate.py --maxfail=1 --disable-warnings -> pass
+  - mypy --config-file config/mypy.ini octa/core -> pass (notes about unchecked bodies)
+- notes:
+  - SignalGate added under octa/core/gates/signal_engine with deterministic signal artifacts (direction/confidence/horizon + metrics)
+  - registry now prefers SignalGate for 1H and keeps SafeNoopGate fallback for remaining gates
+
+## Batch 15
+- files_changed:
+  - octa/core/gates/execution_engine/__init__.py
+  - octa/core/gates/execution_engine/gate.py
+  - octa/core/gates/execution_engine/tests/__init__.py
+  - octa/core/gates/execution_engine/tests/test_execution_engine_gate.py
+  - octa/core/cascade/registry.py
+  - octa/core/cascade/controller.py
+  - octa/core/cascade/tests/test_registry_build_stack.py
+  - docs/CONTEXT_FREEZE.md
+- tests_added:
+  - octa/core/gates/execution_engine/tests/test_execution_engine_gate.py
+- verification:
+  - python -m compileall -q . -> pass
+  - pytest -q tests/test_imports.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q tests/test_core_boundaries.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/cascade/tests --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/gates/execution_engine/tests/test_execution_engine_gate.py --maxfail=1 --disable-warnings -> pass
+  - mypy --config-file config/mypy.ini octa/core -> pass (notes about unchecked bodies)
+- notes:
+  - ExecutionGate added under octa/core/gates/execution_engine with execution_plan artifacts and PASS only for actionable ENTER
+  - registry now prefers ExecutionGate for 5M and keeps SafeNoopGate fallback for remaining gates
+  - CascadeController passes CascadeContext to gates via optional set_context hook
+
+## Batch 16
+- files_changed:
+  - octa/core/gates/micro_optimization/__init__.py
+  - octa/core/gates/micro_optimization/gate.py
+  - octa/core/gates/micro_optimization/tests/__init__.py
+  - octa/core/gates/micro_optimization/tests/test_micro_gate.py
+  - octa/core/cascade/registry.py
+  - octa/core/cascade/tests/test_registry_build_stack.py
+  - docs/CONTEXT_FREEZE.md
+- tests_added:
+  - octa/core/gates/micro_optimization/tests/test_micro_gate.py
+- verification:
+  - python -m compileall -q . -> pass
+  - pytest -q tests/test_imports.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q tests/test_core_boundaries.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/cascade/tests --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/gates/micro_optimization/tests/test_micro_gate.py --maxfail=1 --disable-warnings -> pass
+  - mypy --config-file config/mypy.ini octa/core -> pass (notes about unchecked bodies)
+- notes:
+  - MicroGate added under octa/core/gates/micro_optimization with micro_plan hints (LIMIT/MARKET, offset, slicing)
+  - registry now prefers MicroGate for 1M and SafeNoopGate fallback is no longer used when all gates are present
+  - MicroGate consumes execution_plan from CascadeContext via set_context
+
+## Batch 17
+- files_changed:
+  - octa/core/data/providers/__init__.py
+  - octa/core/data/providers/ohlcv.py
+  - octa/core/data/providers/in_memory.py
+  - octa/core/data/providers/aligned.py
+  - octa/core/data/providers/tests/__init__.py
+  - octa/core/data/providers/tests/test_aligned.py
+  - octa/core/data/providers/tests/test_in_memory_provider.py
+  - octa/core/gates/structure_filter/gate.py
+  - octa/core/gates/structure_filter/tests/test_structure_filter_gate.py
+  - octa/core/gates/signal_engine/gate.py
+  - octa/core/gates/signal_engine/tests/test_signal_engine_gate.py
+  - octa/core/gates/execution_engine/gate.py
+  - octa/core/gates/execution_engine/tests/test_execution_engine_gate.py
+  - octa/core/gates/micro_optimization/gate.py
+  - octa/core/gates/micro_optimization/tests/test_micro_gate.py
+  - docs/CONTEXT_FREEZE.md
+- tests_added:
+  - octa/core/data/providers/tests/test_aligned.py
+  - octa/core/data/providers/tests/test_in_memory_provider.py
+- verification:
+  - python -m compileall -q . -> pass
+  - pytest -q tests/test_imports.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q tests/test_core_boundaries.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/cascade/tests --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/data/providers/tests --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/gates --maxfail=1 --disable-warnings -> pass
+  - mypy --config-file config/mypy.ini octa/core -> pass (notes about unchecked bodies)
+- notes:
+  - shared OHLCVProvider contract added under octa/core/data/providers with alignment helpers
+  - gates accept optional ohlcv_provider injection without changing existing behavior
+
+## Batch 18
+- files_changed:
+  - octa/core/pipeline/__init__.py
+  - octa/core/pipeline/paper_run.py
+  - octa/core/pipeline/tests/__init__.py
+  - octa/core/pipeline/tests/test_paper_run.py
+  - octa/core/data/providers/ohlcv.py
+  - octa/core/cascade/registry.py
+  - docs/CONTEXT_FREEZE.md
+- tests_added:
+  - octa/core/pipeline/tests/test_paper_run.py
+- verification:
+  - python -m compileall -q . -> pass
+  - pytest -q tests/test_imports.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q tests/test_core_boundaries.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/cascade/tests --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/pipeline/tests --maxfail=1 --disable-warnings -> pass
+  - mypy --config-file config/mypy.ini octa/core -> pass (notes about unchecked bodies)
+- notes:
+  - paper-run pipeline added at octa/core/pipeline/paper_run.py with JSONL audit output
+  - build_default_gate_stack now accepts optional ohlcv_provider injection without behavior changes
+
+## Batch 19
+- files_changed:
+  - octa/core/risk/allrad/__init__.py
+  - octa/core/risk/allrad/state.py
+  - octa/core/risk/allrad/metrics.py
+  - octa/core/risk/allrad/policies.py
+  - octa/core/risk/allrad/engine.py
+  - octa/core/risk/allrad/tests/__init__.py
+  - octa/core/risk/allrad/tests/test_allrad_engine.py
+  - octa/core/cascade/controller.py
+  - docs/CONTEXT_FREEZE.md
+- tests_added:
+  - octa/core/risk/allrad/tests/test_allrad_engine.py
+- verification:
+  - python -m compileall -q . -> pass
+  - pytest -q tests/test_imports.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q tests/test_core_boundaries.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/cascade/tests --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/risk/allrad/tests --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/pipeline/tests --maxfail=1 --disable-warnings -> pass
+  - mypy --config-file config/mypy.ini octa/core -> pass (notes about unchecked bodies)
+- notes:
+  - ALLRAD master risk engine added (Allocation/Liquidity/Loss/Regime/Availability/Drift) with RiskDecision schema
+  - CascadeController hook runs after signal gate; writes allrad decision artifacts and can block further progression
+
+## Batch 20
+- files_changed:
+  - octa/core/capital/__init__.py
+  - octa/core/capital/state.py
+  - octa/core/capital/sizing.py
+  - octa/core/capital/exposure.py
+  - octa/core/capital/engine.py
+  - octa/core/capital/tests/__init__.py
+  - octa/core/capital/tests/test_capital_engine.py
+  - octa/core/cascade/controller.py
+  - docs/CONTEXT_FREEZE.md
+- tests_added:
+  - octa/core/capital/tests/test_capital_engine.py
+- verification:
+  - python -m compileall -q . -> pass
+  - pytest -q tests/test_imports.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q tests/test_core_boundaries.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/cascade/tests --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/capital/tests --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/pipeline/tests --maxfail=1 --disable-warnings -> pass
+  - mypy --config-file config/mypy.ini octa/core -> pass (notes about unchecked bodies)
+- notes:
+  - CapitalEngine added with deterministic sizing/exposure controls and RiskDecision gating
+  - CascadeController hook runs after execution gate to inject capital sizing and block when needed
+
+## Batch 21
+- files_changed:
+  - octa/core/portfolio/__init__.py
+  - octa/core/portfolio/state.py
+  - octa/core/portfolio/metrics.py
+  - octa/core/portfolio/correlation.py
+  - octa/core/portfolio/engine.py
+  - octa/core/portfolio/tests/__init__.py
+  - octa/core/portfolio/tests/test_portfolio_engine.py
+  - octa/core/pipeline/paper_run.py
+  - octa/core/pipeline/tests/test_paper_run.py
+  - docs/CONTEXT_FREEZE.md
+- tests_added:
+  - octa/core/portfolio/tests/test_portfolio_engine.py
+- verification:
+  - python -m compileall -q . -> pass
+  - pytest -q tests/test_imports.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q tests/test_core_boundaries.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/portfolio/tests --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/pipeline/tests --maxfail=1 --disable-warnings -> pass
+  - mypy --config-file config/mypy.ini octa/core -> pass (notes about unchecked bodies)
+- notes:
+  - PortfolioEngine aggregates capital decisions and enforces exposure/correlation/drawdown constraints
+  - paper-run pipeline emits a portfolio-level JSONL record when configured
+
+## Batch 22
+- files_changed:
+  - octa/core/execution/__init__.py
+  - octa/core/execution/oms.py
+  - octa/core/execution/orders.py
+  - octa/core/execution/fills.py
+  - octa/core/execution/state.py
+  - octa/core/execution/ibkr/__init__.py
+  - octa/core/execution/ibkr/client.py
+  - octa/core/execution/ibkr/orders.py
+  - octa/core/execution/ibkr/fills.py
+  - octa/core/execution/ibkr/state.py
+  - octa/core/execution/ibkr/adapters.py
+  - octa/core/execution/tests/__init__.py
+  - octa/core/execution/tests/test_oms_simulation.py
+  - octa/core/capital/engine.py
+  - octa/core/cascade/controller.py
+  - octa/core/pipeline/paper_run.py
+  - octa/core/portfolio/engine.py
+  - docs/CONTEXT_FREEZE.md
+- tests_added:
+  - octa/core/execution/tests/test_oms_simulation.py
+- verification:
+  - python -m compileall -q . -> pass
+  - pytest -q tests/test_imports.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q tests/test_core_boundaries.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/cascade/tests --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/pipeline/tests --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/execution/tests --maxfail=1 --disable-warnings -> pass
+  - mypy --config-file config/mypy.ini octa/core -> pass (notes about unchecked bodies)
+- notes:
+  - IBKR paper OMS added with deterministic simulation path and JSONL audit logging
+  - CapitalDecision now carries optional symbol/execution_plan for OMS translation (additive only)
+
+## Batch 23
+- files_changed:
+  - octa/core/analytics/__init__.py
+  - octa/core/analytics/performance.py
+  - octa/core/analytics/risk_metrics.py
+  - octa/core/analytics/attribution.py
+  - octa/core/analytics/diagnostics.py
+  - octa/core/analytics/tests/__init__.py
+  - octa/core/analytics/tests/test_analytics_engine.py
+  - octa/core/pipeline/paper_run.py
+  - octa/core/pipeline/tests/test_paper_run.py
+  - docs/CONTEXT_FREEZE.md
+- tests_added:
+  - octa/core/analytics/tests/test_analytics_engine.py
+- verification:
+  - python -m compileall -q . -> pass
+  - pytest -q tests/test_imports.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q tests/test_core_boundaries.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/analytics/tests --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/pipeline/tests --maxfail=1 --disable-warnings -> pass
+  - mypy --config-file config/mypy.ini octa/core -> pass (notes about unchecked bodies)
+- notes:
+  - analytics engine added under octa/core/analytics with performance/risk/attribution/diagnostics
+  - paper-run pipeline emits performance_summary.json under audit directory
+
+## Batch 24
+- files_changed:
+  - octa/core/governance/__init__.py
+  - octa/core/governance/audit_chain.py
+  - octa/core/governance/hashing.py
+  - octa/core/governance/kill_switch.py
+  - octa/core/governance/access.py
+  - octa/core/governance/tests/__init__.py
+  - octa/core/governance/tests/test_governance_layer.py
+  - octa/core/execution/oms.py
+  - docs/CONTEXT_FREEZE.md
+- tests_added:
+  - octa/core/governance/tests/test_governance_layer.py
+- verification:
+  - python -m compileall -q . -> pass
+  - pytest -q tests/test_imports.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q tests/test_core_boundaries.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/governance/tests --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/pipeline/tests --maxfail=1 --disable-warnings -> pass
+  - mypy --config-file config/mypy.ini octa/core -> pass (notes about unchecked bodies)
+- notes:
+  - governance layer added with audit chain hashing and kill switch policies
+  - OMS can optionally append execution reports to audit chain
+
+## Batch 25
+- files_changed:
+  - octa/core/autonomy/__init__.py
+  - octa/core/autonomy/health.py
+  - octa/core/autonomy/events.py
+  - octa/core/autonomy/runbooks.py
+  - octa/core/autonomy/supervisor.py
+  - octa/core/autonomy/tests/__init__.py
+  - octa/core/autonomy/tests/test_supervisor_health.py
+  - octa/core/autonomy/tests/test_supervisor_runbooks.py
+  - octa/core/autonomy/tests/test_supervisor_loop.py
+  - docs/CONTEXT_FREEZE.md
+- tests_added:
+  - octa/core/autonomy/tests/test_supervisor_health.py
+  - octa/core/autonomy/tests/test_supervisor_runbooks.py
+  - octa/core/autonomy/tests/test_supervisor_loop.py
+- verification:
+  - python -m compileall -q . -> pass
+  - pytest -q tests/test_imports.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q tests/test_core_boundaries.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/autonomy/tests --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/pipeline/tests --maxfail=1 --disable-warnings -> pass
+  - mypy --config-file config/mypy.ini octa/core -> pass (notes about unchecked bodies)
+- notes:
+  - autonomy supervisor added with deterministic health checks and runbook actions
+  - supervisor writes autonomy events JSONL and enforces fail-closed SAFE/HALT behavior
+
+## Batch 26
+- files_changed:
+  - octa/core/autonomy/events.py
+  - octa/core/autonomy/runbooks.py
+  - octa/core/autonomy/recovery.py
+  - octa/core/autonomy/supervisor.py
+  - octa/core/autonomy/cli.py
+  - octa/core/autonomy/__init__.py
+  - octa/core/autonomy/tests/test_supervisor_audit_chain.py
+  - octa/core/autonomy/tests/test_supervisor_disable_oms.py
+  - octa/core/pipeline/paper_run.py
+  - octa/core/pipeline/tests/test_paper_run.py
+  - docs/CONTEXT_FREEZE.md
+- tests_added:
+  - octa/core/autonomy/tests/test_supervisor_audit_chain.py
+  - octa/core/autonomy/tests/test_supervisor_disable_oms.py
+- verification:
+  - python -m compileall -q . -> pass
+  - pytest -q tests/test_imports.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q tests/test_core_boundaries.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/governance/tests --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/autonomy/tests --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/pipeline/tests --maxfail=1 --disable-warnings -> pass
+  - mypy --config-file config/mypy.ini octa/core -> pass (notes about unchecked bodies)
+- notes:
+  - supervisor now switches execution_mode via runbooks and passes audit_chain to pipeline
+  - autonomy events prefer AuditChain logging with JSONL fallback
+  - paper_run supports execution_mode OMS/DECISIONS_ONLY and emits EXEC_DISABLED records when OMS is disabled
+
+## Batch 27 (System E2E Parquet Test)
+- files_added:
+  - octa/core/system_tests/__init__.py
+  - octa/core/system_tests/test_full_autonomy_parquet_e2e.py
+- files_updated:
+  - octa/core/data/providers/parquet.py
+  - octa/core/data/providers/__init__.py
+  - octa/core/autonomy/supervisor.py
+  - octa/core/pipeline/paper_run.py
+  - docs/CONTEXT_FREEZE.md
+- notes:
+  - ParquetOHLCVProvider now supports 1D/30M/1H/5M/1M coverage with optimized tail reads.
+  - System test selects 3 symbols with full coverage and runs supervisor in DECISIONS_ONLY mode.
+- commands_run:
+  - python -m compileall -q . -> pass
+  - pytest -q tests/test_imports.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q tests/test_core_boundaries.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/pipeline/tests --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/autonomy/tests --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/governance/tests --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/data/providers/tests --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/system_tests --maxfail=1 --disable-warnings -> pass
+  - mypy --config-file config/mypy.ini octa/core -> pass (notes only)
+
+## Batch 28 (Timeframe Canonicalization)
+- files_updated:
+  - octa/core/data/providers/ohlcv.py
+  - octa/core/data/providers/parquet.py
+  - octa/core/cascade/registry.py
+  - octa/core/cascade/adapters.py
+  - octa/core/cascade/policies.py
+  - octa/core/cascade/tests/test_registry_build_stack.py
+  - octa/core/cascade/tests/test_cascade_controller.py
+  - octa/core/gates/signal_engine/gate.py
+  - octa/core/gates/signal_engine/tests/test_signal_engine_gate.py
+  - octa/core/pipeline/paper_run.py
+  - octa/core/pipeline/tests/test_paper_run.py
+  - octa/core/autonomy/cli.py
+  - docs/CONTEXT_FREEZE.md
+- notes:
+  - Canonical signal timeframe updated to 1H; 15M assumptions removed.
+  - Parquet symbol coverage now requires 1D/30M/1H/5M/1M.
+  - Fixed test variable name for mypy in octa/core/cascade/tests/test_cascade_controller.py.
+- commands_run:
+  - python -m compileall -q . -> pass
+  - pytest -q tests/test_imports.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q tests/test_core_boundaries.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/gates --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/system_tests --maxfail=1 --disable-warnings -> pass
+  - mypy --config-file config/mypy.ini octa/core -> pass (notes only)
+
+## Batch 29 (E2E 5-symbol cross-asset parquet test)
+- files_added:
+  - octa/core/system_tests/test_full_autonomy_parquet_e2e_5symbols.py
+- files_updated:
+  - octa/core/data/providers/parquet.py
+  - octa/core/data/providers/__init__.py
+- symbols_chosen:
+  - A (EQUITY)
+  - AUDBRL (FX)
+  - AEX_full (INDICES)
+  - AA (EQUITY)
+  - AACB (EQUITY)
+- notes:
+  - Categories inferred from raw folder names; equity/fx/indices present.
+  - Parquet provider now skips rows with invalid OHLC values to avoid NoneType float errors.
+- commands_run:
+  - pytest -q octa/core/system_tests --maxfail=1 --disable-warnings -> pass
+  - python -m compileall -q . -> pass
+  - pytest -q tests/test_imports.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q tests/test_core_boundaries.py --maxfail=1 --disable-warnings -> pass
+  - pytest -q octa/core/system_tests --maxfail=1 --disable-warnings -> pass
+  - mypy --config-file config/mypy.ini octa/core -> pass (notes only)

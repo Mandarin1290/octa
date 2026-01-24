@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/AIMBU_1D.parquet",
+  "n": 269,
+  "vol_ann": 0.4984383777059075,
+  "max_drawdown": -0.1807486631016042,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

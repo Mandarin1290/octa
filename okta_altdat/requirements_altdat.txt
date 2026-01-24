@@ -1,0 +1,22 @@
+# Optional dependencies for okta_altdat
+# Install is controlled by OKTA_ALTDATA_AUTO_INSTALL=1
+
+duckdb
+pyarrow
+pandas
+requests
+httpx
+tenacity
+python-dateutil
+fredapi
+sec-edgar-downloader
+beautifulsoup4
+lxml
+pytz
+vaderSentiment
+
+# Optional (do not require by default)
+# transformers
+# gdelt
+# pystac-client
+# rasterio

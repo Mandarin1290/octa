@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/XSP_full_1day.parquet",
+  "n": 5084,
+  "vol_ann": 0.1941679760369514,
+  "max_drawdown": -0.5677868642984922,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

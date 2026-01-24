@@ -1,0 +1,6 @@
+schema_version: 1
+mode: LIVE
+env: live
+service_name: octa-foundation-live
+broker:
+  requires_secret: true

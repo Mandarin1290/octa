@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/SPRO_full_1day.parquet",
+  "n": 2104,
+  "vol_ann": 0.13062097301649248,
+  "max_drawdown": -0.2333536156149708,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

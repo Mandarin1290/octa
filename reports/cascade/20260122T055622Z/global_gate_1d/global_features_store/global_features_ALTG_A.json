@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/ALTG_A_1D.parquet",
+  "n": 1150,
+  "vol_ann": 0.1711509491883852,
+  "max_drawdown": -0.2236443246884473,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

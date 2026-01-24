@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-21T09:59:27.228987+00:00",
+  "symbol": "ALCY",
+  "run_id": "diag_1H_20260121T092943Z__ALCY",
+  "snapshot_id": "81ec5787d807b471b4bbfbc082f59eaea65c67378d61358a25e635252084a1ba",
+  "attestation_hash": "72d8884938ebc5c916b2bb11aaa8a182e47b3d1524fce529ef003fe98cf9ff04",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T09:59:27.229171+00:00",
+      "action": "snapshot_taken",
+      "id": "81ec5787d807b471b4bbfbc082f59eaea65c67378d61358a25e635252084a1ba",
+      "name": "training_run",
+      "evidence_hash": "81ec5787d807b471b4bbfbc082f59eaea65c67378d61358a25e635252084a1ba"
+    },
+    {
+      "ts": "2026-01-21T09:59:27.229572+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "72d8884938ebc5c916b2bb11aaa8a182e47b3d1524fce529ef003fe98cf9ff04"
+    },
+    {
+      "ts": "2026-01-21T09:59:27.229596+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "PASS",
+      "evidence_hash": "f6ddfd299ad0edf94efdbcb82ec40f0a1b55c4a6f81889a7a1e7658d932bafa8"
+    }
+  ]
+}

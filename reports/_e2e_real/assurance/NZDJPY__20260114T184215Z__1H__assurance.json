@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-14T19:59:42.968065+00:00",
+  "symbol": "NZDJPY",
+  "run_id": "20260114T184215Z__1H",
+  "snapshot_id": "da89e66d0a48cf2ba5335c3b79331acd89354d687078ded6932df8ba77513a91",
+  "attestation_hash": "d72f50b50a06df73449a7f4d2251a29a9ca054d6a646985e097627c6c09bc34f",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-14T19:59:42.968222+00:00",
+      "action": "snapshot_taken",
+      "id": "da89e66d0a48cf2ba5335c3b79331acd89354d687078ded6932df8ba77513a91",
+      "name": "training_run",
+      "evidence_hash": "da89e66d0a48cf2ba5335c3b79331acd89354d687078ded6932df8ba77513a91"
+    },
+    {
+      "ts": "2026-01-14T19:59:42.968467+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "d72f50b50a06df73449a7f4d2251a29a9ca054d6a646985e097627c6c09bc34f"
+    },
+    {
+      "ts": "2026-01-14T19:59:42.968487+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "159fffa5419f332f9efb8bcdce251b68671004cd5d9d8d2c6e2dda878ebb80e4"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/EURCAD_1D.parquet",
+  "n": 4152,
+  "vol_ann": 0.08148834299763097,
+  "max_drawdown": -0.20093489810974519,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

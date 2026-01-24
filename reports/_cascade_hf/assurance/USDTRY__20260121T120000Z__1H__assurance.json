@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-21T09:16:09.136193+00:00",
+  "symbol": "USDTRY",
+  "run_id": "20260121T120000Z__1H",
+  "snapshot_id": "e5cfe95d13f3b0a5e1129ad92d924c2852b994341b9a3d55a84a2e04f302b95b",
+  "attestation_hash": "ef27ed70a78359c317d1c05efa05b4488726c92f07ab3a7aff2ba17a29b0c016",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T09:16:09.136308+00:00",
+      "action": "snapshot_taken",
+      "id": "e5cfe95d13f3b0a5e1129ad92d924c2852b994341b9a3d55a84a2e04f302b95b",
+      "name": "training_run",
+      "evidence_hash": "e5cfe95d13f3b0a5e1129ad92d924c2852b994341b9a3d55a84a2e04f302b95b"
+    },
+    {
+      "ts": "2026-01-21T09:16:09.136518+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "ef27ed70a78359c317d1c05efa05b4488726c92f07ab3a7aff2ba17a29b0c016"
+    },
+    {
+      "ts": "2026-01-21T09:16:09.136537+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "c7a053e9471722c58caf669b5ba95709617f3d7eddf43d6323208b109bbc797f"
+    }
+  ]
+}

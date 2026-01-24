@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/AEFC_1D.parquet",
+  "n": 1556,
+  "vol_ann": 0.2807561340260432,
+  "max_drawdown": -0.5777360493121606,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

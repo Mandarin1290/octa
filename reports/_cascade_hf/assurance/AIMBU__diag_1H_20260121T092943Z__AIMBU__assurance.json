@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-21T09:55:13.875231+00:00",
+  "symbol": "AIMBU",
+  "run_id": "diag_1H_20260121T092943Z__AIMBU",
+  "snapshot_id": "ef77c21773bf70cfb50999951542a90aed219346fdd475365c37f0556f6729fc",
+  "attestation_hash": "13a68bfa5f50e37a2985f0896f88f7424b826c70484d8c190b5be123296ac143",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T09:55:13.875416+00:00",
+      "action": "snapshot_taken",
+      "id": "ef77c21773bf70cfb50999951542a90aed219346fdd475365c37f0556f6729fc",
+      "name": "training_run",
+      "evidence_hash": "ef77c21773bf70cfb50999951542a90aed219346fdd475365c37f0556f6729fc"
+    },
+    {
+      "ts": "2026-01-21T09:55:13.875818+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "13a68bfa5f50e37a2985f0896f88f7424b826c70484d8c190b5be123296ac143"
+    },
+    {
+      "ts": "2026-01-21T09:55:13.875842+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "PASS",
+      "evidence_hash": "5991471a80cc81abf9133e4713e2d3511214efc6e6d6d5a82aa32a76dd8b49b4"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/EURCHF_1D.parquet",
+  "n": 4153,
+  "vol_ann": 0.08016752325587774,
+  "max_drawdown": -0.3795093892286553,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

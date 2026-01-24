@@ -1,0 +1,13 @@
+# Asset-class overlay: futures
+
+signal:
+  vol_target: 0.10
+
+broker:
+  # Futures can have tighter spreads, but costs vary by contract.
+  cost_bps: 1.8
+  spread_bps: 0.8
+  stress_cost_multiplier: 3.0
+
+features:
+  horizons: [1, 3, 5]

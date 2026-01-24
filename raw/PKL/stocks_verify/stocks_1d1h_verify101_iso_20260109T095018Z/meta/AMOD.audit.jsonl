@@ -1,0 +1,5 @@
+{"type": "START", "ts_utc": "2026-01-09T11:51:45.014999+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AMOD", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-09T11:51:45.030439+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AMOD", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/AMOD_1D.parquet", "parquet_sha256": "41656ab83e7ccb5b25a5c1716dde69a456bc95b65bccd49e4c22a6444f8b492d"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-09T11:51:45.031225+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AMOD", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-09T11:53:06.917975+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AMOD", "tf": "1D", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-09T11:53:06.969407+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AMOD", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_verify/stocks_1d1h_verify101_iso_20260109T095018Z/meta/AMOD.meta.json"}

@@ -1,0 +1,49 @@
+# AltData Platform Config (safe defaults)
+# Default: disabled to avoid any silent behavior change.
+
+enabled: false
+
+# If true, any detected future-leakage will mark features invalid.
+# Strict mode can also be set via env `OKTA_ALTDATA_STRICT=1`.
+strict_mode: false
+
+# Allow the bootstrapper to auto-install missing deps via pip.
+# Can also be set via env `OKTA_ALTDATA_AUTO_INSTALL=1`.
+auto_install: false
+
+storage:
+  # Optional override; otherwise uses env OKTA_ALTDATA_ROOT or ./data/altdat
+  root: null
+
+asof:
+  # tolerance in seconds per inferred timeframe
+  tolerance_seconds:
+    "1D": 3888000   # 45 days
+    "1H": 604800    # 7 days
+    "30m": 259200   # 3 days
+    "5m": 86400     # 1 day
+    "1m": 21600     # 6 hours
+
+sources:
+  fred:
+    enabled: true
+    api_key_env: FRED_API_KEY
+    series: ["FEDFUNDS", "DGS10", "DGS2", "UNRATE"]
+  edgar:
+    enabled: true
+    forms: ["10-K", "10-Q", "8-K"]
+  gdelt:
+    enabled: false
+  satellite:
+    enabled: false
+
+weights:
+  base:
+    edgar: 0.35
+    macro: 0.25
+    market: 0.15
+    news: 0.15
+    satellite: 0.10
+  quality:
+    min_coverage: 0.5
+    stale_days: 45

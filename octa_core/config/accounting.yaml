@@ -1,0 +1,18 @@
+accounting:
+  enabled: false
+  ledger_db_path: "artifacts/accounting/ledger.sqlite3"
+  base_currency: "EUR"
+
+  chart_of_accounts:
+    # Minimal HGB/IFRS-friendly skeleton (config-driven; no legal advice)
+    assets_cash: "1000"
+    assets_securities: "1100"
+    liabilities_payable: "2000"
+    equity: "3000"
+    income_trading: "4000"
+    expenses_fees: "5000"
+
+  datev:
+    enabled: false
+    export_dir: "artifacts/accounting/datev"
+    delimiter: ";"

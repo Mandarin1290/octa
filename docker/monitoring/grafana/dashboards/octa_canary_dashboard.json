@@ -1,0 +1,22 @@
+{
+  "annotations": {"list": []},
+  "panels": [
+    {
+      "type": "graph",
+      "title": "Canary Drift Share",
+      "targets": [{"expr": "octa_canary_drift_share", "format": "time_series"}]
+    },
+    {
+      "type": "graph",
+      "title": "Canary Drift Score",
+      "targets": [{"expr": "octa_canary_drift_score", "format": "time_series"}]
+    },
+    {
+      "type": "stat",
+      "title": "Canary Passed",
+      "targets": [{"expr": "octa_canary_passed", "format": "time_series"}]
+    }
+  ],
+  "title": "OCTA Canary Dashboard",
+  "schemaVersion": 16
+}

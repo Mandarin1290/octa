@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-21T10:09:44.830967+00:00",
+  "symbol": "APACU",
+  "run_id": "diag_1H_20260121T092943Z__APACU",
+  "snapshot_id": "8bf54f6380a4542961dfaba37b3c25da67edc9b254c6c2ad9756479b396b9941",
+  "attestation_hash": "446377dde945159987db8e7300c621a21254b97ae9b9f3f5b82d792b0d038613",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T10:09:44.831088+00:00",
+      "action": "snapshot_taken",
+      "id": "8bf54f6380a4542961dfaba37b3c25da67edc9b254c6c2ad9756479b396b9941",
+      "name": "training_run",
+      "evidence_hash": "8bf54f6380a4542961dfaba37b3c25da67edc9b254c6c2ad9756479b396b9941"
+    },
+    {
+      "ts": "2026-01-21T10:09:44.831338+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "446377dde945159987db8e7300c621a21254b97ae9b9f3f5b82d792b0d038613"
+    },
+    {
+      "ts": "2026-01-21T10:09:44.831358+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "a185715e8ed75b536418aa982a8423f0597c4a1bfe6f05809c0791e7d2e53e65"
+    }
+  ]
+}

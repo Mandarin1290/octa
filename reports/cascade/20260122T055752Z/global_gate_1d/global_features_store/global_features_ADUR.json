@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/ADUR_1D.parquet",
+  "n": 288,
+  "vol_ann": 0.8317165115447336,
+  "max_drawdown": -0.43128234617596317,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

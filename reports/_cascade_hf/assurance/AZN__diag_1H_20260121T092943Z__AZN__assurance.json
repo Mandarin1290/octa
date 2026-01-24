@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-21T10:35:31.157251+00:00",
+  "symbol": "AZN",
+  "run_id": "diag_1H_20260121T092943Z__AZN",
+  "snapshot_id": "eb35955ada1b17895d698b4fd632dad1522d71423be0e68030c7fe682258bf7f",
+  "attestation_hash": "2ff43475b8151e8a4fe5dc0d830036707cad4d597a51b5c3e01ea96dee950c7f",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T10:35:31.157389+00:00",
+      "action": "snapshot_taken",
+      "id": "eb35955ada1b17895d698b4fd632dad1522d71423be0e68030c7fe682258bf7f",
+      "name": "training_run",
+      "evidence_hash": "eb35955ada1b17895d698b4fd632dad1522d71423be0e68030c7fe682258bf7f"
+    },
+    {
+      "ts": "2026-01-21T10:35:31.157684+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "2ff43475b8151e8a4fe5dc0d830036707cad4d597a51b5c3e01ea96dee950c7f"
+    },
+    {
+      "ts": "2026-01-21T10:35:31.157703+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "PASS",
+      "evidence_hash": "b543958ffa78fe4ee9b0ebde3da355a3e5e1c37c5bff6e2171e951b3c46614b8"
+    }
+  ]
+}

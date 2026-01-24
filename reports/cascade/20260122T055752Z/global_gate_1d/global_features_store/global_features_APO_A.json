@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/APO_A_1D.parquet",
+  "n": 598,
+  "vol_ann": 0.32141667080288505,
+  "max_drawdown": -0.36341333333333337,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

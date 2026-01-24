@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/AATC_1D.parquet",
+  "n": 1113,
+  "vol_ann": 0.36743364326987304,
+  "max_drawdown": -0.5769777278435001,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

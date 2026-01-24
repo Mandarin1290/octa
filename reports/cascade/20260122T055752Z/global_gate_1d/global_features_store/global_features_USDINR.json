@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/USDINR_1D.parquet",
+  "n": 4170,
+  "vol_ann": 0.06798562811039618,
+  "max_drawdown": -0.14954088325317005,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

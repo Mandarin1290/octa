@@ -1,0 +1,40 @@
+# Example: Asset profiles for Global Gate
+#
+# These keys are optional. If omitted, the system runs in fully backwards-compatible
+# "legacy" mode (no profile-specific overrides).
+#
+# Routing order:
+# 1) asset_defaults.by_dataset[dataset]
+# 2) asset_defaults.by_asset_class[asset_class]
+# 3) asset_defaults.default_profile
+# 4) heuristic fallback
+
+asset_defaults:
+  default_profile: legacy
+  by_dataset:
+    stocks: stock
+    indices: index
+    fx: fx
+
+asset_profiles:
+  stock:
+    kind: stock
+    gates:
+      global:
+        sharpe_min: 0.7
+      global_by_timeframe:
+        "1D":
+          turnover_per_day_max: 0.3
+
+  index:
+    kind: index
+    gates:
+      global:
+        sharpe_min: 0.5
+
+  fx:
+    kind: fx
+    gates:
+      global:
+        net_to_gross_min: 0.6
+        turnover_per_day_max: 0.2

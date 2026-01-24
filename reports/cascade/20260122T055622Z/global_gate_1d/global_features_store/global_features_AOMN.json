@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/AOMN_1D.parquet",
+  "n": 356,
+  "vol_ann": 0.07695545171111907,
+  "max_drawdown": -0.06396099540530575,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-21T11:07:17.428903+00:00",
+  "symbol": "XSP",
+  "run_id": "diag_1H_20260121T092943Z__XSP",
+  "snapshot_id": "b734cfcd36549fcf763eefb2d1185136b08bce7a72239f10be7c9a2ee41f2b22",
+  "attestation_hash": "2191d2b510fbae1c70996ba14da123770a240da86182386aba0c9119d236ca32",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T11:07:17.429044+00:00",
+      "action": "snapshot_taken",
+      "id": "b734cfcd36549fcf763eefb2d1185136b08bce7a72239f10be7c9a2ee41f2b22",
+      "name": "training_run",
+      "evidence_hash": "b734cfcd36549fcf763eefb2d1185136b08bce7a72239f10be7c9a2ee41f2b22"
+    },
+    {
+      "ts": "2026-01-21T11:07:17.429349+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "2191d2b510fbae1c70996ba14da123770a240da86182386aba0c9119d236ca32"
+    },
+    {
+      "ts": "2026-01-21T11:07:17.429368+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "ed60e0ce4485442495fd20a2e2403708c9a0406640c22c9afa0ecbdd7ed01970"
+    }
+  ]
+}

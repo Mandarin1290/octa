@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/SP500LVOL_full_1day.parquet",
+  "n": 3709,
+  "vol_ann": 0.1432564199183205,
+  "max_drawdown": -0.3632384966702009,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

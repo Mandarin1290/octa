@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-20T23:10:53.940954+00:00",
+  "symbol": "VXTH",
+  "run_id": "20260120T181614Z__1H",
+  "snapshot_id": "ea504050124afc4592149e1bcb7e20c78d36700341737c3979d95e9cd6cacf68",
+  "attestation_hash": "d16fb12125d19db14c5f27dda26ccbfca80f7a43e177f04415cc5e6e304dd1ba",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-20T23:10:53.946779+00:00",
+      "action": "snapshot_taken",
+      "id": "ea504050124afc4592149e1bcb7e20c78d36700341737c3979d95e9cd6cacf68",
+      "name": "training_run",
+      "evidence_hash": "ea504050124afc4592149e1bcb7e20c78d36700341737c3979d95e9cd6cacf68"
+    },
+    {
+      "ts": "2026-01-20T23:10:53.947468+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "d16fb12125d19db14c5f27dda26ccbfca80f7a43e177f04415cc5e6e304dd1ba"
+    },
+    {
+      "ts": "2026-01-20T23:10:53.947491+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "b0e131dc3027ed9980c980c53bf3cc8028c3179d9ad1e9649686f25cbf505955"
+    }
+  ]
+}

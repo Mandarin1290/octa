@@ -1,0 +1,2 @@
+symbol,status,parquet,reasons
+AACT,FAIL,raw/Stock_parquet/AACT_1H.parquet,net_to_gross too low: 0.3144435815519636 < 0.6;avg_net_trade_return too low: 0.00012503116855498285 < 0.00015;turnover_per_day too high: 8.03974796633733 > 0.6;cost_stress_failed sharpe=-4.2622652085479835

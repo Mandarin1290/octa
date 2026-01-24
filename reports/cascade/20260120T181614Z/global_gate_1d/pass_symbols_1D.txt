@@ -1,0 +1,1 @@
+pass_symbols_1d.txt

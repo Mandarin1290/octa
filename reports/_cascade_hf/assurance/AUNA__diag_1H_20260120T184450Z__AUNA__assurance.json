@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-20T19:45:51.730420+00:00",
+  "symbol": "AUNA",
+  "run_id": "diag_1H_20260120T184450Z__AUNA",
+  "snapshot_id": "648a23fd156bd836688b400f3e731015a2078c18c101964e3b1a09aa63ec18df",
+  "attestation_hash": "8961e0373f8b532b5372a425755568995a91a8d8090fe834e0c7e260d73d2a81",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-20T19:45:51.730558+00:00",
+      "action": "snapshot_taken",
+      "id": "648a23fd156bd836688b400f3e731015a2078c18c101964e3b1a09aa63ec18df",
+      "name": "training_run",
+      "evidence_hash": "648a23fd156bd836688b400f3e731015a2078c18c101964e3b1a09aa63ec18df"
+    },
+    {
+      "ts": "2026-01-20T19:45:51.730878+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "8961e0373f8b532b5372a425755568995a91a8d8090fe834e0c7e260d73d2a81"
+    },
+    {
+      "ts": "2026-01-20T19:45:51.730900+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "68c3e5e2fdddbafac0e50c437b5f8bf150275ce9068ae43e0e0e6dccda13303e"
+    }
+  ]
+}

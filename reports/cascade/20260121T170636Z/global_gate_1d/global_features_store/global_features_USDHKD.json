@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/USDHKD_1D.parquet",
+  "n": 4153,
+  "vol_ann": 0.006392511567070786,
+  "max_drawdown": -0.012958143362518437,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

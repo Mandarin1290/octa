@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/USDZAR_1D.parquet",
+  "n": 4152,
+  "vol_ann": 0.14909500323482822,
+  "max_drawdown": -0.31485009823299315,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

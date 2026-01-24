@@ -1,0 +1,14 @@
+opengamma:
+  enabled: false
+  base_url: "http://127.0.0.1:8090"
+  auth:
+    mode: "none"   # none|bearer_env
+    bearer_env: "OPENGAMMA_BEARER_TOKEN"
+
+  timeouts:
+    connect_s: 3
+    read_s: 20
+
+  retries:
+    attempts: 3
+    wait_s: 1

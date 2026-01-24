@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/USDTRY_1D.parquet",
+  "n": 4153,
+  "vol_ann": 0.15164547150712684,
+  "max_drawdown": -0.3296367252580569,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

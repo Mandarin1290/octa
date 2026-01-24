@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/XDA_full_1day.parquet",
+  "n": 3214,
+  "vol_ann": 0.1035924668215909,
+  "max_drawdown": -0.455691403658421,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

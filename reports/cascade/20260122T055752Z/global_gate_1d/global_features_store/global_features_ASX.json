@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/ASX_full_1day.parquet",
+  "n": 6072,
+  "vol_ann": 0.32005946792225554,
+  "max_drawdown": -0.5810565067421785,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

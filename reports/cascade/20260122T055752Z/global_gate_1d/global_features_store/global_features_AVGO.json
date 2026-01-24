@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/AVGO_1D.parquet",
+  "n": 2495,
+  "vol_ann": 0.3886315113694543,
+  "max_drawdown": -0.48300118492319477,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

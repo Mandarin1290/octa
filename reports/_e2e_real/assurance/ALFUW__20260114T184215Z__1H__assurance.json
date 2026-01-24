@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-14T19:14:00.894596+00:00",
+  "symbol": "ALFUW",
+  "run_id": "20260114T184215Z__1H",
+  "snapshot_id": "0cac51069925f63a6a1bcd72dc44ada6e9996bfc65b56c83d3559c83ff63e05a",
+  "attestation_hash": "10db0653855afe2af65f4864bd967949c8551c30581cfeb70cb2dc248c053fbf",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-14T19:14:00.894786+00:00",
+      "action": "snapshot_taken",
+      "id": "0cac51069925f63a6a1bcd72dc44ada6e9996bfc65b56c83d3559c83ff63e05a",
+      "name": "training_run",
+      "evidence_hash": "0cac51069925f63a6a1bcd72dc44ada6e9996bfc65b56c83d3559c83ff63e05a"
+    },
+    {
+      "ts": "2026-01-14T19:14:00.895185+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "10db0653855afe2af65f4864bd967949c8551c30581cfeb70cb2dc248c053fbf"
+    },
+    {
+      "ts": "2026-01-14T19:14:00.895210+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "PASS",
+      "evidence_hash": "87afa1809ebf1b8db4c8f059818b66490f034d4427c16c19fdb8a2e4ca345f01"
+    }
+  ]
+}

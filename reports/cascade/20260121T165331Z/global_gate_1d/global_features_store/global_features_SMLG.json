@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/SMLG_full_1day.parquet",
+  "n": 3558,
+  "vol_ann": 0.21291597156493838,
+  "max_drawdown": -0.4263784975490771,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

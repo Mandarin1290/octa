@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/SGX_full_1day.parquet",
+  "n": 6291,
+  "vol_ann": 0.20135062918212396,
+  "max_drawdown": -0.5267448512585813,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

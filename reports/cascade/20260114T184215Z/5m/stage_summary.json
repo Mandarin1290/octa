@@ -1,0 +1,12 @@
+{
+  "timeframe": "5m",
+  "input_list": "reports/cascade/20260114T184215Z/30m/pass_30m.txt",
+  "n_input": 0,
+  "n_missing_parquet": 0,
+  "n_pass": 0,
+  "passlist": "reports/cascade/20260114T184215Z/5m/pass_5m.txt",
+  "missing_parquet_list": "",
+  "safe_mode": true,
+  "fast": true,
+  "seconds": 0.0
+}

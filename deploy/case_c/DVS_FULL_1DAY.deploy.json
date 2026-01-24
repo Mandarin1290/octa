@@ -1,0 +1,158 @@
+{
+  "symbol": "DVS_FULL_1DAY",
+  "deployed_at": "2026-01-04T21:09:21.959853+00:00",
+  "source_pkl": "raw/PKL/DVS_FULL_1DAY.pkl",
+  "meta": {
+    "schema_version": 1,
+    "symbol": "DVS_FULL_1DAY",
+    "asset_class": "index",
+    "run_id": "cascade_from_index_gate_2026-01-04",
+    "created_at": "2026-01-04T10:58:21.740224",
+    "artifact_kind": "tradeable",
+    "created_with": {
+      "code_version": null,
+      "python": "3.13.5",
+      "libs": {
+        "numpy": "2.2.6",
+        "pandas": "2.3.3",
+        "lightgbm": null,
+        "xgboost": null,
+        "catboost": "1.2.8",
+        "sklearn": "1.8.0"
+      }
+    },
+    "metrics": {
+      "sharpe": 1.9304912988420155,
+      "sortino": 111.49799965085369,
+      "sharpe_is_mean": 1.9607332007806626,
+      "sharpe_wf_std": 0.16565616352565,
+      "sharpe_oos_over_is": 0.9845762279500389,
+      "max_drawdown": 0.012297568975482842,
+      "calmar": 596.3030531429947,
+      "profit_factor": 78.62550548588874,
+      "cagr": 7.333077926316989,
+      "net_to_gross": 0.9993774840367705,
+      "cvar_99": -0.00483375084529693,
+      "cvar_99_sigma": 0.03512644820444529,
+      "cvar_95": -0.0037091829919243327,
+      "daily_vol": 0.06918555794841086,
+      "cvar_95_over_daily_vol": 0.0536120991412185,
+      "turnover": 5.704384430398111,
+      "turnover_per_day": 0.005704384430398111,
+      "avg_gross_exposure": 0.010596903661077087,
+      "hit_rate": 0.4351464435146444,
+      "avg_trade": null,
+      "avg_net_trade_return": 0.03520344170300266,
+      "n_trades": 239,
+      "fold_metrics": [
+        {
+          "sharpe": 1.8680101597450696,
+          "sharpe_is": 1.998820516609874,
+          "max_drawdown": 0.004041475828919228,
+          "n_trades": 59
+        },
+        {
+          "sharpe": 1.9586347771065566,
+          "sharpe_is": 1.9745415937671336,
+          "max_drawdown": 0.012064201019812537,
+          "n_trades": 51
+        },
+        {
+          "sharpe": 1.5500441527152042,
+          "sharpe_is": 1.9581209321419428,
+          "max_drawdown": 0.01008589466234433,
+          "n_trades": 59
+        },
+        {
+          "sharpe": 1.6134005341041706,
+          "sharpe_is": 1.9330439900501253,
+          "max_drawdown": 0.003311472896719403,
+          "n_trades": 58
+        },
+        {
+          "sharpe": 1.910071450409575,
+          "sharpe_is": 1.9391389713342373,
+          "max_drawdown": 0.009616014039171339,
+          "n_trades": 59
+        }
+      ],
+      "metadata": {
+        "horizon": null,
+        "bar_size": null,
+        "cost_bps": 2.0,
+        "spread_bps": 1.0,
+        "sample_start": "2014-01-28T00:00:00+00:00",
+        "sample_end": "2018-01-16T00:00:00+00:00"
+      }
+    },
+    "gate": {
+      "passed": true,
+      "gate_version": "hf_gate_2026-01-03_v1",
+      "reasons": [],
+      "passed_checks": [
+        "tail_kill_switch",
+        "sharpe",
+        "sortino",
+        "max_drawdown",
+        "profit_factor",
+        "n_trades",
+        "sharpe_wf_std",
+        "is_oos_degradation",
+        "net_to_gross",
+        "avg_net_trade_return",
+        "turnover_per_day",
+        "avg_gross_exposure",
+        "tail_risk",
+        "folds_pass_ratio"
+      ],
+      "robustness": {
+        "passed": true,
+        "reasons": [],
+        "details": {
+          "permutation": {
+            "mean_auc": 0.4872026030027232,
+            "aucs": [
+              0.4586410984848485,
+              0.48511999999999994,
+              0.4694076038903625,
+              0.5171475995914199,
+              0.5056967130469852
+            ],
+            "passed": true
+          },
+          "subwindow": {
+            "passed": true,
+            "pass_count": 3,
+            "windows": [
+              {
+                "i": 0,
+                "sharpe": 1.9007187408808413
+              },
+              {
+                "i": 1,
+                "sharpe": 1.892821412972156
+              },
+              {
+                "i": 2,
+                "sharpe": 2.0486419869435974
+              }
+            ]
+          },
+          "cost_stress": {
+            "passed": true,
+            "sharpe": 1.9293421373097062
+          },
+          "regime": {
+            "passed": true,
+            "subset_max_drawdown": -0.004253538501666876
+          }
+        }
+      }
+    },
+    "feature_count": 50,
+    "horizons": [
+      "3"
+    ],
+    "meta_sha256": "fbc2e62c7dc092707e91c4a452b3161524f46439cfd1e67a491e9a4dd235fb12"
+  }
+}

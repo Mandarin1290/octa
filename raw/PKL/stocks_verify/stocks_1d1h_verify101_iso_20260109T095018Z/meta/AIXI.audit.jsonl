@@ -1,0 +1,5 @@
+{"type": "START", "ts_utc": "2026-01-09T10:42:32.416235+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AIXI", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-09T10:42:32.422474+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AIXI", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/AIXI_1D.parquet", "parquet_sha256": "c0ac4e1cc4f2b3f4eed6dfd340eed277adcf73e3652330b29bf81afb6533eae9"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-09T10:42:32.425008+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AIXI", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-09T10:43:01.641265+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AIXI", "tf": "1D", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-09T10:43:01.679124+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AIXI", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_verify/stocks_1d1h_verify101_iso_20260109T095018Z/meta/AIXI.meta.json"}

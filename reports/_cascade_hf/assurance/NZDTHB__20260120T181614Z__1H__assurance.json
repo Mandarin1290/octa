@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-20T22:45:14.593653+00:00",
+  "symbol": "NZDTHB",
+  "run_id": "20260120T181614Z__1H",
+  "snapshot_id": "5ff10ef82d5f0a47ead828b71b3a7d84449ff179d3c75d11b8ed39b1e53d1bc0",
+  "attestation_hash": "10e62550b7707ecf1f033d641876fb40ccca5944987288c1ff9dbb59b5b902d0",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-20T22:45:14.593768+00:00",
+      "action": "snapshot_taken",
+      "id": "5ff10ef82d5f0a47ead828b71b3a7d84449ff179d3c75d11b8ed39b1e53d1bc0",
+      "name": "training_run",
+      "evidence_hash": "5ff10ef82d5f0a47ead828b71b3a7d84449ff179d3c75d11b8ed39b1e53d1bc0"
+    },
+    {
+      "ts": "2026-01-20T22:45:14.593985+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "10e62550b7707ecf1f033d641876fb40ccca5944987288c1ff9dbb59b5b902d0"
+    },
+    {
+      "ts": "2026-01-20T22:45:14.594004+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "3d3fa22cf2f6404551d90e89076c1a0ad497a5780dc02eb418dc5e83127f5357"
+    }
+  ]
+}

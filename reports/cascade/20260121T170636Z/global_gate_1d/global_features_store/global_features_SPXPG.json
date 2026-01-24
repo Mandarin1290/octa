@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/SPXPG_full_1day.parquet",
+  "n": 4996,
+  "vol_ann": 0.22734719767673217,
+  "max_drawdown": -0.5377238172707097,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

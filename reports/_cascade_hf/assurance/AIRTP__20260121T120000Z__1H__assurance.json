@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-21T06:53:00.539093+00:00",
+  "symbol": "AIRTP",
+  "run_id": "20260121T120000Z__1H",
+  "snapshot_id": "97684c399b968ecae711313baa7bd46b03864fe800942298b2643bdaf4ef3989",
+  "attestation_hash": "a423e8563f27ab61d8e29f920581b59ce476122a680794d6d65efa46f4bab0e5",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T06:53:00.539352+00:00",
+      "action": "snapshot_taken",
+      "id": "97684c399b968ecae711313baa7bd46b03864fe800942298b2643bdaf4ef3989",
+      "name": "training_run",
+      "evidence_hash": "97684c399b968ecae711313baa7bd46b03864fe800942298b2643bdaf4ef3989"
+    },
+    {
+      "ts": "2026-01-21T06:53:00.539953+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "a423e8563f27ab61d8e29f920581b59ce476122a680794d6d65efa46f4bab0e5"
+    },
+    {
+      "ts": "2026-01-21T06:53:00.539974+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "ba3acdd67aa06d1dd71101d2ede253a66195a64f98a5451cfdddeb84b7e4f4d1"
+    }
+  ]
+}

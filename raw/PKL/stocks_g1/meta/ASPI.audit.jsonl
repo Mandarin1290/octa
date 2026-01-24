@@ -1,0 +1,16 @@
+{"type": "START", "ts_utc": "2026-01-08T19:33:46.751040+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "ASPI", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-08T19:33:46.751864+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "ASPI", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ASPI_1H.parquet", "parquet_sha256": "b4899f05aaec5f99c649be4164cbb148c0729c273b02c9a13e6b4ee6df139f60"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T19:33:46.786374+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "ASPI", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T19:39:26.568794+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "ASPI", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T19:39:26.570205+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "ASPI", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/ASPI.meta.json"}
+{"type": "START", "ts_utc": "2026-01-08T21:45:04.201036+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "ASPI", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-08T21:45:04.203613+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "ASPI", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ASPI_1H.parquet", "parquet_sha256": "b4899f05aaec5f99c649be4164cbb148c0729c273b02c9a13e6b4ee6df139f60"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T21:45:04.241000+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "ASPI", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T21:46:44.376127+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "ASPI", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T21:46:44.377413+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "ASPI", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/ASPI.meta.json"}
+{"type": "START", "ts_utc": "2026-01-09T06:55:09.707699+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "ASPI", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-09T06:55:09.709725+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "ASPI", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ASPI_1H.parquet", "parquet_sha256": "b4899f05aaec5f99c649be4164cbb148c0729c273b02c9a13e6b4ee6df139f60"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-09T06:55:09.756900+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "ASPI", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-09T06:56:25.045324+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "ASPI", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_PKL_DEBUG_FAIL", "ts_utc": "2026-01-09T06:56:25.057691+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "ASPI", "tf": "1H", "pkl": "/home/n-b/Octa/raw/PKL/stocks_g1/1H_DEBUG_FAIL/ASPI.pkl", "pkl_sha256": "0a07fc12aa60217114c34b14db765c829df287b0c81c916d26daab17646e2679", "artifact_kind": "debug"}
+{"type": "WRITE_META", "ts_utc": "2026-01-09T06:56:25.058676+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "ASPI", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/ASPI.meta.json"}

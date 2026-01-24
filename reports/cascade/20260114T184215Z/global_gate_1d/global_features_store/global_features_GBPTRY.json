@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/GBPTRY_1D.parquet",
+  "n": 4183,
+  "vol_ann": 0.16307465111201538,
+  "max_drawdown": -0.3428966300573991,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

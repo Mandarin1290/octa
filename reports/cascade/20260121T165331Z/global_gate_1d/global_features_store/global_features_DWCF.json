@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/DWCF_full_1day.parquet",
+  "n": 5470,
+  "vol_ann": 0.19247185499424818,
+  "max_drawdown": -0.5681224790240191,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/ASX_1D.parquet",
+  "n": 1929,
+  "vol_ann": 0.3940634265674896,
+  "max_drawdown": -0.4611667695216587,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

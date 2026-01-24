@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/ACR_D_1D.parquet",
+  "n": 1146,
+  "vol_ann": 0.20540870835402786,
+  "max_drawdown": -0.34807692307692306,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/ATMC_1D.parquet",
+  "n": 348,
+  "vol_ann": 0.2761687191639012,
+  "max_drawdown": -0.0969976905311778,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

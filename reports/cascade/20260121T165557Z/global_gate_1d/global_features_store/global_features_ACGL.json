@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/ACGL_1D.parquet",
+  "n": 6441,
+  "vol_ann": 0.2634492140223215,
+  "max_drawdown": -0.5383973999384473,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

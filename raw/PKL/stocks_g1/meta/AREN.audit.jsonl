@@ -1,0 +1,16 @@
+{"type": "START", "ts_utc": "2026-01-08T19:20:44.195053+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "AREN", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-08T19:20:44.196645+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "AREN", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/AREN_1H.parquet", "parquet_sha256": "7b0f9578b60b208fad76ac5e4cb5a3091d0bca1d2ed15dd8ee73ffbe5960e33f"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T19:20:44.237465+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "AREN", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T19:26:24.871148+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "AREN", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T19:26:24.872353+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "AREN", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/AREN.meta.json"}
+{"type": "START", "ts_utc": "2026-01-08T21:40:20.324719+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "AREN", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-08T21:40:20.327127+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "AREN", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/AREN_1H.parquet", "parquet_sha256": "7b0f9578b60b208fad76ac5e4cb5a3091d0bca1d2ed15dd8ee73ffbe5960e33f"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T21:40:20.365043+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "AREN", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T21:41:54.515944+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "AREN", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T21:41:54.517773+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "AREN", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/AREN.meta.json"}
+{"type": "START", "ts_utc": "2026-01-09T06:49:48.633033+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AREN", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-09T06:49:48.635202+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AREN", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/AREN_1H.parquet", "parquet_sha256": "7b0f9578b60b208fad76ac5e4cb5a3091d0bca1d2ed15dd8ee73ffbe5960e33f"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-09T06:49:48.679032+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AREN", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-09T06:51:52.746890+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AREN", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_PKL_DEBUG_FAIL", "ts_utc": "2026-01-09T06:51:52.751605+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AREN", "tf": "1H", "pkl": "/home/n-b/Octa/raw/PKL/stocks_g1/1H_DEBUG_FAIL/AREN.pkl", "pkl_sha256": "3405b5c3a5afe4a59cfb31a1d06fa6df0eb52932381c04750931925f6b81a64f", "artifact_kind": "debug"}
+{"type": "WRITE_META", "ts_utc": "2026-01-09T06:51:52.752775+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AREN", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/AREN.meta.json"}

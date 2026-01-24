@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/NYA_full_1day.parquet",
+  "n": 6313,
+  "vol_ann": 0.18965912633292417,
+  "max_drawdown": -0.5901406278941892,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

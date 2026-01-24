@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/ATLCL_1D.parquet",
+  "n": 1027,
+  "vol_ann": 0.20465636014116262,
+  "max_drawdown": -0.22743065955789854,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

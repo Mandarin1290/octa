@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/EURMXN_1D.parquet",
+  "n": 4176,
+  "vol_ann": 0.12428915411480404,
+  "max_drawdown": -0.3516595450500474,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

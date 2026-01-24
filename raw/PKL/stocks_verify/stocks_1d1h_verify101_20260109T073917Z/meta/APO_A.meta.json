@@ -1,0 +1,45 @@
+{
+  "symbol": "APO_A",
+  "asset_profile": "stock",
+  "run_id": "stocks_1d1h_verify101_20260109T073917Z",
+  "created_utc": "2026-01-09T07:39:43.844078+00:00",
+  "gate_version": "hf_gate_2026-01-03_v1",
+  "timeframe_status": {
+    "1D": "ERROR",
+    "1H": "SKIP_H1_NOT_ELIGIBLE"
+  },
+  "limited": {
+    "1D": false,
+    "1H": false
+  },
+  "datasets": {
+    "1D": {
+      "path": "raw/Stock_parquet/APO_A_1D.parquet",
+      "sha256": "8a02a412ab941a14b27c669188e4f89c53651139bfdd446f15ebfb7ea10000e1",
+      "rows": 598,
+      "start": "2023-08-16 00:00:00+00:00",
+      "end": "2026-01-02 00:00:00+00:00"
+    }
+  },
+  "models": {
+    "1D": {
+      "pkl": null,
+      "sha256": null
+    },
+    "1H": null
+  },
+  "gates": {
+    "1D": {
+      "passed": false,
+      "status": "ERROR",
+      "gate_version": null,
+      "reasons": [
+        "missing_gate"
+      ],
+      "passed_checks": [],
+      "insufficient_evidence": []
+    },
+    "1H": null
+  },
+  "armed": false
+}

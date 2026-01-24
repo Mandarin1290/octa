@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-22T07:50:55.015678+00:00",
+  "symbol": "UTY",
+  "run_id": "20260122T055752Z__1H",
+  "snapshot_id": "ff451cf3d2d529eb28560737631ccf1008a463c62819487b20eff630c968cac7",
+  "attestation_hash": "d84683e00b379300069efca1aa3d5a5cfcc061498c57fcecaf8f802122aa1fbc",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-22T07:50:55.015846+00:00",
+      "action": "snapshot_taken",
+      "id": "ff451cf3d2d529eb28560737631ccf1008a463c62819487b20eff630c968cac7",
+      "name": "training_run",
+      "evidence_hash": "ff451cf3d2d529eb28560737631ccf1008a463c62819487b20eff630c968cac7"
+    },
+    {
+      "ts": "2026-01-22T07:50:55.016242+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "d84683e00b379300069efca1aa3d5a5cfcc061498c57fcecaf8f802122aa1fbc"
+    },
+    {
+      "ts": "2026-01-22T07:50:55.016266+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "PASS",
+      "evidence_hash": "184c9e7fb2075b57f1467292d19def372687c9aa933edb8a593ffe7f9479f501"
+    }
+  ]
+}

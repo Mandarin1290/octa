@@ -1,0 +1,119 @@
+# DJR multi-timeframe config (HF-style training discipline)
+# - Enables multi-model selection + Optuna tuning for 1D/1H/30m
+# - Keeps 5m/1m trained but NOT live by default (research only)
+
+paths:
+  raw_dir: raw/tmp_djr_multi
+
+features:
+  # Use multi-horizon targets for daily/struct layers
+  horizons: [1, 3, 5]
+  # Optional exogenous macro proxy (OpenSky aviation traffic)
+  # Collector writes parquet under /home/n-b/Octa/altdata/aviation
+  aviation:
+    enabled: true
+    region: GLOBAL
+
+# Signal / evaluation (leakage-safe thresholds)
+signal:
+  mode: cls
+  upper_q: 0.95
+  lower_q: 0.05
+  causal_quantiles: true
+  quantile_window: 252
+  leverage_cap: 1.0
+  vol_target: 0.03
+  realized_vol_window: 20
+  cost_bps: 2.0
+  spread_bps: 1.0
+  stress_cost_multiplier: 3.0
+
+# Optuna tuning (real, no simulation) — moderate defaults to control runtime
+# Increase optuna_trials/timeouts if you want more exhaustive search.
+tuning:
+  enabled: true
+  optuna_trials: 400
+  early_stop_rounds: 20
+  timeout_sec: 3600
+  models_order: [lightgbm, hgb]
+
+# Always retrain during HF iteration runs (avoid "recent_pass" short-circuit).
+retrain:
+  skip_window_days: 0
+
+# Walk-forward splits (recent folds)
+splits:
+  n_folds: -6
+  train_window: 500
+  test_window: 100
+  step: 100
+  purge_size: 10
+  embargo_size: 5
+  min_train_size: 500
+  min_test_size: 100
+  expanding: true
+  min_folds_required: 1
+
+# Packaging / safety
+packaging:
+  # Abort early if disk is too full (used by train_multiframe_symbol.py)
+  min_free_gb: 8
+
+layers:
+  # Structural layers: tuned, direction-leading
+  struct_1h:
+    features:
+      horizons: [6, 12]
+    tuning:
+      enabled: true
+      optuna_trials: 400
+      timeout_sec: 3600
+    signal:
+      upper_q: 0.97
+      lower_q: 0.03
+      leverage_cap: 1.0
+      vol_target: 0.02
+
+  struct_30m:
+    features:
+      horizons: [1, 3]
+      aviation:
+        enabled: false
+    tuning:
+      enabled: false
+      optuna_trials: 2
+      timeout_sec: 30
+    signal:
+      upper_q: 0.95
+      lower_q: 0.05
+
+  # Research layers: trained, but keep runtime bounded and remain non-direction-leading
+  entry_5m:
+    features:
+      horizons: [3]
+      aviation:
+        enabled: false
+    tuning:
+      enabled: false
+    splits:
+      n_folds: -3
+    signal:
+      upper_q: 0.995
+      lower_q: 0.005
+      leverage_cap: 0.5
+      vol_target: 0.01
+
+  exec_1m:
+    features:
+      horizons: [5]
+      aviation:
+        enabled: false
+    tuning:
+      enabled: false
+    splits:
+      n_folds: -2
+    signal:
+      upper_q: 0.995
+      lower_q: 0.005
+      leverage_cap: 0.3
+      vol_target: 0.008

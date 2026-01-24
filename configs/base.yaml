@@ -1,0 +1,7 @@
+schema_version: 1
+mode: DEV
+env: base
+service_name: octa-foundation
+broker:
+  broker_name: ibkr
+  requires_secret: true

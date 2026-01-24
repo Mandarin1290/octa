@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-21T10:04:43.459874+00:00",
+  "symbol": "AMCR",
+  "run_id": "diag_1H_20260121T092943Z__AMCR",
+  "snapshot_id": "b533867125a33a77e57044162f41feeda962ca62c321f1f670646974ec4c4618",
+  "attestation_hash": "334c041daf92c4df9ce01c0e15cca08cc129455cfb53309b9e017690a1b16771",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T10:04:43.460012+00:00",
+      "action": "snapshot_taken",
+      "id": "b533867125a33a77e57044162f41feeda962ca62c321f1f670646974ec4c4618",
+      "name": "training_run",
+      "evidence_hash": "b533867125a33a77e57044162f41feeda962ca62c321f1f670646974ec4c4618"
+    },
+    {
+      "ts": "2026-01-21T10:04:43.460338+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "334c041daf92c4df9ce01c0e15cca08cc129455cfb53309b9e017690a1b16771"
+    },
+    {
+      "ts": "2026-01-21T10:04:43.460360+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "PASS",
+      "evidence_hash": "73522d8ff9bdde1d93fa49321e9364357b060fd62ed8a1a2b445b78a0d6eb8b7"
+    }
+  ]
+}

@@ -1,0 +1,200 @@
+{
+  "summary": {
+    "module_count": 721,
+    "import_edges": 781,
+    "notes": [
+      "Static AST import graph; dynamic imports may be missed.",
+      "Artifact directories (raw/reports/artifacts/mlruns) treated as data, not code."
+    ]
+  },
+  "assumptions": [
+    "Repo root is /home/n-b/Octa.",
+    "No network access used; analysis is local.",
+    "Responsibility inference based on directory names and common OCTA conventions."
+  ],
+  "top_level_directories": [
+    {"name": "raw", "files": 7211, "py": 0, "responsibility": "data artifacts"},
+    {"name": "reports", "files": 5376, "py": 0, "responsibility": "generated reports"},
+    {"name": "tests", "files": 875, "py": 220, "responsibility": "test suite"},
+    {"name": "scripts", "files": 212, "py": 102, "responsibility": "entrypoints and tooling"},
+    {"name": "octa_core", "files": 116, "py": 55, "responsibility": "core system utilities and risk"},
+    {"name": "octa_training", "files": 61, "py": 30, "responsibility": "training pipeline"},
+    {"name": "octa_ops", "files": 58, "py": 29, "responsibility": "operations and orchestration"},
+    {"name": "octa_strategy", "files": 44, "py": 22, "responsibility": "strategy lifecycle and gates"},
+    {"name": "octa_reports", "files": 41, "py": 20, "responsibility": "report generation"},
+    {"name": "octa_alpha", "files": 38, "py": 19, "responsibility": "alpha pipeline"},
+    {"name": "octa_assets", "files": 38, "py": 19, "responsibility": "asset domain models"},
+    {"name": "octa_vertex", "files": 38, "py": 19, "responsibility": "execution layer"},
+    {"name": "octa_sentinel", "files": 32, "py": 16, "responsibility": "safety policies"}
+  ],
+  "entrypoints": [
+    "octa_training/run_train.py",
+    "octa_training/run_daemon.py",
+    "scripts/train_multiframe_symbol.py",
+    "scripts/e2e_orchestrator.py",
+    "scripts/octa_autopilot.py",
+    "scripts/run_nexus_paper.py",
+    "scripts/global_gate_diagnose.py",
+    "scripts/batch_gate_check_indices_1d.py",
+    "scripts/batch_gate_check_indices_multitf.py",
+    "dagster/repository.py"
+  ],
+  "dependency_graph": {
+    "top_fan_out": [
+      {"module": "octa_training.run_train", "fan_out": 18},
+      {"module": "octa_training.core.pipeline", "fan_out": 18},
+      {"module": "scripts.train_and_save", "fan_out": 15},
+      {"module": "scripts.train_multiframe_symbol", "fan_out": 13},
+      {"module": "octa_nexus.paper_runtime", "fan_out": 10}
+    ],
+    "top_fan_in": [
+      {"module": "octa_training.core.config", "fan_in": 25},
+      {"module": "octa_training.core.state", "fan_in": 20},
+      {"module": "octa_training.core.io_parquet", "fan_in": 18},
+      {"module": "octa_ledger.store", "fan_in": 18},
+      {"module": "octa_training.core.pipeline", "fan_in": 17}
+    ],
+    "cycles": [
+      ["scripts.hyperparam_search", "scripts.train_and_save", "scripts.hyperparam_search"]
+    ]
+  },
+  "redundancy_clusters": {
+    "safe": {
+      "config_loading": [
+        "octa_training/core/config.py",
+        "scripts/octa_autopilot.py",
+        "scripts/run_dashboard.py",
+        "scripts/run_octa.py",
+        "octa_core/control_plane/api.py",
+        "octa_ops/autopilot/universe.py",
+        "octa_stream/manifest.py"
+      ],
+      "logging": [
+        "octa_training/core/logging.py",
+        "scripts/train_options_time_series.py",
+        "scripts/train_options_lstm.py",
+        "scripts/run_all_assets.py"
+      ],
+      "path_env": [
+        "octa_training/core/fs_utils.py",
+        "octa_fabric/loader.py",
+        "scripts/train_and_save.py"
+      ]
+    },
+    "medium": {
+      "data_loading": [
+        "octa_training/core/io_parquet.py",
+        "scripts/normalize_parquets.py",
+        "scripts/convert_indices_to_parquet.py",
+        "scripts/convert_us_indices_zip_to_parquet.py"
+      ],
+      "feature_engineering": [
+        "octa_training/core/features.py",
+        "okta_altdat/features/feature_builder.py"
+      ],
+      "splits": [
+        "octa_training/core/splits.py",
+        "scripts/cross_validation.py",
+        "scripts/train_and_save.py"
+      ]
+    },
+    "high": {
+      "metrics_and_gates": [
+        "octa_training/core/evaluation.py",
+        "octa_training/core/gates.py",
+        "octa_strategy/paper_gates.py",
+        "octa_sentinel/paper_gates.py",
+        "scripts/batch_train_and_gate.py"
+      ],
+      "execution_and_portfolio": [
+        "octa_vertex/*",
+        "octa_strategy/*",
+        "octa_sentinel/*"
+      ]
+    }
+  },
+  "kpi_inconsistencies": [
+    {
+      "metric": "sharpe",
+      "difference": "annualization and return series differ across training, ledger, and scripts",
+      "files": [
+        "octa_training/core/evaluation.py",
+        "octa_ledger/performance.py",
+        "scripts/backtest.py"
+      ]
+    },
+    {
+      "metric": "max_drawdown",
+      "difference": "computed from equity vs prices vs NAV vs compounded returns",
+      "files": [
+        "octa_training/core/evaluation.py",
+        "octa_ledger/performance.py",
+        "octa_reports/investor_reports.py",
+        "octa_alpha/pre_risk.py"
+      ]
+    },
+    {
+      "metric": "annualization",
+      "difference": "252 vs 365 day conventions and inferred bars per day",
+      "files": [
+        "octa_training/core/evaluation.py",
+        "octa_ledger/performance.py",
+        "octa_reports/investor_reports.py",
+        "scripts/backtest.py"
+      ]
+    }
+  ],
+  "safe_refactor_strategy": [
+    {
+      "proposal": "shared YAML config loader",
+      "risk": "low",
+      "complexity": "S",
+      "benefit": "consistent overlays and parsing",
+      "rollback": "remove delegation, revert to local helpers",
+      "validation": "config dict equivalence checks"
+    },
+    {
+      "proposal": "shared logging setup",
+      "risk": "low",
+      "complexity": "S",
+      "benefit": "auditability and log uniformity",
+      "rollback": "restore logging.basicConfig",
+      "validation": "log format and level parity"
+    },
+    {
+      "proposal": "shared path/env resolver",
+      "risk": "low",
+      "complexity": "S",
+      "benefit": "consistent path resolution",
+      "rollback": "restore inline paths",
+      "validation": "path parity checks"
+    }
+  ],
+  "do_not_touch_registry": [
+    "octa_vertex",
+    "octa_strategy",
+    "octa_sentinel",
+    "octa_training/core",
+    "octa_core",
+    "octa_capital",
+    "octa_fund",
+    "octa_governance",
+    "octa_audit",
+    "octa_reg",
+    "octa_compliance"
+  ],
+  "risk_register": [
+    "KPI drift due to inconsistent sharpe/sortino/max_drawdown definitions",
+    "Multiple config loaders with divergent overlay logic",
+    "Mixed logging setups reduce auditability",
+    "Ad-hoc data prep scripts bypass core validation",
+    "Script-level import cycle (hyperparam_search <-> train_and_save)"
+  ],
+  "validation_plan": [
+    "Golden-run reproducibility checks",
+    "Output artifact hashing",
+    "Logging parity checks",
+    "Performance baseline comparison",
+    "Risk-gate behavior parity"
+  ]
+}

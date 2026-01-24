@@ -1,0 +1,21 @@
+{"type": "START", "ts_utc": "2026-01-08T18:48:33.188383+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "AISPW", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-08T18:48:33.189177+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "AISPW", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/AISPW_1H.parquet", "parquet_sha256": "4213b851f40bd8782ea468d582f9a087b5a4db8066051c47cb99d8185c32939d"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T18:48:33.218524+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "AISPW", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T18:52:17.649646+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "AISPW", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T18:52:17.650866+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "AISPW", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/AISPW.meta.json"}
+{"type": "START", "ts_utc": "2026-01-08T20:48:56.118887+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "AISPW", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-08T20:48:56.120311+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "AISPW", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/AISPW_1H.parquet", "parquet_sha256": "4213b851f40bd8782ea468d582f9a087b5a4db8066051c47cb99d8185c32939d"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T20:48:56.159144+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "AISPW", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T20:54:51.909718+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "AISPW", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T20:54:51.910911+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "AISPW", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/AISPW.meta.json"}
+{"type": "START", "ts_utc": "2026-01-08T21:30:14.905468+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "AISPW", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-08T21:30:14.907632+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "AISPW", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/AISPW_1H.parquet", "parquet_sha256": "4213b851f40bd8782ea468d582f9a087b5a4db8066051c47cb99d8185c32939d"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T21:30:14.942501+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "AISPW", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T21:31:14.432844+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "AISPW", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T21:31:14.434615+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "AISPW", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/AISPW.meta.json"}
+{"type": "START", "ts_utc": "2026-01-09T06:37:43.149347+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AISPW", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-09T06:37:43.150594+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AISPW", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/AISPW_1H.parquet", "parquet_sha256": "4213b851f40bd8782ea468d582f9a087b5a4db8066051c47cb99d8185c32939d"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-09T06:37:43.186691+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AISPW", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-09T06:38:53.630258+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AISPW", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_PKL_DEBUG_FAIL", "ts_utc": "2026-01-09T06:38:53.641547+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AISPW", "tf": "1H", "pkl": "/home/n-b/Octa/raw/PKL/stocks_g1/1H_DEBUG_FAIL/AISPW.pkl", "pkl_sha256": "4dbe20fb283166ee93e7adecdbf187a22c5b3222d0e913595b2338b8709b2e50", "artifact_kind": "debug"}
+{"type": "WRITE_META", "ts_utc": "2026-01-09T06:38:53.642607+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AISPW", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/AISPW.meta.json"}

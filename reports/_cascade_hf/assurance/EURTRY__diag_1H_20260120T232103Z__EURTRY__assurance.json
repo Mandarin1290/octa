@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-21T00:39:08.755955+00:00",
+  "symbol": "EURTRY",
+  "run_id": "diag_1H_20260120T232103Z__EURTRY",
+  "snapshot_id": "5626565c6ef9cb724aaf9ae285d79607a5b511434000fab7907d608380138ca2",
+  "attestation_hash": "4c2e4724d5f506752a536dc70ef0d3fbf2ed7cb1912de5befe1234daf168ae58",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T00:39:08.756080+00:00",
+      "action": "snapshot_taken",
+      "id": "5626565c6ef9cb724aaf9ae285d79607a5b511434000fab7907d608380138ca2",
+      "name": "training_run",
+      "evidence_hash": "5626565c6ef9cb724aaf9ae285d79607a5b511434000fab7907d608380138ca2"
+    },
+    {
+      "ts": "2026-01-21T00:39:08.756301+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "4c2e4724d5f506752a536dc70ef0d3fbf2ed7cb1912de5befe1234daf168ae58"
+    },
+    {
+      "ts": "2026-01-21T00:39:08.756320+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "07b6de2ead9b549ba4eff97d543e6d4722838242ee154f31decf6726da932f0f"
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "path": "raw/Stock_parquet/ARGO_A_1D.parquet",
+  "n": 1294,
+  "vol_ann": 0.15325733683806805,
+  "max_drawdown": -0.352670675627874,
+  "fred": {
+    "enabled": true,
+    "series": [
+      "FEDFUNDS",
+      "DGS10",
+      "DGS2",
+      "UNRATE"
+    ],
+    "window": {
+      "start_ts": "2024-09-07 00:00:00+00:00",
+      "end_ts": "2025-09-12 00:00:00+00:00"
+    },
+    "data": {
+      "FEDFUNDS": {
+        "last": 4.22,
+        "last_date": "2025-09-01 00:00:00+00:00",
+        "d30": 0.0
+      },
+      "DGS10": {
+        "last": 4.06,
+        "last_date": "2025-09-12 00:00:00+00:00",
+        "d30": -0.1800000000000006
+      },
+      "DGS2": {
+        "last": 3.56,
+        "last_date": "2025-09-12 00:00:00+00:00",
+        "d30": -0.10999999999999988
+      },
+      "UNRATE": {
+        "last": 4.4,
+        "last_date": "2025-09-01 00:00:00+00:00",
+        "d30": 0.0
+      }
+    }
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true,
+    "reason": "ticker_not_mapped"
+  }
+}

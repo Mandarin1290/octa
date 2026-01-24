@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/EURNZD_1D.parquet",
+  "n": 4153,
+  "vol_ann": 0.09329845730022969,
+  "max_drawdown": -0.2999764704704404,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

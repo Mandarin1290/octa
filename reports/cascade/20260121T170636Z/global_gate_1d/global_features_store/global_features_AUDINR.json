@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/AUDINR_1D.parquet",
+  "n": 4147,
+  "vol_ann": 0.10377123980501951,
+  "max_drawdown": -0.3018018838764255,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

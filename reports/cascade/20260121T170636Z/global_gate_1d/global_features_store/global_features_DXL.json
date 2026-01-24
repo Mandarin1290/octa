@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/DXL_full_1day.parquet",
+  "n": 3218,
+  "vol_ann": 0.18949528893060547,
+  "max_drawdown": -0.3708622941721881,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

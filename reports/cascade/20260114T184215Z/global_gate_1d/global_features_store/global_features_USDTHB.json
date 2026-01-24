@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/USDTHB_1D.parquet",
+  "n": 4184,
+  "vol_ann": 0.08894646031836528,
+  "max_drawdown": -0.19481444937784353,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

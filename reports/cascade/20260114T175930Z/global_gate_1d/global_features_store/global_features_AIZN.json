@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/AIZN_1D.parquet",
+  "n": 1281,
+  "vol_ann": 0.18422375556698406,
+  "max_drawdown": -0.35514512507055107,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

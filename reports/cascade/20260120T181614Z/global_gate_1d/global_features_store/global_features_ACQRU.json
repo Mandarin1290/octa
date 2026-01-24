@@ -1,0 +1,46 @@
+{
+  "path": "raw/Stock_parquet/ACQRU_1D.parquet",
+  "n": 372,
+  "vol_ann": 0.07279438425963836,
+  "max_drawdown": -0.042156862745098,
+  "fred": {
+    "enabled": true,
+    "series": [
+      "FEDFUNDS",
+      "DGS10",
+      "DGS2",
+      "UNRATE"
+    ],
+    "window": {
+      "start_ts": "2022-03-03 00:00:00+00:00",
+      "end_ts": "2023-03-08 00:00:00+00:00"
+    },
+    "data": {
+      "FEDFUNDS": {
+        "last": 4.65,
+        "last_date": "2023-03-01 00:00:00+00:00",
+        "d30": 0.08000000000000007
+      },
+      "DGS10": {
+        "last": 3.98,
+        "last_date": "2023-03-08 00:00:00+00:00",
+        "d30": 0.3500000000000001
+      },
+      "DGS2": {
+        "last": 5.05,
+        "last_date": "2023-03-08 00:00:00+00:00",
+        "d30": 0.6099999999999994
+      },
+      "UNRATE": {
+        "last": 3.5,
+        "last_date": "2023-03-01 00:00:00+00:00",
+        "d30": -0.10000000000000009
+      }
+    }
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true,
+    "reason": "ticker_not_mapped"
+  }
+}

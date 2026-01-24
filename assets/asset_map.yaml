@@ -1,0 +1,13 @@
+# symbol -> asset_class mapping
+AAPL: equity
+MSFT: equity
+QQQ: equity
+SPY: equity
+SPX: index
+ES: futures
+BTC: crypto
+AAPL_OPT: options
+# added for tests
+BOND1: bond
+EURUSD: forex
+# fallback: if a symbol is not present, the pipeline will infer asset class automatically

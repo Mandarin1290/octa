@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/EURUSD_1D.parquet",
+  "n": 4155,
+  "vol_ann": 0.08329477724700159,
+  "max_drawdown": -0.3530835890346292,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

@@ -1,0 +1,1 @@
+{"ts": "2026-01-22T18:09:14.494317+00:00", "event": "training_blocked", "symbol": "AUDCAD", "timeframe": "1D", "reason": "train config does not match gate config (fingerprint mismatch)", "run_id": "smoke_micro"}

@@ -1,0 +1,7 @@
+# ruff.toml expects configuration at top-level (not under [tool.ruff]).
+line-length = 88
+
+[lint]
+select = ["E", "F", "W", "I", "B"]
+# Temporarily ignore long lines, imports-not-at-top, ambiguous single-letter vars and broad pytest exception asserts
+ignore = ["E501", "E402", "E741", "B017"]

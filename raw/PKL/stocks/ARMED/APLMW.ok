@@ -1,0 +1,29 @@
+{
+  "symbol": "APLMW",
+  "asset_profile": "stock",
+  "run_id": "stocks_pkl_1d1h_rerun_h1fix3",
+  "created_utc": "2026-01-08T16:57:20.193730+00:00",
+  "armed_mode": "ARMED_1D_ONLY",
+  "timeframe_status": {
+    "1D": "PASS",
+    "1H": "SKIP_H1_NOT_ELIGIBLE"
+  },
+  "pkl_paths": {
+    "1D": "/home/n-b/Octa/raw/PKL/stocks/1D/APLMW.pkl",
+    "1H": null
+  },
+  "pkl_sha256": {
+    "1D": "cbfcda4fe7a9fc119ef05ca13b112cb10b0689a4072adfe6535a8149ff83de2c",
+    "1H": null
+  },
+  "gate": {
+    "1D": {
+      "status": "PASS_LIMITED_STATISTICAL_CONFIDENCE",
+      "gate_version": "hf_gate_2026-01-03_v1"
+    },
+    "1H": {
+      "status": "SKIP_H1_NOT_ELIGIBLE",
+      "gate_version": "hf_gate_2026-01-03_v1"
+    }
+  }
+}

@@ -1,0 +1,5 @@
+{"type": "START", "ts_utc": "2026-01-09T12:33:04.661050+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AMZE", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-09T12:33:04.673983+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AMZE", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/AMZE_1D.parquet", "parquet_sha256": "7f4d380a956411a8739d33b0c28525fa6c4a9cc857a3940c6caa45632fec010a"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-09T12:33:04.674749+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AMZE", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-09T12:35:19.679410+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AMZE", "tf": "1D", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-09T12:35:19.738248+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AMZE", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_verify/stocks_1d1h_verify101_iso_20260109T095018Z/meta/AMZE.meta.json"}

@@ -1,0 +1,35 @@
+{"type": "START", "ts_utc": "2026-01-08T14:52:44.273882+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ANGX", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-08T14:52:44.275241+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ANGX", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ANGX_1D.parquet", "parquet_sha256": "0ab1d1dc8b53769504773741cd052d099fe04fe058720ce4298e61ef6496f821"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T14:52:44.275616+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ANGX", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T14:52:55.152400+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ANGX", "tf": "1D", "passed": true, "error": null}
+{"type": "WRITE_PKL", "ts_utc": "2026-01-08T14:52:55.161399+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ANGX", "tf": "1D", "pkl": "/home/n-b/Octa/raw/PKL/stocks/1D/ANGX.pkl", "pkl_sha256": "ac7c1aecfd064293bc0a62a10639a7673c72504b5934bbd52965435c05bb2a0e"}
+{"type": "LOAD", "ts_utc": "2026-01-08T14:52:55.163011+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ANGX", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ANGX_1H.parquet", "parquet_sha256": "70dce3388a39f2b63a033dd0014a5c355422c865af85e681f1d47592d83832ea"}
+{"type": "SKIP", "ts_utc": "2026-01-08T14:52:55.304793+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ANGX", "tf": "1H", "reason": "not_hourly_like"}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T14:52:55.305444+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ANGX", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks/meta/ANGX.meta.json"}
+{"type": "ARMED", "ts_utc": "2026-01-08T14:52:55.305666+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ANGX", "ok": true, "armed": "/home/n-b/Octa/raw/PKL/stocks/ARMED/ANGX.ok"}
+{"type": "START", "ts_utc": "2026-01-08T15:53:33.436123+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ANGX", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-08T15:53:33.438882+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ANGX", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ANGX_1D.parquet", "parquet_sha256": "0ab1d1dc8b53769504773741cd052d099fe04fe058720ce4298e61ef6496f821"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T15:53:33.439643+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ANGX", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T15:53:33.507216+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ANGX", "tf": "1D", "passed": true, "error": null}
+{"type": "LOAD", "ts_utc": "2026-01-08T15:53:33.542483+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ANGX", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ANGX_1H.parquet", "parquet_sha256": "70dce3388a39f2b63a033dd0014a5c355422c865af85e681f1d47592d83832ea"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T15:53:33.571504+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ANGX", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T15:56:20.624091+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ANGX", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T15:56:20.627603+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ANGX", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks/meta/ANGX.meta.json"}
+{"type": "DISARM", "ts_utc": "2026-01-08T15:56:20.627852+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ANGX", "ok": true, "armed": "/home/n-b/Octa/raw/PKL/stocks/ARMED/ANGX.ok"}
+{"type": "START", "ts_utc": "2026-01-08T16:20:21.650370+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ANGX", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-08T16:20:21.652677+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ANGX", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ANGX_1D.parquet", "parquet_sha256": "0ab1d1dc8b53769504773741cd052d099fe04fe058720ce4298e61ef6496f821"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T16:20:21.653209+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ANGX", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T16:20:21.712824+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ANGX", "tf": "1D", "passed": true, "error": null}
+{"type": "LOAD", "ts_utc": "2026-01-08T16:20:21.738426+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ANGX", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ANGX_1H.parquet", "parquet_sha256": "70dce3388a39f2b63a033dd0014a5c355422c865af85e681f1d47592d83832ea"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T16:20:21.784642+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ANGX", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T16:23:15.229509+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ANGX", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T16:23:15.232728+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ANGX", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks/meta/ANGX.meta.json"}
+{"type": "START", "ts_utc": "2026-01-08T16:49:30.080828+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ANGX", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-08T16:49:30.082658+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ANGX", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ANGX_1D.parquet", "parquet_sha256": "0ab1d1dc8b53769504773741cd052d099fe04fe058720ce4298e61ef6496f821"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T16:49:30.083327+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ANGX", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T16:49:56.246881+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ANGX", "tf": "1D", "passed": true, "error": null}
+{"type": "WRITE_PKL", "ts_utc": "2026-01-08T16:49:56.277368+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ANGX", "tf": "1D", "pkl": "/home/n-b/Octa/raw/PKL/stocks/1D/ANGX.pkl", "pkl_sha256": "dc84a5dab71648f148f79b14143cbe4e088b1612c9b95a062656b90563860324"}
+{"type": "LOAD", "ts_utc": "2026-01-08T16:49:56.284201+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ANGX", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ANGX_1H.parquet", "parquet_sha256": "70dce3388a39f2b63a033dd0014a5c355422c865af85e681f1d47592d83832ea"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T16:49:56.345783+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ANGX", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T16:52:31.840900+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ANGX", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T16:52:31.846563+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ANGX", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks/meta/ANGX.meta.json"}

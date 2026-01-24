@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-14T19:45:37.099108+00:00",
+  "symbol": "ATO",
+  "run_id": "20260114T184215Z__1H",
+  "snapshot_id": "507896541484246d26942a00dc7721e8fe873eb51f5d75b5c6f0d233ae0d9e05",
+  "attestation_hash": "680a0336a806fc29e3cb0b5d2058ba100b6ac3d683f1fa5909054d9356712007",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-14T19:45:37.099350+00:00",
+      "action": "snapshot_taken",
+      "id": "507896541484246d26942a00dc7721e8fe873eb51f5d75b5c6f0d233ae0d9e05",
+      "name": "training_run",
+      "evidence_hash": "507896541484246d26942a00dc7721e8fe873eb51f5d75b5c6f0d233ae0d9e05"
+    },
+    {
+      "ts": "2026-01-14T19:45:37.099770+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "680a0336a806fc29e3cb0b5d2058ba100b6ac3d683f1fa5909054d9356712007"
+    },
+    {
+      "ts": "2026-01-14T19:45:37.099805+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "776f4dffeec8bca414af802af77c838c407b73f53d586e921242da57368dfade"
+    }
+  ]
+}

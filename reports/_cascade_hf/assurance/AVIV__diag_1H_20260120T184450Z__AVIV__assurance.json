@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-20T19:47:46.395432+00:00",
+  "symbol": "AVIV",
+  "run_id": "diag_1H_20260120T184450Z__AVIV",
+  "snapshot_id": "205be4dbcd7b70cca2cf5626d6931e1ac7b40d49402c3da17dfb8a5485faf1a8",
+  "attestation_hash": "d8e3eb3d0128d45441a68b36add025e11e04f81358e23771e8d9d039cdab7bcd",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-20T19:47:46.395575+00:00",
+      "action": "snapshot_taken",
+      "id": "205be4dbcd7b70cca2cf5626d6931e1ac7b40d49402c3da17dfb8a5485faf1a8",
+      "name": "training_run",
+      "evidence_hash": "205be4dbcd7b70cca2cf5626d6931e1ac7b40d49402c3da17dfb8a5485faf1a8"
+    },
+    {
+      "ts": "2026-01-20T19:47:46.395886+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "d8e3eb3d0128d45441a68b36add025e11e04f81358e23771e8d9d039cdab7bcd"
+    },
+    {
+      "ts": "2026-01-20T19:47:46.395907+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "5920756c47413b37807939336c3985bc07a0ac64a02bf55131c1249a39dc926a"
+    }
+  ]
+}

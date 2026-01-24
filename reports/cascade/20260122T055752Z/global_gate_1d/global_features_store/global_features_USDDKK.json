@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/USDDKK_1D.parquet",
+  "n": 4184,
+  "vol_ann": 0.08292776906325397,
+  "max_drawdown": -0.19378788364709276,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

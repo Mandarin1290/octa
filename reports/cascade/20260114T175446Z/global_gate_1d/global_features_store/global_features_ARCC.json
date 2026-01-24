@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/ARCC_1D.parquet",
+  "n": 3327,
+  "vol_ann": 0.23428478090590105,
+  "max_drawdown": -0.5676863714088756,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

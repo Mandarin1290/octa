@@ -1,0 +1,18 @@
+version: "3.8"
+
+# NOTE:
+# - This is a LOCAL dev composition for a risk service endpoint.
+# - It is NOT a bundled OpenGamma Java distribution.
+# - In LIVE mode, OCTA must NOT accept stub risk outputs.
+
+services:
+  octa-risk-service:
+    image: python:3.13-slim
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: ["python", "-m", "octa_core.risk_institutional.opengamma_stub_service"]
+    ports:
+      - "8090:8090"
+    environment:
+      - OG_STUB_MODE=1

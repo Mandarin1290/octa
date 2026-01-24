@@ -1,0 +1,31 @@
+{
+  "source": "scan:raw/Stock_parquet",
+  "stock_dir": "raw/Stock_parquet",
+  "policy": {
+    "min_history_days": 252,
+    "max_drawdown_max": 0.6,
+    "max_vol_annual": 2.5,
+    "fred_enabled": false,
+    "edgar_enabled": false,
+    "edgar_user_agent": "OCTA/1.0 (research; contact=ops@example.com)",
+    "fred_series": [
+      "FEDFUNDS",
+      "DGS10",
+      "DGS2",
+      "UNRATE"
+    ],
+    "edgar_rate_limit_per_minute": 8
+  },
+  "counts": {
+    "total": 747,
+    "PASS": 148,
+    "FAIL": 599,
+    "SKIP": 0
+  },
+  "outputs": {
+    "global_gate_status": "reports/cascade/20260114T175930Z/global_gate_1d/global_gate_status.json",
+    "pass_symbols": "reports/cascade/20260114T175930Z/global_gate_1d/pass_symbols_1d.txt",
+    "fail_symbols": "reports/cascade/20260114T175930Z/global_gate_1d/fail_symbols_1d.txt",
+    "skip_symbols": "reports/cascade/20260114T175930Z/global_gate_1d/skip_symbols_1d.txt"
+  }
+}

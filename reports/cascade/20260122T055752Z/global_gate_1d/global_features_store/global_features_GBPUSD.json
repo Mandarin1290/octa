@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/GBPUSD_1D.parquet",
+  "n": 4153,
+  "vol_ann": 0.08770777566480296,
+  "max_drawdown": -0.3773968572111098,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

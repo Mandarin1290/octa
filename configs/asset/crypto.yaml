@@ -1,0 +1,23 @@
+gates:
+  by_asset_class:
+    crypto:
+      sharpe_min: 0.3
+      max_drawdown_max: 0.4
+      min_trades: 20
+      required_folds_pass_ratio: 0.5
+
+broker:
+  name: ibkr
+  cost_bps: 2.0
+  spread_bps: 1.0
+  stress_cost_multiplier: 3.0
+
+signal:
+  vol_target: 0.15
+
+features:
+  horizons: [1, 3]
+
+liquidity:
+  enabled: false
+  min_adv_usd: 1000000

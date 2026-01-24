@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/MIDG_full_1day.parquet",
+  "n": 3558,
+  "vol_ann": 0.19463339681314254,
+  "max_drawdown": -0.39217482204191356,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

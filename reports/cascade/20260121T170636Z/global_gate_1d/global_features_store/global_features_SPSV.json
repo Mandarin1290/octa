@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/SPSV_full_1day.parquet",
+  "n": 3558,
+  "vol_ann": 0.2226835346940876,
+  "max_drawdown": -0.49195006457167456,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

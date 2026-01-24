@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-21T10:55:47.914713+00:00",
+  "symbol": "SP600",
+  "run_id": "diag_1H_20260121T092943Z__SP600",
+  "snapshot_id": "6828c661163ae56d0e5313046ef5700955fde71d41ace2b9e810c62be5eda7d1",
+  "attestation_hash": "91087398c1020866634496929f35bd7044af745e09c496ceef36de4b1eb979c3",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T10:55:47.914868+00:00",
+      "action": "snapshot_taken",
+      "id": "6828c661163ae56d0e5313046ef5700955fde71d41ace2b9e810c62be5eda7d1",
+      "name": "training_run",
+      "evidence_hash": "6828c661163ae56d0e5313046ef5700955fde71d41ace2b9e810c62be5eda7d1"
+    },
+    {
+      "ts": "2026-01-21T10:55:47.915177+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "91087398c1020866634496929f35bd7044af745e09c496ceef36de4b1eb979c3"
+    },
+    {
+      "ts": "2026-01-21T10:55:47.915196+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "PASS",
+      "evidence_hash": "24c424c26015d2bd18cb109db82479e95086804c781098558172ebb4a6787319"
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+# Fast multi-timeframe config for DJR (index)
+# Uses symlinked small raw dir to avoid scanning huge directories.
+paths:
+  raw_dir: raw/tmp_djr_multi
+
+# Default horizons for 1D/1H/30m.
+features:
+  horizons: [1]
+
+# Non-HFT walk-forward defaults (override asset overlay if needed)
+splits:
+  # Use last folds for more realistic (recent) evaluation.
+  n_folds: -10
+  train_window: 1000
+  test_window: 200
+  step: 200
+  purge_size: 10
+  embargo_size: 5
+  min_train_size: 500
+  min_test_size: 100
+  expanding: true
+  min_folds_required: 1
+
+# Per-layer overrides (used by scripts/train_multiframe_symbol.py; ignored by core TrainingConfig loader).
+# Goal: train all TFs, but keep 5m/1m research-oriented and less turnover-heavy.
+layers:
+  struct_1h:
+    features:
+      horizons: [1]
+    signal:
+      upper_q: 0.95
+      lower_q: 0.05
+
+  struct_30m:
+    features:
+      horizons: [1]
+    signal:
+      upper_q: 0.95
+      lower_q: 0.05
+
+  entry_5m:
+    features:
+      horizons: [3]
+    splits:
+      # Intraday has many more bars; keep eval bounded.
+      n_folds: -3
+    signal:
+      upper_q: 0.995
+      lower_q: 0.005
+      leverage_cap: 0.5
+      vol_target: 0.01
+
+  exec_1m:
+    features:
+      horizons: [5]
+    splits:
+      # 1m is huge; keep eval bounded.
+      n_folds: -2
+    signal:
+      upper_q: 0.995
+      lower_q: 0.005
+      leverage_cap: 0.3
+      vol_target: 0.008

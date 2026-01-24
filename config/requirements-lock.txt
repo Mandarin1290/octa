@@ -1,0 +1,11 @@
+numpy==1.26.4
+pandas==2.2.3
+pyarrow==11.0.0
+mlflow==3.8.1
+optuna==4.6.0
+scikit-learn==1.8.0
+joblib==1.5.3
+lightgbm==4.6.0
+xgboost==3.1.2
+evidently==0.7.18
+prometheus-client==0.23.1

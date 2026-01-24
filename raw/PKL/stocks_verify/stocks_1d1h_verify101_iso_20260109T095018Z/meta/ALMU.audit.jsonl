@@ -1,0 +1,5 @@
+{"type": "START", "ts_utc": "2026-01-09T10:47:20.868174+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "ALMU", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-09T10:47:20.874488+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "ALMU", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ALMU_1D.parquet", "parquet_sha256": "e20060748f85bfe4272f43155828c9f8656cf5820c61ea7dfce97924094f95fd"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-09T10:47:20.875098+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "ALMU", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-09T10:47:45.172776+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "ALMU", "tf": "1D", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-09T10:47:45.195040+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "ALMU", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_verify/stocks_1d1h_verify101_iso_20260109T095018Z/meta/ALMU.meta.json"}

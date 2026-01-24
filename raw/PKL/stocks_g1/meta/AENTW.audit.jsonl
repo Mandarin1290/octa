@@ -1,0 +1,21 @@
+{"type": "START", "ts_utc": "2026-01-08T18:40:03.572688+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "AENTW", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-08T18:40:03.573466+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "AENTW", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/AENTW_1H.parquet", "parquet_sha256": "88e9eb0145056a5596625a500bf911972d334fcae744aa3c038f15af6a4ff087"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T18:40:03.580711+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "AENTW", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T18:42:09.622830+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "AENTW", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T18:42:09.624965+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "AENTW", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/AENTW.meta.json"}
+{"type": "START", "ts_utc": "2026-01-08T20:40:00.724578+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "AENTW", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-08T20:40:00.725695+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "AENTW", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/AENTW_1H.parquet", "parquet_sha256": "88e9eb0145056a5596625a500bf911972d334fcae744aa3c038f15af6a4ff087"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T20:40:00.735582+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "AENTW", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T20:42:14.148786+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "AENTW", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T20:42:14.150992+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "AENTW", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/AENTW.meta.json"}
+{"type": "START", "ts_utc": "2026-01-08T21:28:02.404374+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "AENTW", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-08T21:28:02.405618+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "AENTW", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/AENTW_1H.parquet", "parquet_sha256": "88e9eb0145056a5596625a500bf911972d334fcae744aa3c038f15af6a4ff087"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T21:28:02.412512+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "AENTW", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T21:28:41.058014+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "AENTW", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T21:28:41.059453+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "AENTW", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/AENTW.meta.json"}
+{"type": "START", "ts_utc": "2026-01-09T06:34:50.579645+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AENTW", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-09T06:34:50.580745+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AENTW", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/AENTW_1H.parquet", "parquet_sha256": "88e9eb0145056a5596625a500bf911972d334fcae744aa3c038f15af6a4ff087"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-09T06:34:50.589571+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AENTW", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-09T06:35:43.366893+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AENTW", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_PKL_DEBUG_FAIL", "ts_utc": "2026-01-09T06:35:43.370604+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AENTW", "tf": "1H", "pkl": "/home/n-b/Octa/raw/PKL/stocks_g1/1H_DEBUG_FAIL/AENTW.pkl", "pkl_sha256": "b0a8f79544aaf7399b6f47ee9ea9c5611028fed0271fa392140b9285a5cffa84", "artifact_kind": "debug"}
+{"type": "WRITE_META", "ts_utc": "2026-01-09T06:35:43.371994+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "AENTW", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/AENTW.meta.json"}

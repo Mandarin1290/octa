@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/ACQRU_1D.parquet",
+  "n": 372,
+  "vol_ann": 0.07279438425963836,
+  "max_drawdown": -0.042156862745098,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

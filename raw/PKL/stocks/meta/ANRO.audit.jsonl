@@ -1,0 +1,35 @@
+{"type": "START", "ts_utc": "2026-01-08T14:53:09.278569+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ANRO", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-08T14:53:09.280145+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ANRO", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ANRO_1D.parquet", "parquet_sha256": "d58804b135d914c1d907f8cef11fbee25da0e62984d592fd0605d8062e98b165"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T14:53:09.280492+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ANRO", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T14:53:20.148152+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ANRO", "tf": "1D", "passed": true, "error": null}
+{"type": "WRITE_PKL", "ts_utc": "2026-01-08T14:53:20.158525+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ANRO", "tf": "1D", "pkl": "/home/n-b/Octa/raw/PKL/stocks/1D/ANRO.pkl", "pkl_sha256": "eae703db44fe65cbec4d7e26334b2ecbbb682be5ebe2801918feb83bcc2d6479"}
+{"type": "LOAD", "ts_utc": "2026-01-08T14:53:20.160443+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ANRO", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ANRO_1H.parquet", "parquet_sha256": "dbe975fac95599ab6dc71e519c28418b300e5e63e9b16845398d24e3143d9d9f"}
+{"type": "SKIP", "ts_utc": "2026-01-08T14:53:20.191238+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ANRO", "tf": "1H", "reason": "not_hourly_like"}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T14:53:20.191941+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ANRO", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks/meta/ANRO.meta.json"}
+{"type": "ARMED", "ts_utc": "2026-01-08T14:53:20.192251+00:00", "run_id": "stocks_pkl_1d1h_20260108T144854Z", "symbol": "ANRO", "ok": true, "armed": "/home/n-b/Octa/raw/PKL/stocks/ARMED/ANRO.ok"}
+{"type": "START", "ts_utc": "2026-01-08T15:56:20.658976+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ANRO", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-08T15:56:20.663831+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ANRO", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ANRO_1D.parquet", "parquet_sha256": "d58804b135d914c1d907f8cef11fbee25da0e62984d592fd0605d8062e98b165"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T15:56:20.664445+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ANRO", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T15:56:20.729025+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ANRO", "tf": "1D", "passed": true, "error": null}
+{"type": "LOAD", "ts_utc": "2026-01-08T15:56:20.751687+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ANRO", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ANRO_1H.parquet", "parquet_sha256": "dbe975fac95599ab6dc71e519c28418b300e5e63e9b16845398d24e3143d9d9f"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T15:56:20.801088+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ANRO", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T15:58:23.132359+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ANRO", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T15:58:23.135247+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ANRO", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks/meta/ANRO.meta.json"}
+{"type": "DISARM", "ts_utc": "2026-01-08T15:58:23.135469+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix", "symbol": "ANRO", "ok": true, "armed": "/home/n-b/Octa/raw/PKL/stocks/ARMED/ANRO.ok"}
+{"type": "START", "ts_utc": "2026-01-08T16:23:15.296009+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ANRO", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-08T16:23:15.299398+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ANRO", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ANRO_1D.parquet", "parquet_sha256": "d58804b135d914c1d907f8cef11fbee25da0e62984d592fd0605d8062e98b165"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T16:23:15.300034+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ANRO", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T16:23:15.356749+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ANRO", "tf": "1D", "passed": true, "error": null}
+{"type": "LOAD", "ts_utc": "2026-01-08T16:23:15.383811+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ANRO", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ANRO_1H.parquet", "parquet_sha256": "dbe975fac95599ab6dc71e519c28418b300e5e63e9b16845398d24e3143d9d9f"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T16:23:15.444613+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ANRO", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T16:25:23.771505+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ANRO", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T16:25:23.776695+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix2", "symbol": "ANRO", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks/meta/ANRO.meta.json"}
+{"type": "START", "ts_utc": "2026-01-08T16:53:25.892732+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ANRO", "asset_profile": "stock"}
+{"type": "LOAD", "ts_utc": "2026-01-08T16:53:25.896403+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ANRO", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ANRO_1D.parquet", "parquet_sha256": "d58804b135d914c1d907f8cef11fbee25da0e62984d592fd0605d8062e98b165"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T16:53:25.900029+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ANRO", "tf": "1D"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T16:53:50.615613+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ANRO", "tf": "1D", "passed": true, "error": null}
+{"type": "WRITE_PKL", "ts_utc": "2026-01-08T16:53:50.638873+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ANRO", "tf": "1D", "pkl": "/home/n-b/Octa/raw/PKL/stocks/1D/ANRO.pkl", "pkl_sha256": "b120083a2cee23b9f28df1f9a5189e34ede397d0a1c2f72a59546fba998c68b6"}
+{"type": "LOAD", "ts_utc": "2026-01-08T16:53:50.641807+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ANRO", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ANRO_1H.parquet", "parquet_sha256": "dbe975fac95599ab6dc71e519c28418b300e5e63e9b16845398d24e3143d9d9f"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T16:53:50.705308+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ANRO", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T16:55:53.844633+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ANRO", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T16:55:53.850242+00:00", "run_id": "stocks_pkl_1d1h_rerun_h1fix3", "symbol": "ANRO", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks/meta/ANRO.meta.json"}

@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/NZDJPY_1D.parquet",
+  "n": 4153,
+  "vol_ann": 0.12198079677772436,
+  "max_drawdown": -0.3404205483098216,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

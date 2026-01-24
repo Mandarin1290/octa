@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/CADJPY_1D.parquet",
+  "n": 4152,
+  "vol_ann": 0.11363257202430646,
+  "max_drawdown": -0.2993755356924208,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

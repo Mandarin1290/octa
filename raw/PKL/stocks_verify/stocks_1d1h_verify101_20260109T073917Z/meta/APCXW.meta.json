@@ -1,0 +1,45 @@
+{
+  "symbol": "APCXW",
+  "asset_profile": "stock",
+  "run_id": "stocks_1d1h_verify101_20260109T073917Z",
+  "created_utc": "2026-01-09T07:39:43.118515+00:00",
+  "gate_version": "hf_gate_2026-01-03_v1",
+  "timeframe_status": {
+    "1D": "ERROR",
+    "1H": "SKIP_H1_NOT_ELIGIBLE"
+  },
+  "limited": {
+    "1D": false,
+    "1H": false
+  },
+  "datasets": {
+    "1D": {
+      "path": "raw/Stock_parquet/APCXW_1D.parquet",
+      "sha256": "5148b10bba9f10601032378be3fbb03848c9122b6e3515c3c013af507923d6ce",
+      "rows": 717,
+      "start": "2022-01-05 00:00:00+00:00",
+      "end": "2025-12-31 00:00:00+00:00"
+    }
+  },
+  "models": {
+    "1D": {
+      "pkl": null,
+      "sha256": null
+    },
+    "1H": null
+  },
+  "gates": {
+    "1D": {
+      "passed": false,
+      "status": "ERROR",
+      "gate_version": null,
+      "reasons": [
+        "missing_gate"
+      ],
+      "passed_checks": [],
+      "insufficient_evidence": []
+    },
+    "1H": null
+  },
+  "armed": false
+}

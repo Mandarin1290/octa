@@ -1,0 +1,1 @@
+Parquet for symbol ACQRU not found in /home/n-b/Octa/raw

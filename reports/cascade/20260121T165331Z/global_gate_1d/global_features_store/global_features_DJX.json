@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/DJX_full_1day.parquet",
+  "n": 4524,
+  "vol_ann": 0.18930300101590947,
+  "max_drawdown": -0.4986215728765181,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

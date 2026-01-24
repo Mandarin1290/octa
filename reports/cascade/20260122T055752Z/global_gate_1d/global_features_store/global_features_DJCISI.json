@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/DJCISI_full_1day.parquet",
+  "n": 2127,
+  "vol_ann": 0.3071638925312174,
+  "max_drawdown": -0.3994833138815518,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

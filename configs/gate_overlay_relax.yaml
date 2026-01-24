@@ -1,0 +1,4 @@
+overlay:
+  gate_version: relax-20260114
+  relax:
+    sharpe_min_factor: 0.6

@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/SPTMI_full_1day.parquet",
+  "n": 3555,
+  "vol_ann": 0.1722438300283005,
+  "max_drawdown": -0.35137199919883266,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

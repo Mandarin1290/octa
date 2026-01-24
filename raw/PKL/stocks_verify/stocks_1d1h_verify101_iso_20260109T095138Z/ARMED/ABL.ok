@@ -1,0 +1,29 @@
+{
+  "symbol": "ABL",
+  "asset_profile": "stock",
+  "run_id": "stocks_1d1h_verify101_iso_20260109T095138Z",
+  "created_utc": "2026-01-09T09:54:54.832637+00:00",
+  "armed_mode": "ARMED_FULL",
+  "timeframe_status": {
+    "1D": "PASS",
+    "1H": "PASS"
+  },
+  "pkl_paths": {
+    "1D": "/home/n-b/Octa/raw/PKL/stocks_verify/stocks_1d1h_verify101_iso_20260109T095138Z/1D/ABL.pkl",
+    "1H": "/home/n-b/Octa/raw/PKL/stocks_verify/stocks_1d1h_verify101_iso_20260109T095138Z/1H/ABL.pkl"
+  },
+  "pkl_sha256": {
+    "1D": "4331b71819d51ba0e4c5a9a36b6f988c54efd85fcba69af7929c65891caff421",
+    "1H": "6e7d6b1ef2a2f572d53b12c36685edd2fce074cdceecbb67943725d98560883b"
+  },
+  "gate": {
+    "1D": {
+      "status": "PASS_LIMITED_STATISTICAL_CONFIDENCE",
+      "gate_version": "hf_gate_2026-01-03_v1"
+    },
+    "1H": {
+      "status": "PASS_LIMITED_STATISTICAL_CONFIDENCE",
+      "gate_version": "hf_gate_2026-01-03_v1"
+    }
+  }
+}

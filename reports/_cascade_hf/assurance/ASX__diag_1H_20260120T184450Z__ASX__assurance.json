@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-20T19:37:02.598646+00:00",
+  "symbol": "ASX",
+  "run_id": "diag_1H_20260120T184450Z__ASX",
+  "snapshot_id": "507e0349f163f5f6b3b014086f546d34ee9b187cdbd0958585a29d1038fdc641",
+  "attestation_hash": "3fcf860dcdb32880e8ae45cf480179f4fb2e0f8f23646236914b382bb2640c72",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-20T19:37:02.598786+00:00",
+      "action": "snapshot_taken",
+      "id": "507e0349f163f5f6b3b014086f546d34ee9b187cdbd0958585a29d1038fdc641",
+      "name": "training_run",
+      "evidence_hash": "507e0349f163f5f6b3b014086f546d34ee9b187cdbd0958585a29d1038fdc641"
+    },
+    {
+      "ts": "2026-01-20T19:37:02.599104+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "3fcf860dcdb32880e8ae45cf480179f4fb2e0f8f23646236914b382bb2640c72"
+    },
+    {
+      "ts": "2026-01-20T19:37:02.599123+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "1ccb3f6bd8f2bfba651510e783d9a52d7a273aa0205c0962d4e26704a27d949b"
+    }
+  ]
+}

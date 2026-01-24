@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/EURHUF_1D.parquet",
+  "n": 3917,
+  "vol_ann": 0.08033242127786164,
+  "max_drawdown": -0.14777914224147914,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/VXTH_full_1day.parquet",
+  "n": 3624,
+  "vol_ann": 0.14463234156953436,
+  "max_drawdown": -0.2984120437203547,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

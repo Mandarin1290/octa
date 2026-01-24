@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/AIO_1D.parquet",
+  "n": 1551,
+  "vol_ann": 0.27273971933291363,
+  "max_drawdown": -0.44878173487247053,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

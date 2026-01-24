@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/DWLG_full_1day.parquet",
+  "n": 5248,
+  "vol_ann": 0.2089499453071555,
+  "max_drawdown": -0.522441360527564,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

@@ -1,0 +1,19 @@
+# E2E real-raw test config (debug packaging)
+# Like e2e_real_raw.yaml but additionally writes debug artifacts even on gate FAIL.
+paths:
+  raw_dir: "/home/n-b/Octa/raw"
+  pkl_dir: "/home/n-b/Octa/raw/PKL/_e2e_real"
+  logs_dir: "/home/n-b/Octa/logs/_e2e_real"
+  state_dir: "/home/n-b/Octa/state/_e2e_real"
+  reports_dir: "/home/n-b/Octa/reports/_e2e_real"
+
+tuning:
+  enabled: false
+
+notifications:
+  telegram:
+    enabled: false
+
+packaging:
+  save_debug_on_fail: true
+  debug_dir: "/home/n-b/Octa/raw/PKL/_e2e_real/_debug_fail"

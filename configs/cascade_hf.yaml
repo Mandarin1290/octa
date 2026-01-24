@@ -1,0 +1,69 @@
+# HF-style cascade preset for scripts/e2e_orchestrator.py
+#
+# Notes
+# - Global HF gate thresholds are merged automatically from configs/hf_defaults.yaml
+#   via octa_training.core.config.load_config().
+# - This file focuses on runtime, tuning, and feature toggles suitable for
+#   sequential, pass-forward cascade runs.
+# - FRED macro features are enabled (if FRED_API_KEY is present); otherwise they
+#   should fall back to cached parquet if available.
+
+paths:
+  raw_dir: "/home/n-b/Octa/raw"
+  pkl_dir: "/home/n-b/Octa/raw/PKL/_cascade_hf"
+  logs_dir: "/home/n-b/Octa/logs/_cascade_hf"
+  state_dir: "/home/n-b/Octa/state/_cascade_hf"
+  reports_dir: "/home/n-b/Octa/reports/_cascade_hf"
+
+# Enable micro timeframes by default for cascade runs.
+enable_micro_timeframes: true
+
+# Per-timeframe parquet requirements (fail-closed defaults).
+data:
+  require_parquet_for_tf:
+    "1D": true
+    "1H": true
+    "30m": true
+    "5m": true
+    "1m": true
+
+# HF-style bounded tuning (real-data Optuna) for single-symbol runs.
+# Use scripts/e2e_orchestrator.py --fast for quicker iteration (reduced CV folds etc.).
+tuning:
+  enabled: true
+  optuna_trials: 400
+  early_stop_rounds: 20
+  timeout_sec: null
+  models_order: [lightgbm, hgb]
+
+# Avoid "recent_pass" short-circuit during iterative HF runs.
+retrain:
+  skip_window_days: 0
+
+# Optional macro features (FRED) – still leakage-safe via shift_bars.
+features:
+  macro:
+    enabled: true
+    source: auto
+  # Market context proxies (from raw/Indices_parquet). Optional: if files are missing, training proceeds.
+  market_context:
+    enabled: true
+    symbols: [SPX, NDX, VIX, DXY]
+    shift_bars: 1
+    vol_window: 20
+    corr_window: 60
+
+notifications:
+  telegram:
+    enabled: false
+
+# Keep debug artifacts on FAIL (useful for gate-reason auditing)
+packaging:
+  save_debug_on_fail: true
+  debug_dir: "/home/n-b/Octa/raw/PKL/_cascade_hf/_debug_fail"
+
+# Override broker costs for this cascade
+broker:
+  name: ibkr
+  cost_bps: 1.0
+  spread_bps: 0.5

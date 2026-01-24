@@ -1,0 +1,51 @@
+# Core developer tools (keep compatible with Python 3.13)
+pytest>=8.0
+ruff>=0.1.270
+mypy>=1.6.1
+black>=24.3.0
+bandit>=1.8.2
+
+# Core config / security
+pydantic>=2,<3
+PyYAML>=6.0
+cryptography>=41.0.3
+keyring>=23.15.0
+ulid-py>=1.1.0
+
+# Data & core
+pandas>=2.2.3
+pyarrow>=11.0.0
+psutil>=5.9.0
+orjson>=3.10.0
+
+# Tier-1 / infra integrations
+feast>=0.26.0
+dagster
+mlserver
+seldon-core; python_version < "3.13"
+prometheus-client>=0.16.0
+boto3
+
+# Experiment tracking & hyperopt
+mlflow>=2.5.0
+optuna>=3.0.0
+
+# ML libraries
+scikit-learn>=1.2.2
+lightgbm>=4.4.0
+xgboost>=2.3.0
+catboost>=1.2.0
+joblib>=1.3.0
+
+# Monitoring and validation
+evidently>=0.3.1
+
+# Note: xgboost/lightgbm may require system build deps in Docker (gcc, build-essential, libgomp)
+
+# Optional backtesting/analytics libraries (install only when needed):
+# vectorbt is lightweight and fast for research: `pip install vectorbt`
+# zipline often requires conda / platform-specific steps; refer to docs before installing.
+# backtrader is another option: `pip install backtrader`
+
+# Optional ultra-fast dataframe engine (use only if/where integrated):
+# polars>=0.20

@@ -1,0 +1,66 @@
+{
+  "run_id": "20260114T201458Z",
+  "out_dir": "reports/cascade/20260114T201458Z",
+  "raw_root": "raw",
+  "scan_raw": true,
+  "config": "configs/cascade_hf.yaml",
+  "safe_mode": true,
+  "fast": true,
+  "stages": [
+    {
+      "timeframe": "1D",
+      "source": "global_gate_1d",
+      "input_passlist": "reports/cascade/20260114T201458Z/global_gate_1d/pass_symbols_1d.txt",
+      "n_pass": 42,
+      "passlist": "reports/cascade/20260114T201458Z/1D/pass_1d.txt"
+    },
+    {
+      "timeframe": "1H",
+      "input_list": "reports/cascade/20260114T201458Z/1D/pass_1d.txt",
+      "n_input": 42,
+      "n_missing_parquet": 1,
+      "n_pass": 3,
+      "passlist": "reports/cascade/20260114T201458Z/1H/pass_1h.txt",
+      "missing_parquet_list": "reports/cascade/20260114T201458Z/1H/missing_parquet.txt",
+      "safe_mode": true,
+      "fast": true,
+      "seconds": 1499.34
+    },
+    {
+      "timeframe": "30m",
+      "input_list": "reports/cascade/20260114T201458Z/1H/pass_1h.txt",
+      "n_input": 3,
+      "n_missing_parquet": 3,
+      "n_pass": 0,
+      "passlist": "reports/cascade/20260114T201458Z/30m/pass_30m.txt",
+      "missing_parquet_list": "reports/cascade/20260114T201458Z/30m/missing_parquet.txt",
+      "safe_mode": true,
+      "fast": true,
+      "seconds": 0.0
+    },
+    {
+      "timeframe": "5m",
+      "input_list": "reports/cascade/20260114T201458Z/30m/pass_30m.txt",
+      "n_input": 0,
+      "n_missing_parquet": 0,
+      "n_pass": 0,
+      "passlist": "reports/cascade/20260114T201458Z/5m/pass_5m.txt",
+      "missing_parquet_list": "",
+      "safe_mode": true,
+      "fast": true,
+      "seconds": 0.0
+    },
+    {
+      "timeframe": "1m",
+      "input_list": "reports/cascade/20260114T201458Z/5m/pass_5m.txt",
+      "n_input": 0,
+      "n_missing_parquet": 0,
+      "n_pass": 0,
+      "passlist": "reports/cascade/20260114T201458Z/1m/pass_1m.txt",
+      "missing_parquet_list": "",
+      "safe_mode": true,
+      "fast": true,
+      "seconds": 0.0
+    }
+  ]
+}

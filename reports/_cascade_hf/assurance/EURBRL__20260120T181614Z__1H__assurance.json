@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-20T22:36:35.828441+00:00",
+  "symbol": "EURBRL",
+  "run_id": "20260120T181614Z__1H",
+  "snapshot_id": "79ffec5d9c30453576900387ba66cdbc0fc4a62caabf78483df64c6c5feae7cc",
+  "attestation_hash": "40b44d775bc1d40ccec69381fb1694ba1cc64bf6e3206ed71fde3d5fc74f43b5",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-20T22:36:35.828555+00:00",
+      "action": "snapshot_taken",
+      "id": "79ffec5d9c30453576900387ba66cdbc0fc4a62caabf78483df64c6c5feae7cc",
+      "name": "training_run",
+      "evidence_hash": "79ffec5d9c30453576900387ba66cdbc0fc4a62caabf78483df64c6c5feae7cc"
+    },
+    {
+      "ts": "2026-01-20T22:36:35.828767+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "40b44d775bc1d40ccec69381fb1694ba1cc64bf6e3206ed71fde3d5fc74f43b5"
+    },
+    {
+      "ts": "2026-01-20T22:36:35.828786+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "b98d443c32f3e965ddf135bb182393eaa99df56f66d9fec20655ca1cf1f27710"
+    }
+  ]
+}

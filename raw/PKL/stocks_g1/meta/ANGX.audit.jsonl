@@ -1,0 +1,21 @@
+{"type": "START", "ts_utc": "2026-01-08T18:59:26.739641+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "ANGX", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-08T18:59:26.739960+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "ANGX", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ANGX_1H.parquet", "parquet_sha256": "70dce3388a39f2b63a033dd0014a5c355422c865af85e681f1d47592d83832ea"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T18:59:26.768460+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "ANGX", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T19:02:25.834751+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "ANGX", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T19:02:25.836151+00:00", "run_id": "stocks_g1_1h_pkl_20260108T181728Z", "symbol": "ANGX", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/ANGX.meta.json"}
+{"type": "START", "ts_utc": "2026-01-08T21:02:41.440281+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "ANGX", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-08T21:02:41.441483+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "ANGX", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ANGX_1H.parquet", "parquet_sha256": "70dce3388a39f2b63a033dd0014a5c355422c865af85e681f1d47592d83832ea"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T21:02:41.474780+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "ANGX", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T21:05:44.221896+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "ANGX", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T21:05:44.224029+00:00", "run_id": "stocks_g1_1h_pkgfix", "symbol": "ANGX", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/ANGX.meta.json"}
+{"type": "START", "ts_utc": "2026-01-08T21:34:20.828778+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "ANGX", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-08T21:34:20.830764+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "ANGX", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ANGX_1H.parquet", "parquet_sha256": "70dce3388a39f2b63a033dd0014a5c355422c865af85e681f1d47592d83832ea"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-08T21:34:20.862836+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "ANGX", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-08T21:35:33.804932+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "ANGX", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_META", "ts_utc": "2026-01-08T21:35:33.805988+00:00", "run_id": "g1_1h_cfgalign_28_try2", "symbol": "ANGX", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/ANGX.meta.json"}
+{"type": "START", "ts_utc": "2026-01-09T06:42:55.416647+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "ANGX", "asset_profile": "stock", "tf": "1H"}
+{"type": "LOAD", "ts_utc": "2026-01-09T06:42:55.417853+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "ANGX", "tf": "1H", "ok": true, "parquet_path": "raw/Stock_parquet/ANGX_1H.parquet", "parquet_sha256": "70dce3388a39f2b63a033dd0014a5c355422c865af85e681f1d47592d83832ea"}
+{"type": "TRAIN_START", "ts_utc": "2026-01-09T06:42:55.449961+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "ANGX", "tf": "1H"}
+{"type": "TRAIN_END", "ts_utc": "2026-01-09T06:44:32.000212+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "ANGX", "tf": "1H", "passed": false, "error": null}
+{"type": "WRITE_PKL_DEBUG_FAIL", "ts_utc": "2026-01-09T06:44:32.005302+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "ANGX", "tf": "1H", "pkl": "/home/n-b/Octa/raw/PKL/stocks_g1/1H_DEBUG_FAIL/ANGX.pkl", "pkl_sha256": "5aed840c3182ae676fd4d024285d3d288957d890eb1944f51e5feffe828ef177", "artifact_kind": "debug"}
+{"type": "WRITE_META", "ts_utc": "2026-01-09T06:44:32.006456+00:00", "run_id": "g1_1h_force28_20260109T062542Z", "symbol": "ANGX", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_g1/meta/ANGX.meta.json"}

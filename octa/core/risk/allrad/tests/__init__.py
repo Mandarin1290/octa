@@ -1,0 +1,1 @@
+"""ALLRAD tests package."""

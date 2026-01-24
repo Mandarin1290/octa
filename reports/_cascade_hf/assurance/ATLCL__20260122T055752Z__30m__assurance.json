@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-22T08:50:42.509099+00:00",
+  "symbol": "ATLCL",
+  "run_id": "20260122T055752Z__30m",
+  "snapshot_id": "d7532bd6e3c15261cf3f6182dc6e75c79551749eed9d4d4b651884c9f318d963",
+  "attestation_hash": "87c3613c2546beb6f87c4118571e84de074586d808d91b0ed281082bacb5fe76",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-22T08:50:42.509289+00:00",
+      "action": "snapshot_taken",
+      "id": "d7532bd6e3c15261cf3f6182dc6e75c79551749eed9d4d4b651884c9f318d963",
+      "name": "training_run",
+      "evidence_hash": "d7532bd6e3c15261cf3f6182dc6e75c79551749eed9d4d4b651884c9f318d963"
+    },
+    {
+      "ts": "2026-01-22T08:50:42.509651+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "87c3613c2546beb6f87c4118571e84de074586d808d91b0ed281082bacb5fe76"
+    },
+    {
+      "ts": "2026-01-22T08:50:42.509678+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "PASS",
+      "evidence_hash": "408936ea17a99c9a22dd699d2df902a1316af0008c78e1d83a6944ac81e6e179"
+    }
+  ]
+}

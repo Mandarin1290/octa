@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-20T19:04:10.170230+00:00",
+  "symbol": "AGCO",
+  "run_id": "diag_1H_20260120T184450Z__AGCO",
+  "snapshot_id": "4144fab2c189f8240178672839236514899d0231c2324e45eebb82a8a64dc5a7",
+  "attestation_hash": "be8866af861d296a4b87b9b3d0b381362e23f826b709b5adae1a8da10bdb741c",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-20T19:04:10.170371+00:00",
+      "action": "snapshot_taken",
+      "id": "4144fab2c189f8240178672839236514899d0231c2324e45eebb82a8a64dc5a7",
+      "name": "training_run",
+      "evidence_hash": "4144fab2c189f8240178672839236514899d0231c2324e45eebb82a8a64dc5a7"
+    },
+    {
+      "ts": "2026-01-20T19:04:10.170661+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "be8866af861d296a4b87b9b3d0b381362e23f826b709b5adae1a8da10bdb741c"
+    },
+    {
+      "ts": "2026-01-20T19:04:10.170681+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "PASS",
+      "evidence_hash": "4d86b255a151d88b4bfee7c1b19b9b681440fe749de161d8d2a5d2d708665651"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/ASBA_1D.parquet",
+  "n": 712,
+  "vol_ann": 0.2342635080747858,
+  "max_drawdown": -0.24672538699971813,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

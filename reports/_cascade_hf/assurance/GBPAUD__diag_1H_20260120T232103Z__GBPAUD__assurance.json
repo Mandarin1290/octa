@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-21T00:39:08.895751+00:00",
+  "symbol": "GBPAUD",
+  "run_id": "diag_1H_20260120T232103Z__GBPAUD",
+  "snapshot_id": "326011d8520a665cec2c023e22e1b25a6bf74883ebe5f719643ab2b3c23b1204",
+  "attestation_hash": "b84ab42a2e35278c35d2d961312e0a3723751590da534be37f24523de35f3cca",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T00:39:08.895912+00:00",
+      "action": "snapshot_taken",
+      "id": "326011d8520a665cec2c023e22e1b25a6bf74883ebe5f719643ab2b3c23b1204",
+      "name": "training_run",
+      "evidence_hash": "326011d8520a665cec2c023e22e1b25a6bf74883ebe5f719643ab2b3c23b1204"
+    },
+    {
+      "ts": "2026-01-21T00:39:08.896132+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "b84ab42a2e35278c35d2d961312e0a3723751590da534be37f24523de35f3cca"
+    },
+    {
+      "ts": "2026-01-21T00:39:08.896151+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "15866b99354487e054d42148cfdb386a737cc3e7b75c70554cf858379b3e0e0f"
+    }
+  ]
+}

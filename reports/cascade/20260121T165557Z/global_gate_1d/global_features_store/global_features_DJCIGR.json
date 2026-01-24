@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/DJCIGR_full_1day.parquet",
+  "n": 2127,
+  "vol_ann": 0.18711505477023718,
+  "max_drawdown": -0.48258300569653134,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

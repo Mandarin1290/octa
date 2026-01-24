@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/ALCY_1D.parquet",
+  "n": 386,
+  "vol_ann": 0.23190183820184856,
+  "max_drawdown": -0.11265306122448981,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "ts": "2026-01-21T10:46:42.485769+00:00",
+  "symbol": "EURJPY",
+  "run_id": "diag_1H_20260121T092943Z__EURJPY",
+  "snapshot_id": "eb1df6d8b25fbb6f82f969795a9290a9903583a553dcffbd5407f3556265527f",
+  "attestation_hash": "9ace296f099ba56324a4aa7e5cdb703efa9bf024a1f5fdc0a83256fc0c3971c9",
+  "governance": null,
+  "regulatory": null,
+  "audit_log": [
+    {
+      "ts": "2026-01-21T10:46:42.485968+00:00",
+      "action": "snapshot_taken",
+      "id": "eb1df6d8b25fbb6f82f969795a9290a9903583a553dcffbd5407f3556265527f",
+      "name": "training_run",
+      "evidence_hash": "eb1df6d8b25fbb6f82f969795a9290a9903583a553dcffbd5407f3556265527f"
+    },
+    {
+      "ts": "2026-01-21T10:46:42.486282+00:00",
+      "action": "attestation",
+      "name": "training_pipeline_policy",
+      "attestor": "octa_training.pipeline",
+      "evidence_hash": "9ace296f099ba56324a4aa7e5cdb703efa9bf024a1f5fdc0a83256fc0c3971c9"
+    },
+    {
+      "ts": "2026-01-21T10:46:42.486309+00:00",
+      "action": "control_log",
+      "control_id": "training.gates",
+      "status": "FAIL",
+      "evidence_hash": "b3736c7a23875dde308a52aebc9cb15b7f2e6189424297d2777cc68224a2d6af"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "path": "raw/FX_parquet/USDSGD_1D.parquet",
+  "n": 4182,
+  "vol_ann": 0.051714909016021916,
+  "max_drawdown": -0.1567043618739904,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

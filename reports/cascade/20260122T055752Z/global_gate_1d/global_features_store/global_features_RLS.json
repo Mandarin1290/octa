@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/RLS_full_1day.parquet",
+  "n": 1851,
+  "vol_ann": 0.25415416895808135,
+  "max_drawdown": -0.4305206981104861,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

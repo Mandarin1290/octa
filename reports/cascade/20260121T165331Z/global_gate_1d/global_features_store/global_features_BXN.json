@@ -1,0 +1,13 @@
+{
+  "path": "raw/Indices_parquet/BXN_full_1day.parquet",
+  "n": 5108,
+  "vol_ann": 0.16108162197946613,
+  "max_drawdown": -0.4534220532319392,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

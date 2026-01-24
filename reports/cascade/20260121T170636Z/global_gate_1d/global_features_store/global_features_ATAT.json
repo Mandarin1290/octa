@@ -1,0 +1,13 @@
+{
+  "path": "raw/Stock_parquet/ATAT_1D.parquet",
+  "n": 786,
+  "vol_ann": 0.6025124463546864,
+  "max_drawdown": -0.46905067233356534,
+  "fred": {
+    "enabled": false
+  },
+  "edgar": {
+    "enabled": false,
+    "user_agent_configured": true
+  }
+}

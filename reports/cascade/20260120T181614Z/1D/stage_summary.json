@@ -1,0 +1,7 @@
+{
+  "timeframe": "1D",
+  "source": "external_passlist",
+  "input_passlist": "reports/cascade/20260120T181614Z/1D/pass_1d.txt",
+  "n_pass": 289,
+  "passlist": "reports/cascade/20260120T181614Z/1D/pass_1d.txt"
+}
