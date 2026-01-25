@@ -1,0 +1,133 @@
+# Live AltData placement + optional enrichments (no secrets)
+
+enabled_sources:
+  - fred
+  - ecb
+  - oecd
+  - worldbank
+  - cot
+  - gdelt
+  - google_trends
+  - wikipedia
+  - reddit
+  - eia
+  - stooq
+
+sources:
+  fred:
+    enabled: true
+    refresh_interval_seconds: 86400
+    timeout_seconds: 20
+    max_retries: 2
+    cache_ttl_seconds: 86400
+    live_allowed: true
+  ecb:
+    enabled: true
+    refresh_interval_seconds: 86400
+    timeout_seconds: 20
+    max_retries: 2
+    cache_ttl_seconds: 86400
+    live_allowed: true
+  oecd:
+    enabled: true
+    refresh_interval_seconds: 86400
+    timeout_seconds: 20
+    max_retries: 2
+    cache_ttl_seconds: 86400
+    live_allowed: true
+  worldbank:
+    enabled: true
+    refresh_interval_seconds: 86400
+    timeout_seconds: 20
+    max_retries: 2
+    cache_ttl_seconds: 86400
+    live_allowed: true
+  cot:
+    enabled: true
+    refresh_interval_seconds: 604800
+    timeout_seconds: 30
+    max_retries: 2
+    cache_ttl_seconds: 604800
+    live_allowed: true
+  gdelt:
+    enabled: true
+    refresh_interval_seconds: 3600
+    timeout_seconds: 20
+    max_retries: 2
+    cache_ttl_seconds: 21600
+    live_allowed: true
+  google_trends:
+    enabled: true
+    refresh_interval_seconds: 21600
+    timeout_seconds: 20
+    max_retries: 1
+    cache_ttl_seconds: 21600
+    live_allowed: true
+  wikipedia:
+    enabled: true
+    refresh_interval_seconds: 21600
+    timeout_seconds: 20
+    max_retries: 1
+    cache_ttl_seconds: 21600
+    live_allowed: true
+  reddit:
+    enabled: true
+    refresh_interval_seconds: 3600
+    timeout_seconds: 15
+    max_retries: 1
+    cache_ttl_seconds: 7200
+    live_allowed: true
+  eia:
+    enabled: true
+    refresh_interval_seconds: 86400
+    timeout_seconds: 20
+    max_retries: 2
+    cache_ttl_seconds: 86400
+    live_allowed: true
+  stooq:
+    enabled: true
+    refresh_interval_seconds: 86400
+    timeout_seconds: 20
+    max_retries: 1
+    cache_ttl_seconds: 86400
+    live_allowed: false
+
+fingpt:
+  enabled: false
+  endpoint_url: ""
+  max_latency_ms: 2000
+  timeout_ms: 1500
+  cache_ttl_seconds: 86400
+  circuit_breaker:
+    failures: 3
+    cooldown_seconds: 3600
+
+yahoo:
+  enabled: true
+  refresh_interval_seconds: 86400
+  timeout_seconds: 20
+  cache_ttl_seconds: 86400
+  live_allowed: true
+
+gate_overlays:
+  enabled: true
+  global_1d:
+    macro_risk_max: 0.8
+    event_risk_max: 0.7
+    positioning_risk_max: 0.7
+    valuation_stretch_max: 0.9
+    earnings_within_days: 2
+  signal_1h:
+    event_risk_max: 0.75
+    earnings_within_days: 1
+    earnings_confidence_penalty: 0.2
+    fingpt_risk_max: 0.7
+  structure_30m:
+    event_risk_max: 0.7
+    positioning_risk_max: 0.7
+    corp_action_guard_days: 3
+  execution_5m:
+    event_risk_max: 0.75
+    reddit_volume_max: 0.8
+  micro_1m:
+    enabled: true

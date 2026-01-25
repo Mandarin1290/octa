@@ -189,7 +189,10 @@ def build_altdata_features(
             forms = ["10-K", "10-Q", "8-K"]
 
         r = fetch_edgar_filings(ticker=symbol, forms=forms, start_ts=tw.start_ts, end_ts=tw.end_ts)
-        meta["sources"]["edgar"] = {"ok": bool(r.ok), "error": r.error, "forms": forms}
+        edgar_meta = {"ok": bool(r.ok), "error": (str(r.error)[:200] if r.error else None), "forms": forms}
+        if isinstance(r.meta, dict):
+            edgar_meta.update(r.meta)
+        meta["sources"]["edgar"] = edgar_meta
         _duckdb_upsert_source("edgar", bool(r.ok), r.error)
         # Persist raw filings if any
         try:

@@ -1,0 +1,128 @@
+# AltData stack configuration (no secrets)
+
+cache_dir: "octa/var/altdata"
+allow_net_default: false
+
+rate_limits:
+  fred: 1
+  edgar: 1
+  gdelt: 1
+  cot: 1
+  eia: 1
+  ecb: 1
+  worldbank: 1
+  oecd: 1
+  google_trends: 1
+  wikipedia: 1
+  reddit: 1
+  stooq: 1
+  fmp: 1
+
+sources:
+  fred:
+    enabled: true
+    api_key_env: FRED_API_KEY
+    series: ["FEDFUNDS", "DGS2", "DGS10", "DGS3MO", "CPIAUCSL"]
+  edgar:
+    enabled: true
+    forms: ["10-K", "10-Q", "8-K"]
+    user_agent: "OCTA Research (contact: you@example.com)"
+  gdelt:
+    enabled: true
+    base_url: "https://api.gdeltproject.org/api/v2/doc/doc"
+    lag_hours: 6
+    timeout_s: 20
+    max_retries: 2
+    query_packs:
+      global_risk:
+        window_days: [1, 7]
+        queries:
+          - id: "conflict"
+            query: "(war OR conflict OR invasion OR missile OR drone OR terrorism OR attack)"
+          - id: "financial_stress"
+            query: "(bank failure OR liquidity crisis OR credit crunch OR default OR bankruptcy)"
+          - id: "recession"
+            query: "(recession OR layoffs OR unemployment spike OR slowdown)"
+  cot:
+    enabled: true
+    window_days: 730
+    release_offset_days: 3
+    release_hour_utc: 20
+    targets:
+      - id: es
+        candidates: ["e-mini s&p 500", "s&p 500 e-mini", "s&p 500 stock index"]
+      - id: nq
+        candidates: ["e-mini nasdaq 100", "nasdaq-100", "nasdaq 100"]
+      - id: 6e
+        candidates: ["euro fx", "euro fx - chicago mercantile exchange"]
+      - id: 6j
+        candidates: ["japanese yen", "japanese yen - chicago mercantile exchange"]
+      - id: gc
+        candidates: ["gold", "gold - commodity exchange inc."]
+      - id: cl
+        candidates: ["crude oil", "wti crude oil", "crude oil, light sweet"]
+      - id: zn
+        candidates: ["10-year u.s. treasury note", "u.s. treasury notes, 10-yr"]
+  eia:
+    enabled: true
+  ecb:
+    enabled: true
+  worldbank:
+    enabled: true
+  oecd:
+    enabled: true
+  google_trends:
+    enabled: true
+  wikipedia:
+    enabled: true
+  reddit:
+    enabled: true
+  stooq:
+    enabled: true
+    window_days: 365
+    symbols:
+      spx: ["^spx", "spx", "spy.us"]
+      vix: ["^vix", "vix", "vix.us"]
+      dxy: ["^dxy", "dxy"]
+      gold: ["xauusd", "xauusd.cfd", "gc.f"]
+      oil: ["cl.f", "wti", "brent"]
+  fmp:
+    enabled: false
+
+features_by_gate:
+  global_1d:
+    macro: true
+    geopolitics: true
+    positioning: true
+    energy: true
+  structure_30m:
+    fundamentals: true
+    event_risk: true
+    regime_carry: true
+  signal_1h:
+    sentiment: true
+    attention: true
+    positioning_bias: true
+  execution_5m:
+    liquidity: true
+  micro_1m:
+    liquidity: true
+
+overlays:
+  enabled: false
+  global_1d:
+    macro_risk_max: 0.8
+  structure_30m:
+    min_quality: 0.2
+    max_event_risk: 0.7
+  signal_1h:
+    sentiment_weight: 0.1
+    attention_weight: 0.1
+  execution_5m:
+    min_liquidity: 0.1
+  micro_1m:
+    min_liquidity: 0.1
+
+refresh:
+  required_sources: ["fred", "edgar", "cot"]
+  optional_sources: ["gdelt", "stooq"]
