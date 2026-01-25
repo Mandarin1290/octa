@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional
+from types import SimpleNamespace
 
 import numpy as np
 import pandas as pd
@@ -15,6 +16,7 @@ import pickle
 import joblib
 
 from octa.core.governance.model_release import decide_release, update_registry
+from octa.core.data.sources.altdata.sidecar import try_run as _altdat_try_run
 from octa.core.research.robustness.monte_carlo import run_monte_carlo
 from octa.core.research.scoring.scorer import score_run
 from octa.core.research.validation.walk_forward import (
@@ -142,6 +144,8 @@ def run_institutional_train(
     mode_key = str(mode or "paper").replace("-", "_")
     thresholds = release_cfg.get(mode_key, release_cfg) if isinstance(release_cfg, dict) else {}
     fast_mode = os.getenv("OCTA_INSTITUTIONAL_FAST", "").strip() == "1"
+    altdata_enabled = os.getenv("OKTA_ALTDATA_ENABLED", "").strip() == "1"
+    altdata_diag: Dict[str, Any] = {"enabled": altdata_enabled, "per_timeframe": {}}
     if fast_mode:
         validation_cfg["walk_forward"] = {"train_days": 60, "test_days": 20, "step_days": 20, "warmup_days": 0, "embargo_bars": 1}
         validation_cfg["purged_cv"] = {"n_splits": 2, "purge_bars": 1, "embargo_bars": 1}
@@ -159,6 +163,8 @@ def run_institutional_train(
     )
     gate_map = _timeframe_gate_map()
     outcomes: List[GateOutcome] = []
+    skips: List[Dict[str, Any]] = []
+    skip_counts: Dict[str, int] = {}
 
     analysis_timeframes = timeframes
     cascade_timeframes = timeframes
@@ -183,10 +189,38 @@ def run_institutional_train(
             parquet_path = (u.parquet_paths or {}).get(tf)
             if not parquet_path:
                 continue
-            df = load_parquet(Path(parquet_path))
+            try:
+                df = load_parquet(Path(parquet_path))
+            except ValueError as exc:
+                msg = str(exc).lower()
+                if "non-positive prices" in msg:
+                    record = {
+                        "symbol": u.symbol,
+                        "timeframe": tf,
+                        "reason": "non_positive_prices",
+                        "error": _truncate_err(exc),
+                    }
+                    skips.append(record)
+                    skip_counts["non_positive_prices"] = skip_counts.get("non_positive_prices", 0) + 1
+                    continue
+                raise
             if fast_mode and len(df) > 300:
                 df = df.iloc[-300:]
             features_res = build_features(df, cfg, u.asset_class)
+            alt_cols = 0
+            meta: Dict[str, Any] = {"enabled": False, "status": "DISABLED"}
+            if altdata_enabled:
+                try:
+                    settings = SimpleNamespace(symbol=u.symbol, timezone="UTC")
+                    adf, meta = _altdat_try_run(bars_df=df, settings=settings, asset_class=u.asset_class)
+                    if isinstance(adf, pd.DataFrame) and not adf.empty:
+                        adf = adf.reindex(features_res.X.index)
+                        adf = adf.add_prefix("altdat_")
+                        features_res.X = features_res.X.join(adf, how="left")
+                        alt_cols = int(adf.shape[1])
+                except Exception as exc:
+                    meta = {"enabled": False, "status": "ERROR", "error": _truncate_err(exc)}
+            altdata_diag["per_timeframe"][tf] = {"n_alt_cols": alt_cols, "meta": _truncate_meta(meta)}
             eval_settings = EvalSettings(
                 cost_bps=float(scoring_cfg.get("fee_bps", 1.0)),
                 spread_bps=float(scoring_cfg.get("spread_bps", 0.5)),
@@ -245,6 +279,10 @@ def run_institutional_train(
             gate = gate_map.get(tf, tf)
             ctx = {"run_id": run_id, "gate": gate, "timeframe": tf}
             wf_report = validate_model(_train_fn, _eval_fn, wf_splits, seed, ctx)
+            wf_report.__dict__["feature_counts"] = {
+                "n_features_total": int(features_res.X.shape[1]),
+                "n_features_altdata": int(alt_cols),
+            }
 
             best = _select_best(cached_results.get("train_results", []) or [])
             if best is None:
@@ -306,6 +344,9 @@ def run_institutional_train(
         "run_id": run_id,
         "universe_size": len(universe),
         "outcomes": [o.__dict__ for o in outcomes],
+        "altdata": altdata_diag,
+        "skips": skips,
+        "skip_counts": skip_counts,
     }
     _write_summary(summary)
     _write_audit(summary)
@@ -357,6 +398,23 @@ def _persist_joblib(pkl_path: Optional[str]) -> Optional[str]:
         return joblib_path
     except Exception:
         return None
+
+
+def _truncate_err(exc: Exception, limit: int = 200) -> str:
+    msg = str(exc)
+    return msg[:limit] if len(msg) > limit else msg
+
+
+def _truncate_meta(meta: Any, limit: int = 200) -> Dict[str, Any]:
+    if not isinstance(meta, dict):
+        return {"meta": _truncate_err(Exception(str(meta)), limit=limit)}
+    trimmed: Dict[str, Any] = {}
+    for key, val in meta.items():
+        if isinstance(val, str) and len(val) > limit:
+            trimmed[key] = val[:limit]
+        else:
+            trimmed[key] = val
+    return trimmed
 
 
 def main() -> None:
