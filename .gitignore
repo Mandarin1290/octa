@@ -9,6 +9,7 @@ dist/
 .venv/
 venv/
 .env
+.env.local
 
 # OCTA runtime / artifacts / data
 octa/var/
@@ -47,3 +48,4 @@ reports/
 .vscode/
 .idea/
 .DS_Store
+catboost_info/

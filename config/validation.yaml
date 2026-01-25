@@ -1,0 +1,14 @@
+walk_forward:
+  train_days: 504
+  test_days: 126
+  step_days: 63
+  warmup_days: 21
+  embargo_bars: 3
+
+purged_cv:
+  n_splits: 5
+  purge_bars: 5
+  embargo_bars: 5
+
+seeds:
+  default: 42

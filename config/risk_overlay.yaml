@@ -1,0 +1,22 @@
+paper:
+  target_vol: 0.12
+  max_leverage: 1.0
+  soft_drawdown: 0.06
+  hard_drawdown: 0.1
+  max_position_pct: 0.05
+  max_portfolio_exposure: 0.5
+  max_sector_pct: 0.2
+  max_single_asset_risk: 0.02
+  max_gross_short: 0.3
+  require_borrowable: true
+live_shadow:
+  target_vol: 0.12
+  max_leverage: 1.0
+  soft_drawdown: 0.08
+  hard_drawdown: 0.12
+  max_position_pct: 0.05
+  max_portfolio_exposure: 0.5
+  max_sector_pct: 0.2
+  max_single_asset_risk: 0.02
+  max_gross_short: 0.4
+  require_borrowable: false

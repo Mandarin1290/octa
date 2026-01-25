@@ -1,32 +1,20 @@
-from octa_wargames.scoring import ScoringEngine, SimulationRun
+from __future__ import annotations
+
+import pandas as pd
+
+from octa.core.research.scoring.scorer import score_run
 
 
-def make_run(id, loss, recovery, incidents, activated, success):
-    return SimulationRun(
-        id=str(id),
-        loss=loss,
-        recovery_time=recovery,
-        incident_count=incidents,
-        gates_activated=activated,
-        gates_success=success,
-        meta={},
+def test_score_run_basic() -> None:
+    pnl = pd.Series([0.01, -0.005, 0.002], index=pd.date_range("2020-01-01", periods=3, freq="D"))
+    trades = [{"size_frac": 0.1, "price": 100.0}]
+    report = score_run(
+        pnl,
+        trades,
+        {"volatility": 0.02, "liquidity": 1.0},
+        {"fee_bps": 1.0, "spread_bps": 0.5, "slippage_bps": 0.5},
+        run_id="test",
+        gate="global_1d",
+        timeframe="1D",
     )
-
-
-def test_metrics_deterministic():
-    runs = [make_run("a", 10, 100, 2, 2, 2), make_run("b", 5, 50, 1, 1, 1)]
-    engine = ScoringEngine()
-    m1 = engine.compute_metrics(runs)
-    m2 = engine.compute_metrics(list(runs))
-    assert m1 == m2
-    # hash deterministic
-    assert m1["hash"] == m2["hash"]
-
-
-def test_scoring_consistent():
-    engine = ScoringEngine()
-    good = [make_run("g1", 1, 10, 0, 1, 1)]
-    bad = [make_run("b1", 100, 1000, 10, 5, 0)]
-    sg = engine.score(good)
-    sb = engine.score(bad)
-    assert sg > sb
+    assert report.ok

@@ -1,0 +1,4 @@
+n_sims: 200
+block_size: 5
+dd_limit: 0.15
+stress_multipliers: [1.0, 1.5, 2.0]

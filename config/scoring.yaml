@@ -1,0 +1,15 @@
+fee_bps: 1.0
+spread_bps: 0.5
+slippage_bps: 0.8
+min_cost_bps: 0.0
+max_cost_bps: 20.0
+stress_multiplier: 1.5
+cost_penalty: 0.5
+paper:
+  fee_multiplier: 1.2
+  spread_multiplier: 1.5
+  slippage_multiplier: 2.0
+live_shadow:
+  fee_multiplier: 1.0
+  spread_multiplier: 1.0
+  slippage_multiplier: 1.0

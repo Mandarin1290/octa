@@ -1,0 +1,14 @@
+paper:
+  min_sharpe: 1.2
+  max_drawdown: 0.1
+  min_trades: 60
+  max_split_cv: 0.4
+  mc_dd_prob_max: 0.08
+  min_improvement: 0.05
+live_shadow:
+  min_sharpe: 1.0
+  max_drawdown: 0.12
+  min_trades: 50
+  max_split_cv: 0.5
+  mc_dd_prob_max: 0.1
+  min_improvement: 0.05
