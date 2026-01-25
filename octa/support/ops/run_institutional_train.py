@@ -11,6 +11,8 @@ import numpy as np
 import pandas as pd
 import yaml
 import os
+import pickle
+import joblib
 
 from octa.core.governance.model_release import decide_release, update_registry
 from octa.core.research.robustness.monte_carlo import run_monte_carlo
@@ -273,12 +275,18 @@ def run_institutional_train(
             )
             decision = decide_release(wf_report.__dict__, score_report.__dict__, mc_report.__dict__, thresholds)
             registry_path = Path("octa") / "var" / "registry" / "models" / gate / tf / bucket / "champion.json"
+            pack = (metrics_by_tf.get(tf, {}) or {}).get("pack", {}) if isinstance(metrics_by_tf, dict) else {}
+            pkl_path = pack.get("pkl") if isinstance(pack, dict) else None
+            joblib_path = _persist_joblib(pkl_path)
             update_registry(
                 decision,
                 {
                     "run_id": run_id,
                     "score": score_report.score,
                     "stability_ok": wf_report.aggregate_metrics.get("sharpe_cv", 0.0) <= float(thresholds.get("max_split_cv", 0.5)),
+                    "pkl_path": pkl_path,
+                    "joblib_path": joblib_path,
+                    "artifact_sha": pack.get("pkl_sha") if isinstance(pack, dict) else None,
                 },
                 registry_path,
                 thresholds,
@@ -335,6 +343,18 @@ def _prepare_config_override(config_path: str) -> Optional[str]:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(yaml.safe_dump(raw, sort_keys=False), encoding="utf-8")
         return str(out_path)
+    except Exception:
+        return None
+
+
+def _persist_joblib(pkl_path: Optional[str]) -> Optional[str]:
+    if not pkl_path:
+        return None
+    try:
+        artifact = pickle.loads(Path(pkl_path).read_bytes())
+        joblib_path = str(Path(pkl_path).with_suffix(".joblib"))
+        joblib.dump(artifact, joblib_path)
+        return joblib_path
     except Exception:
         return None
 

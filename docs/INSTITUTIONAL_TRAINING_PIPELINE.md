@@ -16,6 +16,7 @@ New Modules Added
 - Risk overlay: `octa/core/risk/overlay.py`, `octa/core/risk/limits.py`
 - Model release: `octa/core/governance/model_release.py`, `octa/core/governance/champion_challenger.py`
 - Monte Carlo robustness: `octa/core/research/robustness/monte_carlo.py`
+- Drift monitor: `octa/core/governance/drift_monitor.py`
 - Entry points: `octa/support/ops/run_institutional_train.py`, `octa/support/ops/run_institutional_smoke.py`
 
 Flow
@@ -26,6 +27,7 @@ Flow
 4) Monte Carlo robustness stress tests write `octa/var/artifacts/robustness/...`.
 5) Model release decision writes registry file `octa/var/registry/models/...` and audit.
 6) Risk overlay gates paper/live orders in `octa_ops/autopilot/paper_runner.py`.
+7) Drift monitor disables paper models after sustained KPI degradation and records rollback candidate.
 
 Fail-Closed Defaults
 --------------------

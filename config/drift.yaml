@@ -1,0 +1,3 @@
+kpi_threshold: 0.2
+window_days: 20
+breach_days: 3

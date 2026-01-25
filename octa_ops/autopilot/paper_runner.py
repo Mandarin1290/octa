@@ -18,6 +18,8 @@ from octa_training.core.io_parquet import load_parquet
 from .budgets import ResourceBudgetController
 from .registry import ArtifactRegistry
 from .types import PaperOrderIntent, now_utc_iso, stable_hash
+from octa.core.risk.overlay import apply_overlay
+from octa.core.governance.drift_monitor import evaluate_drift
 
 
 def _load_broker_adapter(*, mode: str, instruments: List[str], rate_limit_per_minute: int = 60):
@@ -54,6 +56,71 @@ class PaperRiskPolicy:
     daily_loss_limit: float = 0.01
     max_drawdown_stop: float = 0.05
     no_leverage: bool = True
+
+
+def _load_overlay_config(path: str = "config/risk_overlay.yaml", mode: str = "paper") -> Dict[str, Any]:
+    try:
+        import yaml
+
+        raw = Path(path).read_text(encoding="utf-8")
+        cfg = yaml.safe_load(raw) or {}
+        if isinstance(cfg, dict):
+            mode_key = str(mode).replace("-", "_")
+            if isinstance(cfg.get(mode_key), dict):
+                return cfg.get(mode_key) or {}
+            return cfg
+        return {}
+    except Exception:
+        return {}
+
+
+def _regime_state_from_artifact(artifact: Dict[str, Any]) -> Dict[str, Any]:
+    gate = artifact.get("gate", {}) if isinstance(artifact, dict) else {}
+    label = gate.get("regime_label") or gate.get("label") or os.getenv("OCTA_REGIME_LABEL", "RISK_ON")
+    return {"label": str(label)}
+
+
+def _load_drift_config(path: str = "config/drift.yaml") -> Dict[str, Any]:
+    try:
+        import yaml
+
+        raw = Path(path).read_text(encoding="utf-8")
+        cfg = yaml.safe_load(raw) or {}
+        return cfg if isinstance(cfg, dict) else {}
+    except Exception:
+        return {}
+
+
+def _gate_from_timeframe(tf: str) -> str:
+    tf = str(tf).upper()
+    return {
+        "1D": "global_1d",
+        "1H": "signal_1h",
+        "30M": "structure_30m",
+        "5M": "execution_5m",
+        "1M": "micro_1m",
+    }.get(tf, "unknown")
+
+
+def _current_drawdown(ledger: LedgerStore) -> float:
+    navs = []
+    for e in ledger.by_action("performance.nav"):
+        p = e.get("payload", {})
+        try:
+            navs.append(float(p.get("nav", 0.0)))
+        except Exception:
+            continue
+    if not navs:
+        return 0.0
+    peak = navs[0]
+    max_dd = 0.0
+    for nav in navs:
+        if nav > peak:
+            peak = nav
+        dd = (nav / peak) - 1.0
+        if dd < max_dd:
+            max_dd = dd
+    return abs(max_dd)
 
 
 def _ndjson_append(path: Path, obj: Dict[str, Any]) -> None:
@@ -119,6 +186,11 @@ def run_paper(
 
     promoted = reg.get_promoted_artifacts(level=level)
     out_log = Path(paper_log_path)
+    mode = "paper" if not live_enable else "live_shadow"
+    overlay_cfg = _load_overlay_config(mode=mode)
+    drift_cfg = _load_drift_config()
+    bucket = os.getenv("OCTA_MODEL_BUCKET", "default")
+    current_dd = _current_drawdown(ledger)
 
     placed: List[Dict[str, Any]] = []
     skipped: List[Dict[str, Any]] = []
@@ -227,6 +299,43 @@ def run_paper(
 
         side = "BUY" if sig > 0 else "SELL"
         qty = abs(pos)
+
+        # Drift monitor: disable model if KPI deteriorates for N days
+        try:
+            model_key = f"{symbol}_{timeframe}"
+            drift = evaluate_drift(
+                ledger_dir=ledger_dir,
+                model_key=model_key,
+                gate=_gate_from_timeframe(timeframe),
+                timeframe=timeframe,
+                bucket=bucket,
+                cfg=drift_cfg,
+            )
+            if drift.disabled:
+                skipped.append({"symbol": symbol, "timeframe": timeframe, "reason": drift.reason, "kpi": drift.kpi})
+                continue
+        except Exception:
+            skipped.append({"symbol": symbol, "timeframe": timeframe, "reason": "drift_check_failed"})
+            continue
+
+        # Risk overlay (fail-closed)
+        try:
+            regime_state = _regime_state_from_artifact(artifact)
+            borrowable = str(os.getenv("OCTA_ASSUME_BORROWABLE", "1")).strip() == "1"
+            adjusted = apply_overlay(
+                signals=[{"symbol": symbol, "qty": qty, "side": side}],
+                portfolio_state={"exposure_used": exposure_used, "gross_short_exposure": 0.0, "drawdown": current_dd},
+                market_state={"asset_class": asset_class, "borrowable": borrowable},
+                overlay_cfg=overlay_cfg,
+                regime_state=regime_state,
+            )
+            if not adjusted:
+                skipped.append({"symbol": symbol, "timeframe": timeframe, "reason": "overlay_blocked"})
+                continue
+            qty = float(adjusted[0].get("qty", qty))
+        except Exception:
+            skipped.append({"symbol": symbol, "timeframe": timeframe, "reason": "overlay_failed"})
+            continue
 
         # Risk gate (fail-closed): per-position and portfolio exposure
         risk = PaperRiskPolicy()
