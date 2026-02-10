@@ -15,6 +15,9 @@ venv/
 octa/var/
 artifacts/
 **/artifacts/
+evidence/
+.commit_log/
+octa/infra/evidence/
 **/*.parquet
 **/*.duckdb
 **/*.pkl
