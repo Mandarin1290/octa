@@ -1723,9 +1723,31 @@ def train_evaluate_package(
                 pass
         # run robustness tests after gate thresholds are known
         if str(robustness_profile or 'full').lower() == 'risk_overlay':
-            robustness_result = run_risk_overlay_tests(res['df'], preds, metrics, gate, es)
+            robustness_result = run_risk_overlay_tests(
+                res['df'],
+                preds,
+                metrics,
+                gate,
+                es,
+                folds=folds,
+                source_df=df,
+                asset_class=asset_class,
+                timeframe=tf_key,
+            )
         else:
-            robustness_result = run_all_tests(symbol, features_res, folds, res['df'], preds, metrics, gate, es)
+            robustness_result = run_all_tests(
+                symbol,
+                features_res,
+                folds,
+                res['df'],
+                preds,
+                metrics,
+                gate,
+                es,
+                source_df=df,
+                asset_class=asset_class,
+                timeframe=tf_key,
+            )
         try:
             result.robustness = robustness_result.model_dump() if hasattr(robustness_result, "model_dump") else robustness_result.dict()
         except Exception:

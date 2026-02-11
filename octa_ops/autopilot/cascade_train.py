@@ -112,6 +112,10 @@ def run_cascade_training(
             training_window = None
             altdata_meta = None
             monte_carlo = None
+            walk_forward = None
+            regime_stability = None
+            cost_stress = None
+            liquidity = None
             if isinstance(pack, dict):
                 features_used = pack.get("features_used")
                 altdata_sources = pack.get("altdata_sources_used")
@@ -123,9 +127,22 @@ def run_cascade_training(
                 if isinstance(gate_dump, dict):
                     rob = gate_dump.get("robustness")
                     if isinstance(rob, dict):
-                        mc = (rob.get("details") or {}).get("monte_carlo")
+                        details = rob.get("details") or {}
+                        mc = details.get("monte_carlo")
                         if isinstance(mc, dict):
                             monte_carlo = mc
+                        wf = details.get("walk_forward")
+                        if isinstance(wf, dict):
+                            walk_forward = wf
+                        rg = details.get("regime_stability")
+                        if isinstance(rg, dict):
+                            regime_stability = rg
+                        cs = details.get("cost_stress")
+                        if isinstance(cs, dict):
+                            cost_stress = cs
+                        liq = details.get("liquidity")
+                        if isinstance(liq, dict):
+                            liquidity = liq
             except Exception:
                 monte_carlo = None
             metrics_by_tf[tf] = {
@@ -139,6 +156,10 @@ def run_cascade_training(
                 "model_artifacts": model_artifacts,
                 "training_window": training_window,
                 "monte_carlo": monte_carlo,
+                "walk_forward": walk_forward,
+                "regime_stability": regime_stability,
+                "cost_stress": cost_stress,
+                "liquidity": liquidity,
                 "parquet_path": str(pq),
                 "pkl_dir": str(getattr(getattr(cfg_layer, "paths", None), "pkl_dir", "")),
             }

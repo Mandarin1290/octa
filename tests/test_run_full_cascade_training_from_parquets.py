@@ -12,6 +12,16 @@ from octa.support.ops.run_full_cascade_training_from_parquets import (
 )
 
 
+def _mandatory_checks(passed: bool = True) -> dict:
+    return {
+        "monte_carlo": {"passed": passed},
+        "walk_forward": {"passed": passed},
+        "regime_stability": {"passed": passed},
+        "cost_stress": {"passed": passed},
+        "liquidity": {"passed": passed},
+    }
+
+
 def _write_preflight_fixture(preflight_dir: Path) -> None:
     preflight_dir.mkdir(parents=True, exist_ok=True)
     (preflight_dir / "trainable_symbols.txt").write_text("AAA\nBBB\n", encoding="utf-8")
@@ -57,9 +67,9 @@ def test_run_full_cascade_batches_and_resume(tmp_path: Path) -> None:
         ]
         metrics_by_tf = {
             tf: {
-                "metrics": {"n_trades": 1, "sharpe": 1.0},
+                "metrics": {"n_trades": 1, "sharpe": 1.0, "max_drawdown": 0.03, "cagr": 0.05},
                 "model_artifacts": [str(tmp_path / f"{tf}.pkl")],
-                "monte_carlo": {"passed": True},
+                **_mandatory_checks(True),
             }
             for tf in DEFAULT_TIMEFRAMES
         }
@@ -177,9 +187,9 @@ def test_symbols_override_records_missing(tmp_path: Path) -> None:
         ]
         metrics_by_tf = {
             tf: {
-                "metrics": {"n_trades": 1, "sharpe": 1.0},
+                "metrics": {"n_trades": 1, "sharpe": 1.0, "max_drawdown": 0.03, "cagr": 0.05},
                 "model_artifacts": [str(tmp_path / f"{tf}.pkl")],
-                "monte_carlo": {"passed": True},
+                **_mandatory_checks(True),
             }
             for tf in DEFAULT_TIMEFRAMES
         }
@@ -334,6 +344,39 @@ def test_monte_carlo_mandatory_missing_fails_stage(tmp_path: Path) -> None:
     assert result["stages"][0]["reason"] == "monte_carlo_missing"
 
 
+def test_walkforward_mandatory_missing_fails_stage(tmp_path: Path) -> None:
+    preflight_dir = tmp_path / "preflight"
+    _write_preflight_fixture(preflight_dir)
+    evidence_dir = tmp_path / "evidence"
+    settings = RunSettings(
+        root=tmp_path,
+        preflight_out=preflight_dir,
+        evidence_dir=evidence_dir,
+        batch_size=1,
+        max_symbols=1,
+        resume=False,
+        start_at=None,
+        dry_run=False,
+        config_path=None,
+        skip_preflight=True,
+    )
+
+    artifact = tmp_path / "ok.pkl"
+    artifact.write_text("ok", encoding="utf-8")
+
+    def stub_train_fn(**kwargs):
+        decisions = [SimpleNamespace(timeframe="1D", status="PASS", reason=None)]
+        checks = _mandatory_checks(True)
+        checks.pop("walk_forward")
+        metrics_by_tf = {"1D": {"metrics": {"n_trades": 10, "sharpe": 1.0}, "model_artifacts": [str(artifact)], **checks}}
+        return decisions, metrics_by_tf
+
+    run_full_cascade(settings, train_fn=stub_train_fn)
+    result = json.loads((evidence_dir / "results" / "AAA.json").read_text(encoding="utf-8"))
+    assert result["status"] == "FAIL"
+    assert result["stages"][0]["reason"] == "walkforward_missing"
+
+
 def test_train_error_from_decision_writes_exception_artifacts(tmp_path: Path) -> None:
     preflight_dir = tmp_path / "preflight"
     _write_preflight_fixture(preflight_dir)
@@ -395,8 +438,8 @@ def test_paper_ready_requires_1d_and_1h_with_mc_pass(tmp_path: Path) -> None:
             SimpleNamespace(timeframe="1M", status="SKIP", reason="cascade_previous_not_pass"),
         ]
         metrics_by_tf = {
-            "1D": {"metrics": {"n_trades": 100, "sharpe": 1.0}, "model_artifacts": [str(tmp_path / "1D.pkl")], "monte_carlo": {"passed": True}},
-            "1H": {"metrics": {"n_trades": 100, "sharpe": 0.1}, "model_artifacts": [str(tmp_path / "1H.pkl")], "monte_carlo": {"passed": False}},
+            "1D": {"metrics": {"n_trades": 100, "sharpe": 1.0}, "model_artifacts": [str(tmp_path / "1D.pkl")], **_mandatory_checks(True)},
+            "1H": {"metrics": {"n_trades": 100, "sharpe": 0.1}, "model_artifacts": [str(tmp_path / "1H.pkl")], **_mandatory_checks(False)},
         }
         return decisions, metrics_by_tf
 
@@ -428,7 +471,7 @@ def test_paper_ready_true_when_1d_1h_and_mc_pass(tmp_path: Path) -> None:
     def stub_train_fn(**kwargs):
         decisions = [SimpleNamespace(timeframe=tf, status="PASS", reason=None) for tf in DEFAULT_TIMEFRAMES]
         metrics_by_tf = {
-            tf: {"metrics": {"n_trades": 120, "sharpe": 1.0}, "model_artifacts": [str(tmp_path / f"{tf}.pkl")], "monte_carlo": {"passed": True}}
+            tf: {"metrics": {"n_trades": 120, "sharpe": 1.0, "max_drawdown": 0.03, "cagr": 0.05}, "model_artifacts": [str(tmp_path / f"{tf}.pkl")], **_mandatory_checks(True)}
             for tf in DEFAULT_TIMEFRAMES
         }
         return decisions, metrics_by_tf
@@ -436,3 +479,78 @@ def test_paper_ready_true_when_1d_1h_and_mc_pass(tmp_path: Path) -> None:
     run_full_cascade(settings, train_fn=stub_train_fn)
     result = json.loads((evidence_dir / "results" / "AAA.json").read_text(encoding="utf-8"))
     assert result["paper_ready"] is True
+
+
+def test_cross_tf_inconsistent_fails_symbol(tmp_path: Path) -> None:
+    preflight_dir = tmp_path / "preflight"
+    _write_preflight_fixture(preflight_dir)
+    evidence_dir = tmp_path / "evidence"
+    settings = RunSettings(
+        root=tmp_path,
+        preflight_out=preflight_dir,
+        evidence_dir=evidence_dir,
+        batch_size=1,
+        max_symbols=1,
+        resume=False,
+        start_at=None,
+        dry_run=False,
+        config_path=None,
+        skip_preflight=True,
+    )
+
+    for tf in DEFAULT_TIMEFRAMES:
+        (tmp_path / f"{tf}.pkl").write_text("ok", encoding="utf-8")
+
+    def stub_train_fn(**kwargs):
+        decisions = [SimpleNamespace(timeframe=tf, status="PASS", reason=None) for tf in DEFAULT_TIMEFRAMES]
+        metrics_by_tf = {
+            "1D": {"metrics": {"n_trades": 120, "sharpe": 1.0, "cagr": 0.12, "max_drawdown": 0.05}, "model_artifacts": [str(tmp_path / "1D.pkl")], **_mandatory_checks(True)},
+            "1H": {"metrics": {"n_trades": 120, "sharpe": 1.0, "cagr": -0.08, "max_drawdown": 0.04}, "model_artifacts": [str(tmp_path / "1H.pkl")], **_mandatory_checks(True)},
+            "30M": {"metrics": {"n_trades": 120, "sharpe": 1.0, "cagr": 0.01, "max_drawdown": 0.03}, "model_artifacts": [str(tmp_path / "30M.pkl")], **_mandatory_checks(True)},
+            "5M": {"metrics": {"n_trades": 120, "sharpe": 1.0, "cagr": 0.01, "max_drawdown": 0.03}, "model_artifacts": [str(tmp_path / "5M.pkl")], **_mandatory_checks(True)},
+            "1M": {"metrics": {"n_trades": 120, "sharpe": 1.0, "cagr": 0.01, "max_drawdown": 0.02}, "model_artifacts": [str(tmp_path / "1M.pkl")], **_mandatory_checks(True)},
+        }
+        return decisions, metrics_by_tf
+
+    run_full_cascade(settings, train_fn=stub_train_fn)
+    result = json.loads((evidence_dir / "results" / "AAA.json").read_text(encoding="utf-8"))
+    assert result["status"] == "FAIL"
+    assert result["reason"] == "cross_tf_inconsistent"
+    assert result["cross_tf_meta"]["passed"] is False
+
+
+def test_cross_tf_aligned_passes(tmp_path: Path) -> None:
+    preflight_dir = tmp_path / "preflight"
+    _write_preflight_fixture(preflight_dir)
+    evidence_dir = tmp_path / "evidence"
+    settings = RunSettings(
+        root=tmp_path,
+        preflight_out=preflight_dir,
+        evidence_dir=evidence_dir,
+        batch_size=1,
+        max_symbols=1,
+        resume=False,
+        start_at=None,
+        dry_run=False,
+        config_path=None,
+        skip_preflight=True,
+    )
+
+    for tf in DEFAULT_TIMEFRAMES:
+        (tmp_path / f"{tf}.pkl").write_text("ok", encoding="utf-8")
+
+    def stub_train_fn(**kwargs):
+        decisions = [SimpleNamespace(timeframe=tf, status="PASS", reason=None) for tf in DEFAULT_TIMEFRAMES]
+        metrics_by_tf = {
+            "1D": {"metrics": {"n_trades": 120, "sharpe": 1.0, "cagr": 0.12, "max_drawdown": 0.05}, "model_artifacts": [str(tmp_path / "1D.pkl")], **_mandatory_checks(True)},
+            "1H": {"metrics": {"n_trades": 120, "sharpe": 1.0, "cagr": 0.08, "max_drawdown": 0.04}, "model_artifacts": [str(tmp_path / "1H.pkl")], **_mandatory_checks(True)},
+            "30M": {"metrics": {"n_trades": 120, "sharpe": 1.0, "cagr": 0.01, "max_drawdown": 0.03}, "model_artifacts": [str(tmp_path / "30M.pkl")], **_mandatory_checks(True)},
+            "5M": {"metrics": {"n_trades": 120, "sharpe": 1.0, "cagr": 0.01, "max_drawdown": 0.03}, "model_artifacts": [str(tmp_path / "5M.pkl")], **_mandatory_checks(True)},
+            "1M": {"metrics": {"n_trades": 120, "sharpe": 1.0, "cagr": 0.01, "max_drawdown": 0.02}, "model_artifacts": [str(tmp_path / "1M.pkl")], **_mandatory_checks(True)},
+        }
+        return decisions, metrics_by_tf
+
+    run_full_cascade(settings, train_fn=stub_train_fn)
+    result = json.loads((evidence_dir / "results" / "AAA.json").read_text(encoding="utf-8"))
+    assert result["status"] == "PASS"
+    assert result["cross_tf_meta"]["passed"] is True

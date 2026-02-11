@@ -31,3 +31,17 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
 - **CONFIG:** 1 Dateien
   - `octa_training/config/training.yaml`
 
+
+### [2026-02-11 21:17:47] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 6 Code-Dateien - 2 Test-Dateien - (+1077/-37 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 6 Dateien
+  - `octa/support/ops/run_full_cascade_training_from_parquets.py`
+  - `octa_ops/autopilot/cascade_train.py`
+  - `octa_training/core/gates.py`
+  - ... und 3 weitere
+- **TESTS:** 2 Dateien
+  - `tests/test_institutional_gates_mandatory.py`
+  - `tests/test_run_full_cascade_training_from_parquets.py`
+

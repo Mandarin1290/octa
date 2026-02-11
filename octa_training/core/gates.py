@@ -69,6 +69,29 @@ class GateSpec(BaseModel):
     monte_carlo_maxdd_mult: float = 1.5
     monte_carlo_prob_loss_max: float = 0.40
 
+    # Mandatory walk-forward OOS gate
+    walkforward_oos_pf_scale: float = 0.95
+    walkforward_oos_sharpe_scale: float = 0.90
+    walkforward_oos_dd_scale: float = 1.0
+    walkforward_min_fold_pass_ratio: float = 1.0
+    walkforward_oos_pf_min: Optional[float] = None
+    walkforward_oos_sharpe_min: Optional[float] = None
+    walkforward_oos_maxdd_max: Optional[float] = None
+
+    # Mandatory regime-stability gate
+    regime_dd_limit: Optional[float] = None
+    regime_pf_min: float = 1.1
+    regime_pf_min_worst: float = 1.0
+    regime_sharpe_collapse_ratio: float = 0.35
+
+    # Mandatory cost-stress gate
+    stress_pf_min: float = 1.05
+    stress_dd_mult: float = 1.25
+    stress_dd_limit: Optional[float] = None
+
+    # Mandatory liquidity gate
+    liquidity_percentile_min: float = 40.0
+
     # Statistical sufficiency / Phase-1 survival semantics
     # If evidence is insufficient, emit PASS_LIMITED_STATISTICAL_CONFIDENCE instead of FAIL.
     folds_min_evaluable: int = 3

@@ -10,6 +10,12 @@ from sklearn.metrics import roc_auc_score
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
+from octa_training.core.institutional_gates import (
+    evaluate_cost_stress,
+    evaluate_liquidity_gate,
+    evaluate_regime_stability,
+    evaluate_walk_forward_oos,
+)
 from octa_training.core.metrics_contract import MetricsSummary
 
 
@@ -174,6 +180,11 @@ def run_risk_overlay_tests(
     metrics: MetricsSummary,
     gate: Any,
     settings: Any,
+    *,
+    folds: Optional[List[Any]] = None,
+    source_df: Optional[pd.DataFrame] = None,
+    asset_class: Optional[str] = None,
+    timeframe: Optional[str] = None,
 ) -> RobustnessResult:
     """FX 1D Risk/Regime overlay robustness subset.
 
@@ -184,25 +195,55 @@ def run_risk_overlay_tests(
     reasons: List[str] = []
     details: Dict[str, Any] = {}
 
-    # cost stress (HARD)
+    # Mandatory walk-forward (HARD)
     try:
-        cs = cost_stress_test(df_backtest['price'], preds, settings, gate)
-        details['cost_stress'] = cs
-        if not cs.get('passed', True):
-            reasons.append(f"cost_stress_failed sharpe={cs.get('sharpe')}")
+        wf = evaluate_walk_forward_oos(df_backtest, gate, timeframe=timeframe)
+        details["walk_forward"] = wf
+        if not wf.get("passed", False):
+            reasons.append(wf.get("reason") or "walkforward_failed")
     except Exception as e:
-        details['cost_stress'] = {'passed': False, 'error': str(e)}
-        reasons.append('cost_stress_error')
+        details["walk_forward"] = {"enabled": True, "passed": False, "reason": "walkforward_exception", "error": str(e)}
+        reasons.append("walkforward_exception")
 
-    # regime stress (HARD)
+    # Mandatory regime stability (HARD)
     try:
-        rg = regime_stress(df_backtest, gate)
-        details['regime'] = rg
-        if not rg.get('passed', True):
-            reasons.append(f"regime_stress_failed subset_max_dd={rg.get('subset_max_drawdown')}")
+        rg = evaluate_regime_stability(
+            df_backtest,
+            gate,
+            timeframe=timeframe,
+            walkforward_meta=(details.get("walk_forward") or {}).get("walkforward_meta"),
+        )
+        details["regime_stability"] = rg
+        if not rg.get("passed", False):
+            reasons.append(rg.get("reason") or "regime_stability_failed")
     except Exception as e:
-        details['regime'] = {'passed': False, 'error': str(e)}
-        reasons.append('regime_stress_error')
+        details["regime_stability"] = {"enabled": True, "passed": False, "reason": "regime_stability_exception", "error": str(e)}
+        reasons.append("regime_stability_exception")
+
+    # Mandatory cost stress (HARD)
+    try:
+        cs = evaluate_cost_stress(df_backtest["price"], preds, settings, gate)
+        details["cost_stress"] = cs
+        if not cs.get("passed", False):
+            reasons.append(cs.get("reason") or "cost_stress_failed")
+    except Exception as e:
+        details["cost_stress"] = {"enabled": True, "passed": False, "reason": "cost_stress_exception", "error": str(e)}
+        reasons.append("cost_stress_exception")
+
+    # Mandatory liquidity (HARD)
+    try:
+        liq = evaluate_liquidity_gate(
+            source_df if isinstance(source_df, pd.DataFrame) else df_backtest,
+            timeframe=timeframe,
+            gate=gate,
+            asset_class=asset_class,
+        )
+        details["liquidity"] = liq
+        if not liq.get("passed", False):
+            reasons.append(liq.get("reason") or "liquidity_gate_failed")
+    except Exception as e:
+        details["liquidity"] = {"enabled": True, "passed": False, "reason": "liquidity_gate_exception", "error": str(e)}
+        reasons.append("liquidity_gate_exception")
 
     # Mandatory MC gate (HARD)
     try:
@@ -555,7 +596,20 @@ def regime_stress(df: pd.DataFrame, gate: Any) -> Dict[str, Any]:
     return {'passed': passed, 'subset_max_drawdown': float(dd)}
 
 
-def run_all_tests(symbol: str, features_res: Any, folds: List[Any], df_backtest: pd.DataFrame, preds: pd.Series, metrics: MetricsSummary, gate: Any, settings: Any) -> RobustnessResult:
+def run_all_tests(
+    symbol: str,
+    features_res: Any,
+    folds: List[Any],
+    df_backtest: pd.DataFrame,
+    preds: pd.Series,
+    metrics: MetricsSummary,
+    gate: Any,
+    settings: Any,
+    *,
+    source_df: Optional[pd.DataFrame] = None,
+    asset_class: Optional[str] = None,
+    timeframe: Optional[str] = None,
+) -> RobustnessResult:
     reasons: List[str] = []
     details: Dict[str, Any] = {}
     limited_reasons: List[str] = []
@@ -584,17 +638,55 @@ def run_all_tests(symbol: str, features_res: Any, folds: List[Any], df_backtest:
     elif not sw.get('passed', True):
         reasons.append(f"subwindow_stability_failed pass_count={sw.get('pass_count')}")
 
-    # cost stress
-    cs = cost_stress_test(df_backtest['price'], preds, settings, gate)
-    details['cost_stress'] = cs
-    if not cs.get('passed', True):
-        reasons.append(f"cost_stress_failed sharpe={cs.get('sharpe')}")
+    # Mandatory walk-forward OOS (HARD)
+    try:
+        wf = evaluate_walk_forward_oos(df_backtest, gate, timeframe=timeframe)
+        details["walk_forward"] = wf
+        if not wf.get("passed", False):
+            reasons.append(wf.get("reason") or "walkforward_failed")
+    except Exception as e:
+        details["walk_forward"] = {"enabled": True, "passed": False, "reason": "walkforward_exception", "error": str(e)}
+        reasons.append("walkforward_exception")
 
-    # regime stress
-    rg = regime_stress(df_backtest, gate)
-    details['regime'] = rg
-    if not rg.get('passed', True):
-        reasons.append(f"regime_stress_failed subset_max_dd={rg.get('subset_max_drawdown')}")
+    # Mandatory regime stability (HARD)
+    try:
+        rg = evaluate_regime_stability(
+            df_backtest,
+            gate,
+            timeframe=timeframe,
+            walkforward_meta=(details.get("walk_forward") or {}).get("walkforward_meta"),
+        )
+        details["regime_stability"] = rg
+        if not rg.get("passed", False):
+            reasons.append(rg.get("reason") or "regime_stability_failed")
+    except Exception as e:
+        details["regime_stability"] = {"enabled": True, "passed": False, "reason": "regime_stability_exception", "error": str(e)}
+        reasons.append("regime_stability_exception")
+
+    # Mandatory cost stress (HARD)
+    try:
+        cs = evaluate_cost_stress(df_backtest["price"], preds, settings, gate)
+        details["cost_stress"] = cs
+        if not cs.get("passed", False):
+            reasons.append(cs.get("reason") or "cost_stress_failed")
+    except Exception as e:
+        details["cost_stress"] = {"enabled": True, "passed": False, "reason": "cost_stress_exception", "error": str(e)}
+        reasons.append("cost_stress_exception")
+
+    # Mandatory liquidity (HARD)
+    try:
+        liq = evaluate_liquidity_gate(
+            source_df if isinstance(source_df, pd.DataFrame) else df_backtest,
+            timeframe=timeframe,
+            gate=gate,
+            asset_class=asset_class,
+        )
+        details["liquidity"] = liq
+        if not liq.get("passed", False):
+            reasons.append(liq.get("reason") or "liquidity_gate_failed")
+    except Exception as e:
+        details["liquidity"] = {"enabled": True, "passed": False, "reason": "liquidity_gate_exception", "error": str(e)}
+        reasons.append("liquidity_gate_exception")
 
     # Legacy bootstrap robustness (kept for diagnostics only)
     try:

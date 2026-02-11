@@ -15,6 +15,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tupl
 
 from octa import __version__ as OCTA_VERSION
 from octa.core.cascade.policies import DEFAULT_TIMEFRAMES
+from octa_training.core.institutional_gates import evaluate_cross_timeframe_consistency
 from octa_ops.autopilot.cascade_train import CascadePolicy, run_cascade_training
 from octa.core.data.sources.altdata.orchestrator import load_altdat_config
 from octa.core.data.sources.altdata.cache import resolve_cache_root
@@ -287,9 +288,22 @@ def _build_gate_summary(gate: Dict[str, Any]) -> Tuple[Dict[str, Any], Optional[
     try:
         rob = gate.get("robustness") if isinstance(gate, dict) else None
         if isinstance(rob, dict):
-            mc = (rob.get("details") or {}).get("monte_carlo")
+            details = rob.get("details") or {}
+            mc = details.get("monte_carlo")
             if isinstance(mc, dict):
                 summary["monte_carlo"] = _safe_json_obj(mc)
+            wf = details.get("walk_forward")
+            if isinstance(wf, dict):
+                summary["walk_forward"] = _safe_json_obj(wf)
+            rg = details.get("regime_stability")
+            if isinstance(rg, dict):
+                summary["regime_stability"] = _safe_json_obj(rg)
+            cs = details.get("cost_stress")
+            if isinstance(cs, dict):
+                summary["cost_stress"] = _safe_json_obj(cs)
+            liq = details.get("liquidity")
+            if isinstance(liq, dict):
+                summary["liquidity"] = _safe_json_obj(liq)
     except Exception:
         pass
 
@@ -407,6 +421,10 @@ def _normalize_decisions(
         gate_summary: Dict[str, Any] = {}
         gate_result: Optional[Dict[str, Any]] = None
         monte_carlo = None
+        walk_forward = None
+        regime_stability = None
+        cost_stress = None
+        liquidity = None
         if tf in metrics_by_tf:
             metrics = (metrics_by_tf.get(tf) or {}).get("metrics")
             model_artifacts = (metrics_by_tf.get(tf) or {}).get("model_artifacts")
@@ -417,6 +435,10 @@ def _normalize_decisions(
             training_window = (metrics_by_tf.get(tf) or {}).get("training_window")
             gate_summary, gate_result = _compact_gate_result((metrics_by_tf.get(tf) or {}).get("gate"))
             monte_carlo = (metrics_by_tf.get(tf) or {}).get("monte_carlo")
+            walk_forward = (metrics_by_tf.get(tf) or {}).get("walk_forward")
+            regime_stability = (metrics_by_tf.get(tf) or {}).get("regime_stability")
+            cost_stress = (metrics_by_tf.get(tf) or {}).get("cost_stress")
+            liquidity = (metrics_by_tf.get(tf) or {}).get("liquidity")
         if status == "PASS":
             ok_metrics, why_metrics = _metrics_valid(metrics)
             ok_artifacts, why_artifacts = _artifacts_valid(model_artifacts)
@@ -432,6 +454,30 @@ def _normalize_decisions(
             elif not bool(monte_carlo.get("passed", False)):
                 status = "FAIL"
                 reason = "monte_carlo_failed"
+            elif not isinstance(walk_forward, dict):
+                status = "FAIL"
+                reason = "walkforward_missing"
+            elif not bool(walk_forward.get("passed", False)):
+                status = "FAIL"
+                reason = "walkforward_failed"
+            elif not isinstance(regime_stability, dict):
+                status = "FAIL"
+                reason = "regime_stability_missing"
+            elif not bool(regime_stability.get("passed", False)):
+                status = "FAIL"
+                reason = "regime_stability_failed"
+            elif not isinstance(cost_stress, dict):
+                status = "FAIL"
+                reason = "cost_stress_missing"
+            elif not bool(cost_stress.get("passed", False)):
+                status = "FAIL"
+                reason = "cost_stress_failed"
+            elif not isinstance(liquidity, dict):
+                status = "FAIL"
+                reason = "liquidity_missing"
+            elif not bool(liquidity.get("passed", False)):
+                status = "FAIL"
+                reason = "liquidity_failed"
         elif status == "FAIL" and reason == "gate_failed":
             ok_metrics, _ = _metrics_valid(metrics)
             if not ok_metrics:
@@ -466,6 +512,10 @@ def _normalize_decisions(
                 "gate_summary": gate_summary,
                 "gate_result": gate_result,
                 "monte_carlo": _safe_json_obj(monte_carlo) if isinstance(monte_carlo, dict) else monte_carlo,
+                "walk_forward": _safe_json_obj(walk_forward) if isinstance(walk_forward, dict) else walk_forward,
+                "regime_stability": _safe_json_obj(regime_stability) if isinstance(regime_stability, dict) else regime_stability,
+                "cost_stress": _safe_json_obj(cost_stress) if isinstance(cost_stress, dict) else cost_stress,
+                "liquidity": _safe_json_obj(liquidity) if isinstance(liquidity, dict) else liquidity,
                 "decision_detail": decision_detail,
             }
         )
@@ -816,6 +866,32 @@ def run_full_cascade(
                         "exception_ref": exception_ref,
                         "error_type": type(exc).__name__,
                     }
+                    metrics_by_tf = {}
+
+                cross_tf_meta: Dict[str, Any]
+                try:
+                    cross_tf_meta = evaluate_cross_timeframe_consistency(stages)
+                except Exception as exc:
+                    cross_tf_meta = {
+                        "executed": True,
+                        "passed": False,
+                        "reason": "cross_tf_gate_exception",
+                        "error": _truncate_text(str(exc), MAX_EXCEPTION_MESSAGE_CHARS),
+                        "checks": [],
+                    }
+                if not bool(cross_tf_meta.get("executed", False)):
+                    if status == "PASS":
+                        status = "FAIL"
+                        reason = "cross_tf_gate_not_executed"
+                    if top_detail is None:
+                        top_detail = {"cross_tf_meta": _safe_json_obj(cross_tf_meta)}
+                elif status == "PASS" and not bool(cross_tf_meta.get("passed", False)):
+                    status = "FAIL"
+                    reason = "cross_tf_inconsistent"
+                    if top_detail is None:
+                        top_detail = {}
+                    if isinstance(top_detail, dict):
+                        top_detail["cross_tf_meta"] = _safe_json_obj(cross_tf_meta)
 
                 for stage in stages:
                     stage_tf = str(stage.get("timeframe") or "")
@@ -896,6 +972,7 @@ def run_full_cascade(
                     "status": status,
                     "reason": reason,
                     "detail": top_detail,
+                    "cross_tf_meta": _safe_json_obj(cross_tf_meta),
                     "stages": stages,
                     "paper_ready": paper_ready,
                     "paper_artifacts": paper_artifacts,

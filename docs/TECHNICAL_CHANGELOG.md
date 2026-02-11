@@ -3,6 +3,28 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-02-11 21:17:47] FEATURE
+Neue Funktionalität hinzugefügt - 6 Code-Dateien - 2 Test-Dateien - (+1077/-37 Zeilen)
+
+**Statistics:**
+- Files Changed: 8
+- Lines Added: +1077
+- Lines Deleted: -37
+- Net Change: +1040
+
+**File-Level Changes:**
+```
++   78 -    1  octa/support/ops/run_full_cascade_training_from_parquets.py
++   22 -    1  octa_ops/autopilot/cascade_train.py
++   23 -    0  octa_training/core/gates.py
++  532 -    0  octa_training/core/institutional_gates.py
++   24 -    2  octa_training/core/pipeline.py
++  118 -   26  octa_training/core/robustness.py
++  155 -    0  tests/test_institutional_gates_mandatory.py
++  125 -    7  tests/test_run_full_cascade_training_from_parquets.py
+```
+
+
 ## [2026-02-11 20:49:27] TEST
 Code-Änderungen - 9 Code-Dateien - 3 Test-Dateien - (+2268/-108 Zeilen)
 
