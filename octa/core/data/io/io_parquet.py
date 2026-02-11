@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
@@ -93,6 +94,9 @@ class ParquetFileInfo:
     sha256: Optional[str]
 
 
+_STEM_TF_RE = re.compile(r"^(?P<symbol>[A-Z0-9._-]+)_(?P<tf>1D|1H|30M|5M|1M)$", re.IGNORECASE)
+
+
 def sanitize_symbol(name: str) -> str:
     # Keep only A-Z0-9_:-, uppercase, replace others with _
     out = []
@@ -102,6 +106,13 @@ def sanitize_symbol(name: str) -> str:
         else:
             out.append("_")
     return "".join(out)
+
+
+def symbol_from_parquet_stem(stem: str) -> str:
+    m = _STEM_TF_RE.match(str(stem))
+    if m:
+        return sanitize_symbol(str(m.group("symbol")))
+    return sanitize_symbol(str(stem))
 
 
 def compute_sha256(path: Path, chunk_size: int = 4 * 1024 * 1024) -> str:
@@ -128,7 +139,7 @@ def discover_parquets(raw_dir: Path, state: Optional[StateRegistry] = None, igno
         ignore_dirs = ["PKL"]
     raw_dir = Path(raw_dir)
     found: List[ParquetFileInfo] = []
-    for p in raw_dir.rglob("*.parquet"):
+    for p in sorted(raw_dir.rglob("*.parquet"), key=lambda x: str(x).upper()):
         if _is_ignored(p, ignore_dirs):
             continue
         try:
@@ -137,7 +148,7 @@ def discover_parquets(raw_dir: Path, state: Optional[StateRegistry] = None, igno
             continue
         mtime = stat.st_mtime
         size = stat.st_size
-        symbol = sanitize_symbol(p.stem)
+        symbol = symbol_from_parquet_stem(p.stem)
 
         sha: Optional[str] = None
         # fast-path using state if available and size+mtime match

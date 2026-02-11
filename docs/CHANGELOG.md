@@ -45,3 +45,15 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `tests/test_institutional_gates_mandatory.py`
   - `tests/test_run_full_cascade_training_from_parquets.py`
 
+
+### [2026-02-11 21:26:29] TEST
+**Beschreibung:** Code-Änderungen - 2 Code-Dateien - 2 Test-Dateien - (+420/-2 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 2 Dateien
+  - `octa/core/data/io/io_parquet.py`
+  - `octa/support/ops/build_raw_tree_from_flat_parquets.py`
+- **TESTS:** 2 Dateien
+  - `tests/test_build_raw_tree_from_flat_parquets.py`
+  - `tests/test_io_parquet_recursive_discovery.py`
+

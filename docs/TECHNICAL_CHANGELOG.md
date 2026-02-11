@@ -3,6 +3,24 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-02-11 21:26:29] TEST
+Code-Änderungen - 2 Code-Dateien - 2 Test-Dateien - (+420/-2 Zeilen)
+
+**Statistics:**
+- Files Changed: 4
+- Lines Added: +420
+- Lines Deleted: -2
+- Net Change: +418
+
+**File-Level Changes:**
+```
++   13 -    2  octa/core/data/io/io_parquet.py
++  304 -    0  octa/support/ops/build_raw_tree_from_flat_parquets.py
++   74 -    0  tests/test_build_raw_tree_from_flat_parquets.py
++   29 -    0  tests/test_io_parquet_recursive_discovery.py
+```
+
+
 ## [2026-02-11 21:17:47] FEATURE
 Neue Funktionalität hinzugefügt - 6 Code-Dateien - 2 Test-Dateien - (+1077/-37 Zeilen)
 
