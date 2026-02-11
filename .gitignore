@@ -54,3 +54,7 @@ reports/
 catboost_info/
 
 catboost_info/
+
+# local runtime state
+state/state.db
+state/*.db
