@@ -74,3 +74,13 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
 - **OTHER:** 1 Dateien
   - `octa/support/ops/run_evidence_smoke.sh`
 
+
+### [2026-02-11 22:01:28] TEST
+**Beschreibung:** Code-Änderungen - 1 Code-Dateien - 1 Test-Dateien - (+413/-170 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 1 Dateien
+  - `octa/support/ops/build_raw_tree_from_flat_parquets.py`
+- **TESTS:** 1 Dateien
+  - `tests/test_build_raw_tree_from_flat_parquets.py`
+

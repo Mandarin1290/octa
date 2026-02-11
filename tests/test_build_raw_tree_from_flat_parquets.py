@@ -20,55 +20,90 @@ def test_parse_filename_strict_accepts_and_rejects() -> None:
     assert parse_filename_strict("AAPL_1D.csv") is None
 
 
-def test_detect_asset_folders_case_insensitive(tmp_path: Path) -> None:
+def test_detect_asset_folders_case_insensitive_and_options_skipped(tmp_path: Path) -> None:
     (tmp_path / "stock_PARQUET").mkdir()
     (tmp_path / "Etf_parquet").mkdir()
     (tmp_path / "FX_Parquet").mkdir()
     (tmp_path / "futures_parquet").mkdir()
     (tmp_path / "CRYPTO_parquet").mkdir()
-    out = detect_asset_folders(tmp_path)
+    (tmp_path / "Options_parquet").mkdir()
+    out = detect_asset_folders(tmp_path, ignore_options=True)
     assert set(out.keys()) == {"equities", "etfs", "fx", "futures", "crypto"}
+    assert all("option" not in p.name.lower() for p in out.values())
 
 
-def test_build_tree_dry_run_and_real_symlink_is_deterministic(tmp_path: Path) -> None:
+def test_completeness_gating_and_options_ignored_and_deterministic_manifest(tmp_path: Path) -> None:
     src = tmp_path / "src"
     dst = tmp_path / "raw"
-    ev_dry = tmp_path / "evidence_dry"
-    ev_real = tmp_path / "evidence_real"
+    ev = tmp_path / "evidence"
     stock = src / "Stock_parquet"
     etf = src / "ETF_parquet"
+    options = src / "Options_parquet"
     stock.mkdir(parents=True)
     etf.mkdir(parents=True)
+    options.mkdir(parents=True)
 
-    (stock / "MSFT_1H.parquet").write_bytes(b"b")
+    # Incomplete symbol: missing 1M -> must be skipped entirely.
     (stock / "AAPL_1D.parquet").write_bytes(b"a")
-    (stock / "bad_name.parquet").write_bytes(b"x")
-    (etf / "SPY_30M.parquet").write_bytes(b"c")
+    (stock / "AAPL_1H.parquet").write_bytes(b"a")
+    (stock / "AAPL_30M.parquet").write_bytes(b"a")
+    (stock / "AAPL_5M.parquet").write_bytes(b"a")
 
-    out_dry = build_raw_tree(source_root=src, dest_root=dst, mode="symlink", dry_run=True, evidence_dir=ev_dry)
-    man_dry = Path(out_dry["manifest"])
-    rows_dry = [json.loads(x) for x in man_dry.read_text(encoding="utf-8").splitlines() if x.strip()]
-    assert [Path(r["src"]).name for r in rows_dry] == ["AAPL_1D.parquet", "MSFT_1H.parquet", "bad_name.parquet", "SPY_30M.parquet"]
-    assert any(r["status"] == "ERROR" and r.get("error") == "invalid_filename_format" for r in rows_dry)
-    assert not (dst / "equities" / "AAPL" / "AAPL_1D.parquet").exists()
+    # Complete symbol: all required TFs -> must be linked.
+    for tf in ("1D", "1H", "30M", "5M", "1M"):
+        (stock / f"MSFT_{tf}.parquet").write_bytes(tf.encode("utf-8"))
 
-    out_real = build_raw_tree(source_root=src, dest_root=dst, mode="symlink", dry_run=False, evidence_dir=ev_real)
-    man_real = Path(out_real["manifest"])
-    rows_real = [json.loads(x) for x in man_real.read_text(encoding="utf-8").splitlines() if x.strip()]
-    assert [Path(r["src"]).name for r in rows_real] == ["AAPL_1D.parquet", "MSFT_1H.parquet", "bad_name.parquet", "SPY_30M.parquet"]
-    aapl_dst = dst / "equities" / "AAPL" / "AAPL_1D.parquet"
-    msft_dst = dst / "equities" / "MSFT" / "MSFT_1H.parquet"
-    spy_dst = dst / "etfs" / "SPY" / "SPY_30M.parquet"
-    assert aapl_dst.is_symlink()
-    assert msft_dst.is_symlink()
-    assert spy_dst.is_symlink()
-    assert aapl_dst.resolve() == (stock / "AAPL_1D.parquet").resolve()
-    assert msft_dst.resolve() == (stock / "MSFT_1H.parquet").resolve()
-    assert spy_dst.resolve() == (etf / "SPY_30M.parquet").resolve()
+    # Options-like filenames/folders -> ignored.
+    (stock / "SPY_OPTIONS_1D.parquet").write_bytes(b"x")
+    (stock / "QQQ_chain_1H.parquet").write_bytes(b"y")
+    (options / "AAPL_1D.parquet").write_bytes(b"z")
 
-    summary = json.loads(Path(out_real["summary"]).read_text(encoding="utf-8"))
-    assert summary["counts_by_asset_class"]["equities"] == 2
-    assert summary["counts_by_asset_class"]["etfs"] == 1
-    assert summary["error_count"] == 1
-    assert summary["unique_symbols"] == 3
-    assert (Path(out_real["hashes"])).exists()
+    # Unparseable file -> error row in manifest.
+    (etf / "bad_name.parquet").write_bytes(b"b")
+
+    out = build_raw_tree(
+        source_root=src,
+        dest_root=dst,
+        mode="symlink",
+        dry_run=False,
+        ignore_options=True,
+        evidence_dir=ev,
+    )
+
+    plan = json.loads(Path(out["plan"]).read_text(encoding="utf-8"))
+    comp = json.loads(Path(out["completeness_report"]).read_text(encoding="utf-8"))
+    rows = [json.loads(x) for x in Path(out["manifest"]).read_text(encoding="utf-8").splitlines() if x.strip()]
+
+    # completeness: AAPL skipped, MSFT eligible
+    assert "MSFT" in comp["eligible_symbols"]["equities"]
+    skipped = [x for x in comp["skipped_symbols"] if x["asset_class"] == "equities" and x["symbol"] == "AAPL"]
+    assert len(skipped) == 1
+    assert skipped[0]["missing_tfs"] == ["1M"]
+
+    # no folder for incomplete AAPL
+    assert not (dst / "equities" / "AAPL").exists()
+
+    # complete MSFT folder with all required TFs
+    msft_dir = dst / "equities" / "MSFT"
+    assert msft_dir.exists()
+    for tf in ("1D", "1H", "30M", "5M", "1M"):
+        p = msft_dir / f"MSFT_{tf}.parquet"
+        assert p.is_symlink()
+        assert p.resolve() == (stock / f"MSFT_{tf}.parquet").resolve()
+
+    # options-like files are not in plan actions
+    plan_srcs = [Path(a["src"]).name for a in plan["actions"]]
+    assert all("OPTION" not in s.upper() for s in plan_srcs)
+    assert all("CHAIN" not in s.upper() for s in plan_srcs)
+
+    # deterministic ordering in manifest: sorted by asset/symbol/timeframe + preface rows.
+    ok_rows = [r for r in rows if r["status"] in {"OK", "EXISTS_MATCH", "DRY_RUN"}]
+    key_rows = [(r["asset_class"], r["symbol"], r["timeframe"], Path(r["src"]).name) for r in ok_rows]
+    assert key_rows == sorted(key_rows)
+
+    # evidence artifacts
+    assert Path(out["hashes"]).exists()
+    summary = json.loads(Path(out["summary"]).read_text(encoding="utf-8"))
+    assert summary["eligible_count"] == 1
+    assert summary["skipped_incomplete_count"] >= 1
+    assert summary["unparseable_count"] == 1
