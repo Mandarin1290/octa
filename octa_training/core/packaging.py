@@ -8,6 +8,7 @@ import tempfile
 from dataclasses import dataclass
 from datetime import datetime as dt
 from typing import Any, Dict, Optional
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -15,6 +16,7 @@ from pydantic import BaseModel
 
 from octa_training.core.gates import GateResult
 from octa_training.core.metrics_contract import MetricsSummary
+from octa_training.core.artifacts import save_model, write_feature_schema
 
 
 def _json_sanitize(obj: Any) -> Any:
@@ -450,6 +452,17 @@ def save_tradeable_artifact(
     except Exception:
         pass
 
+    # write model artifacts (cbm/pkl + metadata)
+    model_meta = {
+        "model_name": model_name,
+        "task": task,
+        "horizon": horizon,
+        "device_used": getattr(best_result, "device_used", "cpu"),
+    }
+    model_artifacts = save_model(model_obj=model_obj, model_name=str(model_name), out_dir=Path(pkl_dir), extra_meta=model_meta)
+    feature_schema_path = write_feature_schema(feat_names, Path(pkl_dir) / "feature_schema.json")
+    model_artifacts = list(model_artifacts) + [target_pkl, meta_path, sha_path, feature_schema_path]
+
     # update state (only for tradeable/PASS path)
     if update_state:
         try:
@@ -457,4 +470,21 @@ def save_tradeable_artifact(
         except Exception:
             pass
 
-    return {"saved": True, "pkl": target_pkl, "pkl_sha": pkl_sha, "meta": meta.dict(), "artifact_kind": artifact_kind}
+    return {
+        "saved": True,
+        "pkl": target_pkl,
+        "pkl_sha": pkl_sha,
+        "meta": meta.dict(),
+        "artifact_kind": artifact_kind,
+        "model_artifacts": model_artifacts,
+        "feature_schema_path": feature_schema_path,
+        "features_used": feat_names,
+        "altdata_sources_used": (features_res.meta or {}).get("altdata_sources_used") if hasattr(features_res, "meta") else None,
+        "altdata_enabled": (features_res.meta or {}).get("altdata_enabled") if hasattr(features_res, "meta") else False,
+        "altdata_meta": (features_res.meta or {}).get("altdat") if hasattr(features_res, "meta") else None,
+        "altdata_degraded": bool((features_res.meta or {}).get("altdata_degraded", False)) if hasattr(features_res, "meta") else False,
+        "training_window": {
+            "start": str(features_res.X.index.min()) if len(features_res.X.index) else None,
+            "end": str(features_res.X.index.max()) if len(features_res.X.index) else None,
+        },
+    }

@@ -61,6 +61,14 @@ class GateSpec(BaseModel):
     bootstrap_block: Optional[int] = None
     bootstrap_seed: Optional[int] = None
 
+    # Mandatory per-stage Monte Carlo gate (deterministic, net-of-cost).
+    monte_carlo_n: int = 600
+    monte_carlo_seed: int = 1337
+    monte_carlo_pf_p05_min: float = 1.05
+    monte_carlo_sharpe_p05_min: float = 0.40
+    monte_carlo_maxdd_mult: float = 1.5
+    monte_carlo_prob_loss_max: float = 0.40
+
     # Statistical sufficiency / Phase-1 survival semantics
     # If evidence is insufficient, emit PASS_LIMITED_STATISTICAL_CONFIDENCE instead of FAIL.
     folds_min_evaluable: int = 3

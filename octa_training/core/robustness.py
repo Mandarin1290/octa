@@ -20,6 +20,154 @@ class RobustnessResult(BaseModel):
     limited_reasons: List[str] = Field(default_factory=list)
 
 
+def _profit_factor_from_returns(r: np.ndarray) -> float:
+    if r.size == 0:
+        return float("nan")
+    gains = float(np.sum(r[r > 0.0]))
+    losses = float(-np.sum(r[r < 0.0]))
+    if losses <= 0.0:
+        return 10.0
+    return float(gains / losses)
+
+
+def _max_drawdown_from_returns(r: np.ndarray) -> float:
+    if r.size == 0:
+        return float("nan")
+    eq = np.cumprod(1.0 + r)
+    peak = np.maximum.accumulate(eq)
+    dd = 1.0 - (eq / peak)
+    return float(np.max(dd))
+
+
+def _annualization_factor(df_backtest: pd.DataFrame) -> float:
+    try:
+        from octa_training.core.evaluation import infer_frequency
+
+        if isinstance(df_backtest, pd.DataFrame) and isinstance(df_backtest.index, pd.DatetimeIndex):
+            ann = float(infer_frequency(df_backtest.index))
+            if np.isfinite(ann) and ann > 0:
+                return ann
+    except Exception:
+        pass
+    return 252.0
+
+
+def _sharpe_from_returns(r: np.ndarray, ann: float) -> float:
+    if r.size < 2:
+        return float("nan")
+    mu = float(np.mean(r))
+    sd = float(np.std(r, ddof=0))
+    if not np.isfinite(sd) or sd <= 0.0:
+        return float("nan")
+    return float((mu / sd) * np.sqrt(float(ann)))
+
+
+def mandatory_monte_carlo_gate(
+    df_backtest: pd.DataFrame,
+    metrics: MetricsSummary,
+    gate: Any,
+) -> Dict[str, Any]:
+    """Mandatory deterministic Monte Carlo gate over net-of-cost trade sequence.
+
+    If MC cannot run, this returns passed=False with a BUG-class reason.
+    """
+
+    if not isinstance(df_backtest, pd.DataFrame) or "strat_ret" not in df_backtest.columns:
+        return {"enabled": True, "passed": False, "reason": "monte_carlo_missing_strat_ret"}
+
+    try:
+        strat = pd.to_numeric(df_backtest["strat_ret"], errors="coerce").astype(float)
+    except Exception:
+        return {"enabled": True, "passed": False, "reason": "monte_carlo_invalid_strat_ret"}
+
+    if "turnover" in df_backtest.columns:
+        turn = pd.to_numeric(df_backtest["turnover"], errors="coerce").astype(float).fillna(0.0).abs()
+        trade_seq = strat[turn > 0.0]
+    else:
+        trade_seq = strat[strat != 0.0]
+    trade_seq = trade_seq.replace([np.inf, -np.inf], np.nan).dropna()
+    if trade_seq.empty:
+        trade_seq = strat.replace([np.inf, -np.inf], np.nan).dropna()
+    if trade_seq.empty:
+        return {"enabled": True, "passed": False, "reason": "monte_carlo_empty_trade_sequence"}
+
+    seq = trade_seq.to_numpy(dtype=float, copy=False)
+    n = int(seq.size)
+    n_sims = int(getattr(gate, "monte_carlo_n", 600) or 600)
+    if n_sims < 500:
+        n_sims = 500
+    if n_sims > 1000:
+        n_sims = 1000
+    seed = int(getattr(gate, "monte_carlo_seed", 1337) or 1337)
+    rng = np.random.default_rng(seed)
+    ann = _annualization_factor(df_backtest)
+
+    pfs = np.empty(n_sims * 2, dtype=float)
+    sharpes = np.empty(n_sims * 2, dtype=float)
+    maxdds = np.empty(n_sims * 2, dtype=float)
+    losses = np.empty(n_sims * 2, dtype=float)
+
+    for i in range(n_sims):
+        perm = rng.permutation(seq)
+        boot_idx = rng.integers(0, n, size=n, endpoint=False)
+        boot = seq[boot_idx]
+        for j, sample in enumerate((perm, boot)):
+            k = i * 2 + j
+            pfs[k] = _profit_factor_from_returns(sample)
+            sharpes[k] = _sharpe_from_returns(sample, ann)
+            maxdds[k] = _max_drawdown_from_returns(sample)
+            losses[k] = 1.0 if float(np.prod(1.0 + sample)) < 1.0 else 0.0
+
+    mc_pf_median = float(np.nanmedian(pfs))
+    mc_pf_p05 = float(np.nanpercentile(pfs, 5))
+    mc_sharpe_p05 = float(np.nanpercentile(sharpes, 5))
+    mc_worst_drawdown = float(np.nanmax(maxdds))
+    mc_prob_loss = float(np.nanmean(losses))
+
+    hist_dd = float(getattr(metrics, "max_drawdown", 0.0) or 0.0)
+    dd_mult = float(getattr(gate, "monte_carlo_maxdd_mult", 1.5) or 1.5)
+    allowed_dd = float(hist_dd * dd_mult)
+
+    pf_thr = float(getattr(gate, "monte_carlo_pf_p05_min", 1.05) or 1.05)
+    sh_thr = float(getattr(gate, "monte_carlo_sharpe_p05_min", 0.40) or 0.40)
+    loss_thr = float(getattr(gate, "monte_carlo_prob_loss_max", 0.40) or 0.40)
+
+    checks = {
+        "mc_pf_p05": {"value": mc_pf_p05, "threshold": pf_thr, "op": ">=", "pass": bool(mc_pf_p05 >= pf_thr)},
+        "mc_sharpe_p05": {"value": mc_sharpe_p05, "threshold": sh_thr, "op": ">=", "pass": bool(mc_sharpe_p05 >= sh_thr)},
+        "mc_worst_drawdown": {"value": mc_worst_drawdown, "threshold": allowed_dd, "op": "<=", "pass": bool(mc_worst_drawdown <= allowed_dd)},
+        "mc_prob_loss": {"value": mc_prob_loss, "threshold": loss_thr, "op": "<", "pass": bool(mc_prob_loss < loss_thr)},
+    }
+    passed = all(v["pass"] for v in checks.values())
+    reasons: List[str] = []
+    for key, item in checks.items():
+        if not item["pass"]:
+            reasons.append(f"{key}_failed:{item['value']}{item['op']}{item['threshold']}")
+
+    return {
+        "enabled": True,
+        "passed": bool(passed),
+        "reason": None if passed else "monte_carlo_gate_failed",
+        "reasons": reasons,
+        "metrics": {
+            "mc_pf_median": mc_pf_median,
+            "mc_pf_p05": mc_pf_p05,
+            "mc_sharpe_p05": mc_sharpe_p05,
+            "mc_worst_drawdown": mc_worst_drawdown,
+            "mc_prob_loss": mc_prob_loss,
+        },
+        "checks": checks,
+        "config": {
+            "n_sims": int(n_sims),
+            "seed": int(seed),
+            "modes": ["shuffle", "bootstrap_replacement"],
+            "trade_samples": int(n),
+            "annualization": float(ann),
+            "net_of_cost": True,
+        },
+    }
+
+
 def run_risk_overlay_tests(
     df_backtest: pd.DataFrame,
     preds: pd.Series,
@@ -56,6 +204,18 @@ def run_risk_overlay_tests(
         details['regime'] = {'passed': False, 'error': str(e)}
         reasons.append('regime_stress_error')
 
+    # Mandatory MC gate (HARD)
+    try:
+        mc = mandatory_monte_carlo_gate(df_backtest, metrics, gate)
+        details["monte_carlo"] = mc
+        if not mc.get("passed", False):
+            reasons.append(mc.get("reason") or "monte_carlo_gate_failed")
+            for rr in (mc.get("reasons") or []):
+                reasons.append(str(rr))
+    except Exception as e:
+        details["monte_carlo"] = {"enabled": True, "passed": False, "reason": "monte_carlo_exception", "error": str(e)}
+        reasons.append("monte_carlo_exception")
+
     return RobustnessResult(
         passed=(len(reasons) == 0),
         reasons=reasons,
@@ -72,15 +232,6 @@ def _annualized_sharpe_from_returns(r: np.ndarray, periods_per_year: int = 252) 
     if not np.isfinite(sd) or sd <= 0:
         return float('nan')
     return (mu / sd) * float(np.sqrt(periods_per_year))
-
-
-def _max_drawdown_from_returns(r: np.ndarray) -> float:
-    if r.size == 0:
-        return float('nan')
-    eq = np.cumprod(1.0 + r)
-    peak = np.maximum.accumulate(eq)
-    dd = 1.0 - (eq / peak)
-    return float(np.max(dd))
 
 
 def _block_bootstrap_sample(rng: np.random.Generator, base: np.ndarray, block: int) -> np.ndarray:
@@ -445,7 +596,7 @@ def run_all_tests(symbol: str, features_res: Any, folds: List[Any], df_backtest:
     if not rg.get('passed', True):
         reasons.append(f"regime_stress_failed subset_max_dd={rg.get('subset_max_drawdown')}")
 
-    # deterministic block-bootstrap "MC" robustness (optional, post-global gate)
+    # Legacy bootstrap robustness (kept for diagnostics only)
     try:
         if df_backtest is None or 'strat_ret' not in df_backtest.columns:
             boot = block_bootstrap_robustness(None, gate, n_trades=getattr(metrics, 'n_trades', None))
@@ -456,19 +607,20 @@ def run_all_tests(symbol: str, features_res: Any, folds: List[Any], df_backtest:
                 n_trades=getattr(metrics, 'n_trades', None),
             )
         details['bootstrap'] = boot
-        if boot.get('skipped'):
-            limited_reasons.append('bootstrap_insufficient')
-        elif boot.get('enabled') and (not boot.get('passed', False)):
-            # Phase-1 semantics: bootstrap is a confidence amplifier, not a kill-switch.
-            # If it fails, keep the symbol but mark limited-confidence.
-            limited_reasons.append('bootstrap_failed')
-            try:
-                boot['soft_failed'] = True
-            except Exception:
-                pass
     except Exception as e:
         details['bootstrap'] = {'enabled': True, 'passed': False, 'error': str(e)}
-        reasons.append('bootstrap_robustness_error')
+
+    # Mandatory MC gate (HARD)
+    try:
+        mc = mandatory_monte_carlo_gate(df_backtest, metrics, gate)
+        details["monte_carlo"] = mc
+        if not mc.get("passed", False):
+            reasons.append(mc.get("reason") or "monte_carlo_gate_failed")
+            for rr in (mc.get("reasons") or []):
+                reasons.append(str(rr))
+    except Exception as e:
+        details["monte_carlo"] = {"enabled": True, "passed": False, "reason": "monte_carlo_exception", "error": str(e)}
+        reasons.append("monte_carlo_exception")
 
     passed = len(reasons) == 0
     return RobustnessResult(passed=passed, reasons=reasons, details=details, limited_reasons=limited_reasons)

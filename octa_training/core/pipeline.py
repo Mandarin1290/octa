@@ -1127,6 +1127,45 @@ def train_evaluate_package(
         tf_map = gconf.get('global_by_timeframe', {}) if isinstance(gconf, dict) else {}
         tf_spec = tf_map.get(tf_key, {}) if isinstance(tf_map, dict) else {}
 
+        # Hedge-fund risk-first baseline overlays (net-of-cost metric scale).
+        hf_tf_overlays: Dict[str, Dict[str, Any]] = {
+            "1D": {
+                "profit_factor_min": 1.20,
+                "sharpe_min": 0.65,
+                "max_drawdown_max": 0.06,
+                "min_trades": 20,
+                "min_bars": 252,
+            },
+            "1H": {
+                "profit_factor_min": 1.15,
+                "sharpe_min": 0.60,
+                "max_drawdown_max": 0.05,
+                "min_trades": 60,
+                "min_bars": 500,
+            },
+            "30m": {
+                "profit_factor_min": 1.12,
+                "sharpe_min": 0.55,
+                "max_drawdown_max": 0.045,
+                "min_trades": 120,
+                "min_bars": 800,
+            },
+            "5m": {
+                "profit_factor_min": 1.10,
+                "sharpe_min": 0.50,
+                "max_drawdown_max": 0.040,
+                "min_trades": 240,
+                "min_bars": 1200,
+            },
+            "1m": {
+                "profit_factor_min": 1.08,
+                "sharpe_min": 0.45,
+                "max_drawdown_max": 0.035,
+                "min_trades": 480,
+                "min_bars": 2000,
+            },
+        }
+
         # FX-G0 ONLY: compute tail-kill metric on MARKET returns (no positions, no costs).
         # This keeps HF-grade kill semantics but makes G0 a true 1D risk overlay.
         fx_g0_tail_series: Optional[str] = None
@@ -1278,9 +1317,27 @@ def train_evaluate_package(
             pass
 
         # drop Nones to avoid pydantic issues
+        try:
+            hf_overlay = hf_tf_overlays.get(str(tf_key), {})
+            if isinstance(hf_overlay, dict):
+                for k, v in hf_overlay.items():
+                    merged[k] = v
+        except Exception:
+            pass
+
+        # Mandatory deterministic Monte Carlo gate defaults.
+        merged.setdefault("monte_carlo_n", 600)
+        merged.setdefault("monte_carlo_seed", 1337)
+        merged.setdefault("monte_carlo_pf_p05_min", 1.05)
+        merged.setdefault("monte_carlo_sharpe_p05_min", 0.40)
+        merged.setdefault("monte_carlo_maxdd_mult", 1.5)
+        merged.setdefault("monte_carlo_prob_loss_max", 0.40)
+
         merged = {k: v for k, v in merged.items() if v is not None}
         applied_thresholds = dict(merged)
-        gate = GateSpec(**merged)
+        gate_kwargs = dict(merged)
+        min_bars = int(gate_kwargs.pop("min_bars", 0) or 0)
+        gate = GateSpec(**gate_kwargs)
 
         # Enforce canonical profile for dataset before any training/gating.
         try:
@@ -1323,6 +1380,30 @@ def train_evaluate_package(
 
         result = gate_evaluate(metrics, gate)
 
+        # Enforce minimum history bars as a strict structural gate.
+        try:
+            n_bars = int(len(df))
+            if getattr(result, 'diagnostics', None) is None:
+                result.diagnostics = []
+            passed_bars = bool((min_bars <= 0) or (n_bars >= min_bars))
+            result.diagnostics.append(
+                {
+                    'name': 'min_bars',
+                    'value': float(n_bars),
+                    'threshold': float(min_bars) if min_bars > 0 else None,
+                    'op': '>=',
+                    'passed': passed_bars,
+                    'evaluable': True,
+                    'confidence': 1.0 if passed_bars else 0.0,
+                    'reason': None if passed_bars else f"insufficient_history_bars:{n_bars}<{min_bars}",
+                }
+            )
+            if not passed_bars:
+                result.passed = False
+                result.reasons = list(getattr(result, 'reasons', []) or []) + [f"insufficient_history_bars:{n_bars}<{min_bars}"]
+        except Exception:
+            pass
+
         # Attach profile + threshold snapshot for audit/NDJSON.
         try:
             if getattr(result, 'diagnostics', None) is None:
@@ -1358,6 +1439,26 @@ def train_evaluate_package(
                         'passed': True,
                         'evaluable': True,
                         'confidence': 0.0,
+                        'reason': None,
+                    },
+                    {
+                        'name': 'metric_scale_info',
+                        'value': None,
+                        'threshold': None,
+                        'op': None,
+                        'passed': True,
+                        'evaluable': True,
+                        'confidence': 0.0,
+                        'reason': 'sharpe=annualized;profit_factor=net_of_cost_trade_pnl;max_drawdown=equity_drawdown_fraction;n_trades=position_change_count',
+                    },
+                    {
+                        'name': 'net_of_cost',
+                        'value': 1.0,
+                        'threshold': 1.0,
+                        'op': '==',
+                        'passed': True,
+                        'evaluable': True,
+                        'confidence': 1.0,
                         'reason': None,
                     },
                 ]
@@ -1672,9 +1773,26 @@ def train_evaluate_package(
 
         if result.passed:
             if not safe_mode:
-                pack_res = save_tradeable_artifact(symbol, best, features_res, df, metrics, result, cfg, state, run_id, asset_class, str(pinfo.path))
+                pack_res = save_tradeable_artifact(symbol, best, features_res, df, metrics, result, cfg, state, run_id, asset_class, str(pinfo.path), enforce_improvement=False)
             else:
                 pack_res = {'saved': False, 'reason': 'safe_mode'}
+            # Fail-closed: PASS requires saved artifacts and metrics.
+            if not pack_res or not pack_res.get('saved'):
+                result.passed = False
+                result.reasons.append(f"artifact_not_saved:{(pack_res or {}).get('reason')}")
+            else:
+                model_artifacts = pack_res.get("model_artifacts") if isinstance(pack_res, dict) else None
+                if not model_artifacts:
+                    result.passed = False
+                    result.reasons.append("missing_model_artifacts")
+                else:
+                    try:
+                        missing = [p for p in model_artifacts if not Path(p).exists()]
+                    except Exception:
+                        missing = []
+                    if missing:
+                        result.passed = False
+                        result.reasons.append(f"missing_model_artifacts:{len(missing)}")
             # perform smoke-test and quarantine on failure if packaging policy requests it
             try:
                 if pack_res and pack_res.get('saved') and getattr(cfg.packaging, 'quarantine_on_smoke_fail', True):
@@ -1702,12 +1820,12 @@ def train_evaluate_package(
             except Exception:
                 pass
 
-        # Optional: write a non-tradeable debug artifact on FAIL (auditability).
-        if (not result.passed) and (pack_res is None) and (not safe_mode) and bool(getattr(cfg.packaging, 'save_debug_on_fail', False)):
+        # Ensure artifacts exist even on FAIL (auditability, fail-closed).
+        if (not result.passed) and (pack_res is None) and (not safe_mode):
             try:
                 dbg_dir = getattr(cfg.packaging, 'debug_dir', None)
                 if not dbg_dir:
-                    dbg_dir = str(Path(cfg.paths.pkl_dir) / '_debug_fail')
+                    dbg_dir = str(Path(cfg.paths.pkl_dir))
                 pack_res = save_tradeable_artifact(
                     symbol,
                     best,

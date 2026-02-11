@@ -717,6 +717,7 @@ def build_features(raw: pd.DataFrame, settings, asset_class: str, build_targets:
 
     # Optional AltData platform integration (safe-by-default).
     # Policy: never fail training due to AltData; disabled unless explicitly enabled.
+    altdat_meta = None
     try:
         from octa.core.data.sources.altdata.sidecar import try_run as _altdat_try_run
 
@@ -725,8 +726,23 @@ def build_features(raw: pd.DataFrame, settings, asset_class: str, build_targets:
             # Align and merge; altdata is already as-of joined and additionally shifted by sidecar.
             altdat_df = altdat_df.reindex(X.index)
             X = X.join(altdat_df, how="left")
+    except Exception as e:
+        altdat_meta = {"enabled": True, "status": "ERROR", "error": str(e)}
+
+    # Deterministic source-presence features: keep feature dimension stable across missing sources.
+    try:
+        src_meta = (altdat_meta or {}).get("sources") if isinstance(altdat_meta, dict) else None
+        if isinstance(src_meta, dict):
+            for src_name in sorted(str(k) for k in src_meta.keys()):
+                sraw = src_meta.get(src_name) if isinstance(src_meta, dict) else {}
+                sstatus = str((sraw or {}).get("status", "")).strip().upper()
+                present = 1.0 if sstatus in {"OK", "SUCCESS"} else 0.0
+                X[f"altdat_source_{src_name}_present"] = present
     except Exception:
-        altdat_meta = None
+        pass
+
+    # Stable ordering for deterministic training artifacts.
+    X = X.reindex(sorted(X.columns), axis=1)
 
     if not build_targets:
         # Leakage-safe: features are already shifted by 1 bar.
@@ -773,6 +789,7 @@ def build_features(raw: pd.DataFrame, settings, asset_class: str, build_targets:
         "n_rows_features": len(X_clean),
         "dropped_rows": int(len(df) - len(X_clean)),
         "features": list(X_clean.columns),
+        "features_used": list(X_clean.columns),
         "horizons": horizons,
         "feature_settings": {
             "window_short": w_short,
@@ -786,8 +803,56 @@ def build_features(raw: pd.DataFrame, settings, asset_class: str, build_targets:
     try:
         if altdat_meta is not None:
             meta["altdat"] = altdat_meta
+            meta["altdata_sources_used"] = altdat_meta.get("cache_paths") or altdat_meta.get("sources_used") or []
+            meta["altdata_enabled"] = bool(altdat_meta.get("enabled", False))
+            src_meta = altdat_meta.get("sources") if isinstance(altdat_meta, dict) else None
+            src_summary = []
+            missing = 0
+            total = 0
+            if isinstance(src_meta, dict):
+                cov = altdat_meta.get("coverage") if isinstance(altdat_meta.get("coverage"), dict) else {}
+                for source in sorted(src_meta.keys()):
+                    raw = src_meta.get(source) or {}
+                    status = str(raw.get("status", "")).upper()
+                    if not status:
+                        ok_flag = raw.get("ok")
+                        if ok_flag is True:
+                            status = "OK"
+                        elif "error" in raw:
+                            status = "ERROR"
+                        else:
+                            status = "MISSING"
+                    n_rows = raw.get("rows")
+                    if n_rows is None:
+                        n_rows = raw.get("n_rows")
+                    try:
+                        n_rows = int(n_rows or 0)
+                    except Exception:
+                        n_rows = 0
+                    coverage = cov.get(source)
+                    if coverage is None and isinstance(cov, dict):
+                        coverage = cov.get(source.lower())
+                    try:
+                        coverage = float(coverage) if coverage is not None else 0.0
+                    except Exception:
+                        coverage = 0.0
+                    err = raw.get("error")
+                    src_summary.append(
+                        {
+                            "source": str(source),
+                            "status": status or "MISSING",
+                            "n_rows": n_rows,
+                            "coverage": coverage,
+                            "error": None if err is None else str(err),
+                        }
+                    )
+                    total += 1
+                    if status not in {"OK", "SUCCESS"}:
+                        missing += 1
+            meta["altdata_meta"] = src_summary
+            meta["altdata_degraded"] = bool(total > 0 and (missing / float(total)) > 0.5)
     except Exception:
-        pass
+        raise
     return FeatureBuildResult(X=X_clean, y_dict=y_clean, meta=meta)
 
 

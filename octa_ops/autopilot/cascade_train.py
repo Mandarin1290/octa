@@ -37,9 +37,11 @@ def run_cascade_training(
     cascade: CascadePolicy,
     safe_mode: bool,
     reports_dir: str,
+    model_root: Optional[str] = None,
 ) -> Tuple[List[GateDecision], Dict[str, Any]]:
     cfg = load_config(config_path)
-    state = StateRegistry(str(Path(cfg.paths.state_dir) / "state.db"))
+    base_pkl_root = Path(getattr(cfg.paths, "pkl_dir", "pkl"))
+    base_state_root = Path(getattr(cfg.paths, "state_dir", "state")) if getattr(cfg, "paths", None) else Path("state")
 
     decisions: List[GateDecision] = []
     metrics_by_tf: Dict[str, Any] = {}
@@ -52,15 +54,30 @@ def run_cascade_training(
             cfg_layer = cfg.copy(deep=True)
         except Exception:
             cfg_layer = cfg
+        stage_state = None
+        stage_state_dir = None
+        orig_pkl_dir = None
+        orig_state_dir = None
         try:
-            pkl_root = Path(getattr(cfg_layer.paths, "pkl_dir", cfg.paths.pkl_dir))
+            if model_root:
+                pkl_root = Path(model_root)
+            else:
+                pkl_root = Path(getattr(cfg_layer.paths, "pkl_dir", base_pkl_root))
             # Structure: <pkl_root>/<asset_class>/<tf>/<SYMBOL>.pkl
             tf_pkl_dir = pkl_root / str(asset_class) / str(tf)
             tf_pkl_dir.mkdir(parents=True, exist_ok=True)
+            orig_pkl_dir = getattr(cfg_layer.paths, "pkl_dir", None)
             cfg_layer.paths.pkl_dir = tf_pkl_dir
+
+            # Scope state dir per asset_class/timeframe to avoid collisions.
+            stage_state_dir = base_state_root / str(asset_class) / str(tf)
+            stage_state_dir.mkdir(parents=True, exist_ok=True)
+            orig_state_dir = getattr(cfg_layer.paths, "state_dir", None)
+            cfg_layer.paths.state_dir = stage_state_dir
+            stage_state = StateRegistry(str(stage_state_dir / "state.db"))
         except Exception:
             # Fail-closed behavior is handled by the caller (no promotion without PKL files).
-            cfg_layer = cfg_layer
+            stage_state = None
 
         pq = _find_parquet_for_tf(parquet_paths, tf)
         if not prev_pass:
@@ -75,7 +92,7 @@ def run_cascade_training(
             res = train_evaluate_package(
                 symbol=symbol,
                 cfg=cfg_layer,
-                state=state,
+                state=stage_state if stage_state is not None else StateRegistry(str(base_state_root / "state.db")),
                 run_id=run_id,
                 safe_mode=bool(safe_mode),
                 smoke_test=False,
@@ -87,18 +104,65 @@ def run_cascade_training(
             metrics_obj = getattr(res, "metrics", None)
             gate_dump = gate_obj.model_dump() if hasattr(gate_obj, "model_dump") else (gate_obj.dict() if hasattr(gate_obj, "dict") else None)
             metrics_dump = metrics_obj.model_dump() if hasattr(metrics_obj, "model_dump") else (metrics_obj.dict() if hasattr(metrics_obj, "dict") else None)
+            pack = getattr(res, "pack_result", None)
+            features_used = None
+            altdata_sources = None
+            model_artifacts = None
+            altdata_enabled = None
+            training_window = None
+            altdata_meta = None
+            monte_carlo = None
+            if isinstance(pack, dict):
+                features_used = pack.get("features_used")
+                altdata_sources = pack.get("altdata_sources_used")
+                model_artifacts = pack.get("model_artifacts")
+                altdata_enabled = pack.get("altdata_enabled")
+                training_window = pack.get("training_window")
+                altdata_meta = pack.get("altdata_meta")
+            try:
+                if isinstance(gate_dump, dict):
+                    rob = gate_dump.get("robustness")
+                    if isinstance(rob, dict):
+                        mc = (rob.get("details") or {}).get("monte_carlo")
+                        if isinstance(mc, dict):
+                            monte_carlo = mc
+            except Exception:
+                monte_carlo = None
             metrics_by_tf[tf] = {
                 "gate": gate_dump,
                 "metrics": metrics_dump,
-                "pack": getattr(res, "pack_result", None),
+                "pack": pack,
+                "features_used": features_used,
+                "altdata_sources_used": altdata_sources,
+                "altdata_enabled": altdata_enabled,
+                "altdata_meta": altdata_meta,
+                "model_artifacts": model_artifacts,
+                "training_window": training_window,
+                "monte_carlo": monte_carlo,
                 "parquet_path": str(pq),
                 "pkl_dir": str(getattr(getattr(cfg_layer, "paths", None), "pkl_dir", "")),
             }
-            decisions.append(GateDecision(symbol=symbol, timeframe=tf, stage="train", status="PASS" if passed else "FAIL", reason=None if passed else "gate_failed", details={"gate": gate_dump}))
+            fail_reason = None
+            if not passed:
+                fail_reason = "gate_failed"
+                if getattr(res, "error", None):
+                    fail_reason = "train_error"
+            decisions.append(GateDecision(symbol=symbol, timeframe=tf, stage="train", status="PASS" if passed else "FAIL", reason=None if passed else fail_reason, details={"gate": gate_dump, "error": getattr(res, "error", None)}))
             prev_pass = passed
         except Exception as e:
             decisions.append(GateDecision(symbol=symbol, timeframe=tf, stage="train", status="FAIL", reason="train_exception", details={"error": str(e)}))
             prev_pass = False
+        finally:
+            if cfg_layer is cfg and orig_pkl_dir is not None:
+                try:
+                    cfg_layer.paths.pkl_dir = orig_pkl_dir
+                except Exception:
+                    pass
+            if cfg_layer is cfg and orig_state_dir is not None:
+                try:
+                    cfg_layer.paths.state_dir = orig_state_dir
+                except Exception:
+                    pass
 
     # write per-symbol metrics bundle
     out_dir = Path(reports_dir) / "autopilot" / run_id

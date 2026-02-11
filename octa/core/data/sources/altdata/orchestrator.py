@@ -51,7 +51,13 @@ def run_altdata(
     config_path: Optional[str] = None,
 ) -> AltDataBuildResult:
     cfg = load_altdat_config(config_path)
-    enabled = bool(cfg.get("enabled", False)) or str(os.getenv("OKTA_ALTDATA_ENABLED", "")).strip() == "1"
+    enabled_cfg = cfg.get("enabled", False) if isinstance(cfg, dict) else False
+    enabled = bool(enabled_cfg)
+    env_enabled = str(os.getenv("OKTA_ALTDATA_ENABLED", "")).strip()
+    if env_enabled in {"0", "false", "False"}:
+        enabled = False
+    elif env_enabled == "1":
+        enabled = True
     if not enabled:
         return AltDataBuildResult(features_df=pd.DataFrame(index=bars_df.index), meta={"enabled": False, "status": "DISABLED"})
 

@@ -13,7 +13,8 @@ from octa.core.data.sources.altdata.edgar_connector import (
     fetch_edgar_filings,
     filings_to_events,
 )
-from octa.core.data.sources.altdata.fred_connector import fetch_fred_series, fred_to_wide
+from octa.core.data.sources.altdata.fred_connector import FredFetchResult, fetch_fred_series, fred_to_wide
+from octa.core.data.sources.altdata.cache import read_snapshot, read_meta, source_day_dir, cache_key
 from octa.core.data.sources.altdata.time_sync import (
     asof_join,
     derive_timewindow_from_bars,
@@ -51,11 +52,18 @@ def build_altdata_features(
     Fail-closed for AltData: returns empty DF when disabled/unavailable.
     """
 
-    enabled = bool(altdat_cfg.get("enabled", False)) or str(os.getenv("OKTA_ALTDATA_ENABLED", "")).strip() == "1"
+    enabled_cfg = altdat_cfg.get("enabled", False)
+    enabled = bool(enabled_cfg)
+    env_enabled = str(os.getenv("OKTA_ALTDATA_ENABLED", "")).strip()
+    if env_enabled in {"0", "false", "False"}:
+        enabled = False
+    elif env_enabled == "1":
+        enabled = True
     if not enabled:
         return AltDataBuildResult(features_df=pd.DataFrame(index=bars_df.index), meta={"enabled": False, "status": "DISABLED"})
 
     strict = bool(altdat_cfg.get("strict_mode", False)) or str(os.getenv("OKTA_ALTDATA_STRICT", "")).strip() == "1"
+    offline_only = bool(altdat_cfg.get("offline_only", False)) or str(os.getenv("OKTA_ALTDATA_OFFLINE_ONLY", "")).strip() == "1"
 
     storage_root = None
     try:
@@ -75,9 +83,12 @@ def build_altdata_features(
     tol_sec = int(tol_map.get(timeframe, 0) or 0)
     tolerance = pd.Timedelta(seconds=tol_sec) if tol_sec > 0 else None
 
+    asof_date = tw.end_ts.date()
+
     meta: Dict[str, Any] = {
         "enabled": True,
         "strict": bool(strict),
+        "offline_only": bool(offline_only),
         "symbol": symbol,
         "timeframe": timeframe,
         "start_ts": str(tw.start_ts),
@@ -85,6 +96,8 @@ def build_altdata_features(
         "duckdb_ok": bool(ok_db),
         "duckdb_error": db_err,
         "sources": {},
+        "sources_used": [],
+        "cache_paths": [],
         "coverage": {},
         "weights": {},
         "leakage": {"detected": False, "rows": 0},
@@ -129,6 +142,10 @@ def build_altdata_features(
         except Exception:
             return
 
+    def _payload_path(source: str, key_suffix: Optional[str] = None) -> Path:
+        key = cache_key(source, asof_date, key_suffix=key_suffix)
+        return source_day_dir(source, asof_date, root=storage_root) / f"{key}.json"
+
     # FRED / Macro
     fred_cfg = sources.get("fred") or {}
     if bool(fred_cfg.get("enabled", False)):
@@ -139,45 +156,81 @@ def build_altdata_features(
             series = [str(s).strip() for s in series if str(s).strip()]
         except Exception:
             series = []
-        if not api_key:
-            meta["sources"]["fred"] = {"ok": False, "error": "missing_api_key", "series": series}
-            _duckdb_upsert_source("fred", False, "missing_api_key")
+        if offline_only:
+            payload = read_snapshot(source="fred", asof=asof_date, root=storage_root)
+            if payload is None:
+                meta["sources"]["fred"] = {"ok": False, "error": "missing_cache", "series": series}
+                _duckdb_upsert_source("fred", False, "missing_cache")
+            else:
+                payload_path = _payload_path("fred")
+                meta["sources_used"].append("fred")
+                meta["cache_paths"].append(str(payload_path))
+                series_map = payload.get("series") if isinstance(payload, dict) else {}
+                results = []
+                for series_id, rows in (series_map or {}).items():
+                    df = pd.DataFrame(rows or [])
+                    if not df.empty:
+                        df["ts"] = pd.to_datetime(df["ts"], utc=True, errors="coerce")
+                        df = df.dropna(subset=["ts"])
+                    results.append(FredFetchResult(series_id=str(series_id), df=df, ok=bool(len(df)), error=None))
+                ok_any = any(r.ok for r in results)
+                meta["sources"]["fred"] = {"ok": bool(ok_any), "series": series, "errors": [] if ok_any else ["missing_cache_rows"]}
+                _duckdb_upsert_source("fred", bool(ok_any), None if ok_any else "missing_cache_rows")
+                wide = fred_to_wide(series=results)
+                macro = build_macro_features(wide)
+                if not macro.empty:
+                    macro = macro.reset_index().rename(columns={"index": "ts"})
+                    j = asof_join(bars_df=bars_df, alt_df=macro, on="ts", tolerance=tolerance)
+                    leak = validate_no_future_leakage(merged_df=j, bar_index=bars_df.index, alt_ts_col="ts", strict=strict)
+                    if leak.any():
+                        meta["leakage"]["detected"] = True
+                        meta["leakage"]["rows"] = int(leak.sum())
+                        if strict:
+                            j.loc[leak.values, macro.columns] = pd.NA
+                    j = j.drop(columns=["ts"], errors="ignore")
+                    j = j.add_prefix("altdat_macro_")
+                    feat_parts.append(j)
+                    meta["coverage"]["macro"] = float(j.notna().any(axis=1).mean())
         else:
-            results = [fetch_fred_series(series_id=s, start_ts=tw.start_ts, end_ts=tw.end_ts, api_key=api_key) for s in series]
-            ok_any = any(r.ok for r in results)
-            meta["sources"]["fred"] = {
-                "ok": bool(ok_any),
-                "series": series,
-                "errors": [r.error for r in results if (not r.ok and r.error)],
-            }
-            _duckdb_upsert_source("fred", bool(ok_any), ";".join([str(r.error) for r in results if r.error]) if not ok_any else None)
-            # Persist raw series observations
-            for r in results:
-                if r.ok and r.df is not None and not r.df.empty:
-                    try:
-                        ins = r.df.copy()
-                        ins.insert(0, "series_id", r.series_id)
-                        # Ensure column order matches schema
-                        ins = ins[["series_id", "ts", "value", "as_of", "source_time", "ingested_at"]]
-                        _duckdb_try_insert("fred_series", ins)
-                    except Exception:
-                        pass
-            wide = fred_to_wide(series=results)
-            macro = build_macro_features(wide)
-            if not macro.empty:
-                macro = macro.reset_index().rename(columns={"index": "ts"})
-                j = asof_join(bars_df=bars_df, alt_df=macro, on="ts", tolerance=tolerance)
-                leak = validate_no_future_leakage(merged_df=j, bar_index=bars_df.index, alt_ts_col="ts", strict=strict)
-                if leak.any():
-                    meta["leakage"]["detected"] = True
-                    meta["leakage"]["rows"] = int(leak.sum())
-                    if strict:
-                        j.loc[leak.values, macro.columns] = pd.NA
-                # drop ts marker
-                j = j.drop(columns=["ts"], errors="ignore")
-                j = j.add_prefix("altdat_macro_")
-                feat_parts.append(j)
-                meta["coverage"]["macro"] = float(j.notna().any(axis=1).mean())
+            if not api_key:
+                meta["sources"]["fred"] = {"ok": False, "error": "missing_api_key", "series": series}
+                _duckdb_upsert_source("fred", False, "missing_api_key")
+            else:
+                results = [fetch_fred_series(series_id=s, start_ts=tw.start_ts, end_ts=tw.end_ts, api_key=api_key) for s in series]
+                ok_any = any(r.ok for r in results)
+                meta["sources"]["fred"] = {
+                    "ok": bool(ok_any),
+                    "series": series,
+                    "errors": [r.error for r in results if (not r.ok and r.error)],
+                }
+                _duckdb_upsert_source("fred", bool(ok_any), ";".join([str(r.error) for r in results if r.error]) if not ok_any else None)
+                # Persist raw series observations
+                for r in results:
+                    if r.ok and r.df is not None and not r.df.empty:
+                        try:
+                            ins = r.df.copy()
+                            ins.insert(0, "series_id", r.series_id)
+                            # Ensure column order matches schema
+                            ins = ins[["series_id", "ts", "value", "as_of", "source_time", "ingested_at"]]
+                            _duckdb_try_insert("fred_series", ins)
+                        except Exception:
+                            pass
+                wide = fred_to_wide(series=results)
+                macro = build_macro_features(wide)
+                if not macro.empty:
+                    macro = macro.reset_index().rename(columns={"index": "ts"})
+                    j = asof_join(bars_df=bars_df, alt_df=macro, on="ts", tolerance=tolerance)
+                    leak = validate_no_future_leakage(merged_df=j, bar_index=bars_df.index, alt_ts_col="ts", strict=strict)
+                    if leak.any():
+                        meta["leakage"]["detected"] = True
+                        meta["leakage"]["rows"] = int(leak.sum())
+                        if strict:
+                            j.loc[leak.values, macro.columns] = pd.NA
+                    # drop ts marker
+                    j = j.drop(columns=["ts"], errors="ignore")
+                    j = j.add_prefix("altdat_macro_")
+                    feat_parts.append(j)
+                    meta["coverage"]["macro"] = float(j.notna().any(axis=1).mean())
 
     # EDGAR
     edgar_cfg = sources.get("edgar") or {}
@@ -188,34 +241,68 @@ def build_altdata_features(
         except Exception:
             forms = ["10-K", "10-Q", "8-K"]
 
-        r = fetch_edgar_filings(ticker=symbol, forms=forms, start_ts=tw.start_ts, end_ts=tw.end_ts)
-        edgar_meta = {"ok": bool(r.ok), "error": (str(r.error)[:200] if r.error else None), "forms": forms}
-        if isinstance(r.meta, dict):
-            edgar_meta.update(r.meta)
-        meta["sources"]["edgar"] = edgar_meta
-        _duckdb_upsert_source("edgar", bool(r.ok), r.error)
-        # Persist raw filings if any
-        try:
+        if offline_only:
+            payload = read_snapshot(source="edgar", asof=asof_date, root=storage_root, key_suffix=symbol)
+            if payload is None:
+                meta["sources"]["edgar"] = {"ok": False, "error": "missing_cache", "forms": forms}
+                _duckdb_upsert_source("edgar", False, "missing_cache")
+            else:
+                payload_path = _payload_path("edgar", key_suffix=symbol)
+                meta["sources_used"].append("edgar")
+                meta["cache_paths"].append(str(payload_path))
+                filings = payload.get("filings") if isinstance(payload, dict) else []
+                df = pd.DataFrame(filings or [])
+                if not df.empty:
+                    df["ticker"] = symbol
+                r_ok = not df.empty
+                edgar_meta = {"ok": bool(r_ok), "error": None, "forms": forms}
+                meta["sources"]["edgar"] = edgar_meta
+                _duckdb_upsert_source("edgar", bool(r_ok), None if r_ok else "missing_cache_rows")
+                if r_ok:
+                    events = filings_to_events(df)
+                    ff = build_filing_features(events, ticker=symbol)
+                    if not ff.empty:
+                        ff = ff.reset_index().rename(columns={"index": "ts"})
+                        j = asof_join(bars_df=bars_df, alt_df=ff, on="ts", tolerance=tolerance)
+                        leak = validate_no_future_leakage(merged_df=j, bar_index=bars_df.index, alt_ts_col="ts", strict=strict)
+                        if leak.any():
+                            meta["leakage"]["detected"] = True
+                            meta["leakage"]["rows"] = int(meta["leakage"]["rows"]) + int(leak.sum())
+                            if strict:
+                                j.loc[leak.values, ff.columns] = pd.NA
+                        j = j.drop(columns=["ts"], errors="ignore")
+                        j = j.add_prefix("altdat_edgar_")
+                        feat_parts.append(j)
+                        meta["coverage"]["edgar"] = float(j.notna().any(axis=1).mean())
+        else:
+            r = fetch_edgar_filings(ticker=symbol, forms=forms, start_ts=tw.start_ts, end_ts=tw.end_ts)
+            edgar_meta = {"ok": bool(r.ok), "error": (str(r.error)[:200] if r.error else None), "forms": forms}
+            if isinstance(r.meta, dict):
+                edgar_meta.update(r.meta)
+            meta["sources"]["edgar"] = edgar_meta
+            _duckdb_upsert_source("edgar", bool(r.ok), r.error)
+            # Persist raw filings if any
+            try:
+                if r.ok and r.df is not None and not r.df.empty:
+                    _duckdb_try_insert("edgar_filings", r.df)
+            except Exception:
+                pass
             if r.ok and r.df is not None and not r.df.empty:
-                _duckdb_try_insert("edgar_filings", r.df)
-        except Exception:
-            pass
-        if r.ok and r.df is not None and not r.df.empty:
-            events = filings_to_events(r.df)
-            ff = build_filing_features(events, ticker=symbol)
-            if not ff.empty:
-                ff = ff.reset_index().rename(columns={"index": "ts"})
-                j = asof_join(bars_df=bars_df, alt_df=ff, on="ts", tolerance=tolerance)
-                leak = validate_no_future_leakage(merged_df=j, bar_index=bars_df.index, alt_ts_col="ts", strict=strict)
-                if leak.any():
-                    meta["leakage"]["detected"] = True
-                    meta["leakage"]["rows"] = int(meta["leakage"]["rows"]) + int(leak.sum())
-                    if strict:
-                        j.loc[leak.values, ff.columns] = pd.NA
-                j = j.drop(columns=["ts"], errors="ignore")
-                j = j.add_prefix("altdat_edgar_")
-                feat_parts.append(j)
-                meta["coverage"]["edgar"] = float(j.notna().any(axis=1).mean())
+                events = filings_to_events(r.df)
+                ff = build_filing_features(events, ticker=symbol)
+                if not ff.empty:
+                    ff = ff.reset_index().rename(columns={"index": "ts"})
+                    j = asof_join(bars_df=bars_df, alt_df=ff, on="ts", tolerance=tolerance)
+                    leak = validate_no_future_leakage(merged_df=j, bar_index=bars_df.index, alt_ts_col="ts", strict=strict)
+                    if leak.any():
+                        meta["leakage"]["detected"] = True
+                        meta["leakage"]["rows"] = int(meta["leakage"]["rows"]) + int(leak.sum())
+                        if strict:
+                            j.loc[leak.values, ff.columns] = pd.NA
+                    j = j.drop(columns=["ts"], errors="ignore")
+                    j = j.add_prefix("altdat_edgar_")
+                    feat_parts.append(j)
+                    meta["coverage"]["edgar"] = float(j.notna().any(axis=1).mean())
 
     # Weights manifest (explainable)
     enabled_map = {
@@ -244,6 +331,11 @@ def build_altdata_features(
     run_id = f"altdat_{datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')}_{symbol}_{timeframe}"
     meta["run_id"] = run_id
     meta["config_hash"] = _hash_obj(altdat_cfg)
+    meta["features_used"] = list(feats.columns)
+    if enabled and not meta["sources_used"]:
+        meta["status"] = "MISSING_SOURCES"
+    else:
+        meta["status"] = "OK" if enabled else "DISABLED"
 
     # meta_runs (best effort)
     if ok_db:

@@ -104,11 +104,49 @@ prefer_gpu: true
 # Gate defaults (global and per asset class)
 gates:
   global:
-    sharpe_min: 0.8
-    max_drawdown_max: 0.25
-    profit_factor_min: 1.1
-    min_trades: 50
+    sharpe_min: 0.65
+    max_drawdown_max: 0.06
+    profit_factor_min: 1.20
+    min_trades: 20
     required_folds_pass_ratio: 0.7
+  global_by_timeframe:
+    1D:
+      sharpe_min: 0.65
+      max_drawdown_max: 0.06
+      profit_factor_min: 1.20
+      min_trades: 20
+      min_bars: 252
+    1H:
+      sharpe_min: 0.60
+      max_drawdown_max: 0.05
+      profit_factor_min: 1.15
+      min_trades: 60
+      min_bars: 500
+    30m:
+      sharpe_min: 0.55
+      max_drawdown_max: 0.045
+      profit_factor_min: 1.12
+      min_trades: 120
+      min_bars: 800
+    5m:
+      sharpe_min: 0.50
+      max_drawdown_max: 0.040
+      profit_factor_min: 1.10
+      min_trades: 240
+      min_bars: 1200
+    1m:
+      sharpe_min: 0.45
+      max_drawdown_max: 0.035
+      profit_factor_min: 1.08
+      min_trades: 480
+      min_bars: 2000
+  robustness:
+    monte_carlo_n: 600
+    monte_carlo_seed: 1337
+    monte_carlo_pf_p05_min: 1.05
+    monte_carlo_sharpe_p05_min: 0.40
+    monte_carlo_maxdd_mult: 1.5
+    monte_carlo_prob_loss_max: 0.40
   by_asset_class:
     stock:
       sharpe_min: 0.8
@@ -177,4 +215,3 @@ packaging:
   compare_metric_name: sharpe
   min_improvement: 0.01
   max_age_days: 30
-
