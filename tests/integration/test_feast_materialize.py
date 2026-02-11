@@ -20,6 +20,7 @@ def run(cmd, cwd=FEAST_REPO, env=None, timeout=120):
 
 
 @pytest.mark.integration
+@pytest.mark.slow
 def test_feast_apply_and_materialize():
     # Start a fakeredis server (python package fakeredis-server provides redis-server binary in PATH on CI)
     # Fallback: use a local ephemeral real redis if available

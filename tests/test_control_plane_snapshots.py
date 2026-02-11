@@ -4,6 +4,8 @@ import json
 
 import pytest
 
+pytestmark = pytest.mark.slow
+
 
 def _skip_if_fastapi_missing():
     try:

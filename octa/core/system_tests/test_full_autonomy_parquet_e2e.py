@@ -4,11 +4,15 @@ import json
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 from octa.core.autonomy.supervisor import AutonomySupervisor, SupervisorConfig
 from octa.core.data.providers.parquet import ParquetOHLCVProvider, find_raw_root, pick_3_complete_symbols
 from octa.core.data.providers.ohlcv import OHLCVBar, Timeframe
 from octa.core.governance.audit_chain import AuditChain
 from octa.core.pipeline.paper_run import run_paper_cascade
+
+pytestmark = pytest.mark.slow
 
 
 def test_full_autonomy_parquet_e2e(tmp_path: Path) -> None:

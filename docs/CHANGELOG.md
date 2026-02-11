@@ -57,3 +57,20 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `tests/test_build_raw_tree_from_flat_parquets.py`
   - `tests/test_io_parquet_recursive_discovery.py`
 
+
+### [2026-02-11 21:55:33] CONFIG
+**Beschreibung:** Code-Änderungen - 3 Code-Dateien - 7 Test-Dateien - (+232/-49 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 3 Dateien
+  - `octa/support/ops/run_full_cascade_training_from_parquets.py`
+  - `octa_ops/autopilot/cascade_train.py`
+  - `octa_training/core/pipeline.py`
+- **TESTS:** 7 Dateien
+  - `config/pytest.ini`
+  - `octa/core/system_tests/test_full_autonomy_parquet_e2e.py`
+  - `octa/core/system_tests/test_full_autonomy_parquet_e2e_5symbols.py`
+  - ... und 4 weitere
+- **OTHER:** 1 Dateien
+  - `octa/support/ops/run_evidence_smoke.sh`
+

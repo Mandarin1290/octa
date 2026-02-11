@@ -118,6 +118,7 @@ def test_gate_failed_preserves_reason_with_metrics() -> None:
     }
     stages, ok, top_reason, top_detail = _normalize_decisions(decisions, metrics_by_tf)
     assert ok is False
+    assert stages[0]["status"] == "GATE_FAIL"
     assert stages[0]["reason"] == "gate_failed"
     assert top_reason == "gate_failed_1D"
     assert top_detail
@@ -262,6 +263,7 @@ def test_train_error_writes_error_artifact(tmp_path: Path) -> None:
     run_full_cascade(settings, train_fn=boom_train_fn)
     result = json.loads((evidence_dir / "results" / "AAA.json").read_text(encoding="utf-8"))
     stage = result["stages"][0]
+    assert stage["status"] == "TRAIN_ERROR"
     assert stage["reason"] == "train_error"
     assert stage["error_type"] == "RuntimeError"
     exception_ref = stage["exception_ref"]
@@ -307,6 +309,7 @@ def test_gate_failed_unexplained_fails_closed(tmp_path: Path) -> None:
     run_full_cascade(settings, train_fn=stub_train_fn)
     result = json.loads((evidence_dir / "results" / "AAA.json").read_text(encoding="utf-8"))
     stage = result["stages"][0]
+    assert stage["status"] == "GATE_FAIL"
     assert stage["reason"] == "gate_failed_unexplained"
     assert stage["gate_summary"]["unexplained"] is True
     assert stage["gate_unexplained_ref"]
@@ -395,18 +398,49 @@ def test_train_error_from_decision_writes_exception_artifacts(tmp_path: Path) ->
     )
 
     def stub_train_fn(**kwargs):
-        decisions = [SimpleNamespace(timeframe="1D", status="FAIL", reason="train_error", details={"error": "inner boom"})]
+        decisions = [SimpleNamespace(timeframe="1D", status="TRAIN_ERROR", reason="train_error", details={"error": "inner boom"})]
         metrics_by_tf = {"1D": {"metrics": {"n_trades": 10}, "model_artifacts": ["x"]}}
         return decisions, metrics_by_tf
 
     run_full_cascade(settings, train_fn=stub_train_fn)
     result = json.loads((evidence_dir / "results" / "AAA.json").read_text(encoding="utf-8"))
     stage = result["stages"][0]
+    assert stage["status"] == "TRAIN_ERROR"
     assert stage["reason"] == "train_error"
     exception_ref = stage["exception_ref"]
     assert (evidence_dir / exception_ref["exception_json"]).exists()
     assert (evidence_dir / exception_ref["traceback_txt"]).exists()
     assert result["detail"]["exception_ref"] == exception_ref
+
+
+def test_gate_fail_status_does_not_write_exception_artifact(tmp_path: Path) -> None:
+    preflight_dir = tmp_path / "preflight"
+    _write_preflight_fixture(preflight_dir)
+    evidence_dir = tmp_path / "evidence"
+    settings = RunSettings(
+        root=tmp_path,
+        preflight_out=preflight_dir,
+        evidence_dir=evidence_dir,
+        batch_size=1,
+        max_symbols=1,
+        resume=False,
+        start_at=None,
+        dry_run=False,
+        config_path=None,
+        skip_preflight=True,
+    )
+
+    def stub_train_fn(**kwargs):
+        decisions = [SimpleNamespace(timeframe="1D", status="GATE_FAIL", reason="walkforward_failed", details={"error": "gate_fail"})]
+        metrics_by_tf = {"1D": {"metrics": {"n_trades": 10, "sharpe": 0.1}, "model_artifacts": ["x"], "gate": {"passed": False, "reasons": ["walkforward_failed"]}}}
+        return decisions, metrics_by_tf
+
+    run_full_cascade(settings, train_fn=stub_train_fn)
+    result = json.loads((evidence_dir / "results" / "AAA.json").read_text(encoding="utf-8"))
+    stage = result["stages"][0]
+    assert stage["status"] == "GATE_FAIL"
+    assert stage["reason"] == "walkforward_failed"
+    assert "exception_ref" not in stage
 
 
 def test_paper_ready_requires_1d_and_1h_with_mc_pass(tmp_path: Path) -> None:

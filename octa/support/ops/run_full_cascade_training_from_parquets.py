@@ -411,6 +411,12 @@ def _normalize_decisions(
             raw_detail = getattr(match, "details", None)
             if isinstance(raw_detail, dict):
                 decision_detail = _safe_json_obj(raw_detail)
+        if status == "FAIL":
+            # Backward-compatible normalization for older decision producers.
+            if str(reason or "").lower() in {"train_error", "train_exception"}:
+                status = "TRAIN_ERROR"
+            else:
+                status = "GATE_FAIL"
         metrics = None
         model_artifacts = None
         features_used = None
@@ -443,42 +449,42 @@ def _normalize_decisions(
             ok_metrics, why_metrics = _metrics_valid(metrics)
             ok_artifacts, why_artifacts = _artifacts_valid(model_artifacts)
             if not ok_metrics:
-                status = "FAIL"
+                status = "GATE_FAIL"
                 reason = why_metrics
             elif not ok_artifacts:
-                status = "FAIL"
+                status = "GATE_FAIL"
                 reason = why_artifacts
             elif not isinstance(monte_carlo, dict):
-                status = "FAIL"
+                status = "GATE_FAIL"
                 reason = "monte_carlo_missing"
             elif not bool(monte_carlo.get("passed", False)):
-                status = "FAIL"
+                status = "GATE_FAIL"
                 reason = "monte_carlo_failed"
             elif not isinstance(walk_forward, dict):
-                status = "FAIL"
+                status = "GATE_FAIL"
                 reason = "walkforward_missing"
             elif not bool(walk_forward.get("passed", False)):
-                status = "FAIL"
+                status = "GATE_FAIL"
                 reason = "walkforward_failed"
             elif not isinstance(regime_stability, dict):
-                status = "FAIL"
+                status = "GATE_FAIL"
                 reason = "regime_stability_missing"
             elif not bool(regime_stability.get("passed", False)):
-                status = "FAIL"
+                status = "GATE_FAIL"
                 reason = "regime_stability_failed"
             elif not isinstance(cost_stress, dict):
-                status = "FAIL"
+                status = "GATE_FAIL"
                 reason = "cost_stress_missing"
             elif not bool(cost_stress.get("passed", False)):
-                status = "FAIL"
+                status = "GATE_FAIL"
                 reason = "cost_stress_failed"
             elif not isinstance(liquidity, dict):
-                status = "FAIL"
+                status = "GATE_FAIL"
                 reason = "liquidity_missing"
             elif not bool(liquidity.get("passed", False)):
-                status = "FAIL"
+                status = "GATE_FAIL"
                 reason = "liquidity_failed"
-        elif status == "FAIL" and reason == "gate_failed":
+        elif status == "GATE_FAIL" and reason == "gate_failed":
             ok_metrics, _ = _metrics_valid(metrics)
             if not ok_metrics:
                 reason = "invalid_metrics"
@@ -491,11 +497,11 @@ def _normalize_decisions(
         prev_pass = status == "PASS"
         if status != "PASS":
             overall_pass = False
-            if top_fail_reason is None and status == "FAIL":
+            if top_fail_reason is None and status in {"GATE_FAIL", "TRAIN_ERROR"}:
                 top_fail_reason = f"{reason}_{tf}" if reason else f"fail_{tf}"
                 if reason in {"gate_failed", "gate_failed_unexplained"}:
                     top_detail = {"timeframe": tf, "gate_summary": gate_summary}
-                elif reason == "train_error":
+                elif status == "TRAIN_ERROR" or reason in {"train_error", "train_exception"}:
                     top_detail = {"timeframe": tf}
         out.append(
             {
@@ -844,7 +850,7 @@ def run_full_cascade(
                     stages = [
                         {
                             "timeframe": tf,
-                            "status": "FAIL",
+                            "status": "TRAIN_ERROR",
                             "reason": "train_error",
                             "metrics_summary": {},
                             "model_artifacts": [],
@@ -907,7 +913,7 @@ def run_full_cascade(
                         f"n_trades={metrics.get('n_trades')} artifacts_written={artifacts_written}"
                     )
                     _log(log_path, stage_msg)
-                    if stage.get("status") == "FAIL" and stage.get("reason") == "train_error" and not stage.get("exception_ref"):
+                    if stage.get("status") == "TRAIN_ERROR" and stage.get("reason") in {"train_error", "train_exception"} and not stage.get("exception_ref"):
                         detail = stage.get("decision_detail") or {}
                         err_text = str(detail.get("error") or stage.get("error_message") or "train_error")
                         tb_text = str(detail.get("traceback") or "")
@@ -925,7 +931,7 @@ def run_full_cascade(
                         stage["exception_ref"] = exc_ref
                         if isinstance(top_detail, dict) and top_detail.get("timeframe") == stage_tf:
                             top_detail["exception_ref"] = exc_ref
-                    if stage.get("status") == "FAIL" and stage.get("reason") in {"gate_failed", "gate_failed_unexplained"}:
+                    if stage.get("status") == "GATE_FAIL" and stage.get("reason") in {"gate_failed", "gate_failed_unexplained"}:
                         gate_summary = stage.get("gate_summary") or {}
                         failed_checks = gate_summary.get("failed_checks") or []
                         thresholds = gate_summary.get("thresholds")

@@ -3,6 +3,31 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-02-11 21:55:33] CONFIG
+Code-Änderungen - 3 Code-Dateien - 7 Test-Dateien - (+232/-49 Zeilen)
+
+**Statistics:**
+- Files Changed: 11
+- Lines Added: +232
+- Lines Deleted: -49
+- Net Change: +183
+
+**File-Level Changes:**
+```
++    2 -    1  config/pytest.ini
++    4 -    0  octa/core/system_tests/test_full_autonomy_parquet_e2e.py
++    4 -    0  octa/core/system_tests/test_full_autonomy_parquet_e2e_5symbols.py
++   41 -    0  octa/support/ops/run_evidence_smoke.sh
++   24 -   18  octa/support/ops/run_full_cascade_training_from_parquets.py
++   29 -    4  octa_ops/autopilot/cascade_train.py
++   42 -   25  octa_training/core/pipeline.py
++    1 -    0  tests/integration/test_feast_materialize.py
++   48 -    0  tests/test_autopilot_cascade_pkl_per_timeframe.py
++    2 -    0  tests/test_control_plane_snapshots.py
++   35 -    1  tests/test_run_full_cascade_training_from_parquets.py
+```
+
+
 ## [2026-02-11 21:26:29] TEST
 Code-Änderungen - 2 Code-Dateien - 2 Test-Dateien - (+420/-2 Zeilen)
 

@@ -1722,31 +1722,48 @@ def train_evaluate_package(
             except Exception:
                 pass
         # run robustness tests after gate thresholds are known
-        if str(robustness_profile or 'full').lower() == 'risk_overlay':
-            robustness_result = run_risk_overlay_tests(
-                res['df'],
-                preds,
-                metrics,
-                gate,
-                es,
-                folds=folds,
-                source_df=df,
-                asset_class=asset_class,
-                timeframe=tf_key,
-            )
-        else:
-            robustness_result = run_all_tests(
-                symbol,
-                features_res,
-                folds,
-                res['df'],
-                preds,
-                metrics,
-                gate,
-                es,
-                source_df=df,
-                asset_class=asset_class,
-                timeframe=tf_key,
+        def _is_integrity_exception(exc: Exception) -> bool:
+            txt = str(exc or "").lower()
+            markers = ("lookahead", "time-order", "time_order", "schema corruption", "schema_corruption", "leakage")
+            return any(m in txt for m in markers)
+
+        try:
+            if str(robustness_profile or 'full').lower() == 'risk_overlay':
+                robustness_result = run_risk_overlay_tests(
+                    res['df'],
+                    preds,
+                    metrics,
+                    gate,
+                    es,
+                    folds=folds,
+                    source_df=df,
+                    asset_class=asset_class,
+                    timeframe=tf_key,
+                )
+            else:
+                robustness_result = run_all_tests(
+                    symbol,
+                    features_res,
+                    folds,
+                    res['df'],
+                    preds,
+                    metrics,
+                    gate,
+                    es,
+                    source_df=df,
+                    asset_class=asset_class,
+                    timeframe=tf_key,
+                )
+        except Exception as e:
+            if _is_integrity_exception(e):
+                raise
+            from octa_training.core.robustness import RobustnessResult
+
+            robustness_result = RobustnessResult(
+                passed=False,
+                reasons=[f"robustness_gate_exception:{type(e).__name__}:{e}"],
+                details={"error": str(e)},
+                limited_reasons=[],
             )
         try:
             result.robustness = robustness_result.model_dump() if hasattr(robustness_result, "model_dump") else robustness_result.dict()

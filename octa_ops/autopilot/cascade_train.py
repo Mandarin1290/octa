@@ -164,14 +164,39 @@ def run_cascade_training(
                 "pkl_dir": str(getattr(getattr(cfg_layer, "paths", None), "pkl_dir", "")),
             }
             fail_reason = None
+            fail_status = "PASS"
             if not passed:
-                fail_reason = "gate_failed"
-                if getattr(res, "error", None):
+                err_text = str(getattr(res, "error", "") or "")
+                is_exception = bool("Traceback (most recent call last)" in err_text)
+                if is_exception:
+                    fail_status = "TRAIN_ERROR"
                     fail_reason = "train_error"
-            decisions.append(GateDecision(symbol=symbol, timeframe=tf, stage="train", status="PASS" if passed else "FAIL", reason=None if passed else fail_reason, details={"gate": gate_dump, "error": getattr(res, "error", None)}))
+                else:
+                    fail_status = "GATE_FAIL"
+                    reasons = []
+                    if isinstance(gate_dump, dict):
+                        rr = gate_dump.get("reasons")
+                        if isinstance(rr, list):
+                            reasons = [str(x) for x in rr if str(x)]
+                    if reasons:
+                        fail_reason = reasons[0]
+                    elif err_text:
+                        fail_reason = err_text
+                    else:
+                        fail_reason = "gate_failed"
+            decisions.append(
+                GateDecision(
+                    symbol=symbol,
+                    timeframe=tf,
+                    stage="train",
+                    status=fail_status,
+                    reason=None if passed else fail_reason,
+                    details={"gate": gate_dump, "error": getattr(res, "error", None)},
+                )
+            )
             prev_pass = passed
         except Exception as e:
-            decisions.append(GateDecision(symbol=symbol, timeframe=tf, stage="train", status="FAIL", reason="train_exception", details={"error": str(e)}))
+            decisions.append(GateDecision(symbol=symbol, timeframe=tf, stage="train", status="TRAIN_ERROR", reason="train_exception", details={"error": str(e)}))
             prev_pass = False
         finally:
             if cfg_layer is cfg and orig_pkl_dir is not None:
