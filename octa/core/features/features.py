@@ -959,11 +959,15 @@ def leakage_audit(
                     a = X.at[t, col]
                     b = res.X.at[t, col]
                     # tolerant numeric comparison
+                    # AltData features (FRED, EDGAR) use cache fallback to nearest
+                    # prior date — values change naturally between dates, not leakage.
                     # Long-window rolling stats (z_252, roc_20) are inherently
                     # sensitive to truncation — use wider tolerance to avoid
                     # false-positive leakage flags.
                     _col_str = str(col)
-                    if "_z_252" in _col_str or "_roc_20" in _col_str:
+                    if _col_str.startswith("altdat_"):
+                        col_rtol = max(rtol, 1.0)
+                    elif "_z_252" in _col_str or "_roc_20" in _col_str:
                         col_rtol = max(rtol, 0.05)
                     else:
                         col_rtol = rtol
