@@ -98,6 +98,7 @@ def run_cascade_training(
                 smoke_test=False,
                 parquet_path=str(pq),
                 dataset=asset_class,
+                asset_class=asset_class,
             )
             passed = bool(getattr(res, "passed", False))
             gate_obj = getattr(res, "gate_result", None)
@@ -116,6 +117,7 @@ def run_cascade_training(
             regime_stability = None
             cost_stress = None
             liquidity = None
+            leakage_audit = None
             if isinstance(pack, dict):
                 features_used = pack.get("features_used")
                 altdata_sources = pack.get("altdata_sources_used")
@@ -123,6 +125,7 @@ def run_cascade_training(
                 altdata_enabled = pack.get("altdata_enabled")
                 training_window = pack.get("training_window")
                 altdata_meta = pack.get("altdata_meta")
+                leakage_audit = pack.get("leakage_audit")
             try:
                 if isinstance(gate_dump, dict):
                     rob = gate_dump.get("robustness")
@@ -160,7 +163,9 @@ def run_cascade_training(
                 "regime_stability": regime_stability,
                 "cost_stress": cost_stress,
                 "liquidity": liquidity,
+                "leakage_audit": leakage_audit,
                 "parquet_path": str(pq),
+                "asset_class": str(asset_class),
                 "pkl_dir": str(getattr(getattr(cfg_layer, "paths", None), "pkl_dir", "")),
             }
             fail_reason = None
@@ -191,7 +196,7 @@ def run_cascade_training(
                     stage="train",
                     status=fail_status,
                     reason=None if passed else fail_reason,
-                    details={"gate": gate_dump, "error": getattr(res, "error", None)},
+                    details={"gate": gate_dump, "error": getattr(res, "error", None), "leakage_audit": leakage_audit},
                 )
             )
             prev_pass = passed

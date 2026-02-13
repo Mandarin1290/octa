@@ -1,5 +1,0 @@
-{"type": "START", "ts_utc": "2026-01-09T10:13:44.502740+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095138Z", "symbol": "ADXN", "asset_profile": "stock"}
-{"type": "LOAD", "ts_utc": "2026-01-09T10:13:44.504897+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095138Z", "symbol": "ADXN", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ADXN_1D.parquet", "parquet_sha256": "d8fa42af45585ab887de9ca15b4d19b0f034f4b04cdbc9de74a304f2c98b4d79"}
-{"type": "TRAIN_START", "ts_utc": "2026-01-09T10:13:44.505701+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095138Z", "symbol": "ADXN", "tf": "1D"}
-{"type": "TRAIN_END", "ts_utc": "2026-01-09T10:14:09.165944+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095138Z", "symbol": "ADXN", "tf": "1D", "passed": false, "error": null}
-{"type": "WRITE_META", "ts_utc": "2026-01-09T10:14:09.196411+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095138Z", "symbol": "ADXN", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_verify/stocks_1d1h_verify101_iso_20260109T095138Z/meta/ADXN.meta.json"}

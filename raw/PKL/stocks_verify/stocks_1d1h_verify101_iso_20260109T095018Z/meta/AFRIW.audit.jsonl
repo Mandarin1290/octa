@@ -1,5 +1,0 @@
-{"type": "START", "ts_utc": "2026-01-09T10:17:24.552263+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AFRIW", "asset_profile": "stock"}
-{"type": "LOAD", "ts_utc": "2026-01-09T10:17:24.553269+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AFRIW", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/AFRIW_1D.parquet", "parquet_sha256": "51437c1c5bc97c5bb6743ba126670bc85577387be65fb098d58d2910ab823571"}
-{"type": "TRAIN_START", "ts_utc": "2026-01-09T10:17:24.553603+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AFRIW", "tf": "1D"}
-{"type": "TRAIN_END", "ts_utc": "2026-01-09T10:17:33.784072+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AFRIW", "tf": "1D", "passed": false, "error": null}
-{"type": "WRITE_META", "ts_utc": "2026-01-09T10:17:33.791590+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AFRIW", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_verify/stocks_1d1h_verify101_iso_20260109T095018Z/meta/AFRIW.meta.json"}

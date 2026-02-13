@@ -233,6 +233,9 @@ class TrainingConfig(BaseModel):
         "window_long": 60,
         "vol_window": 20,
         "horizons": [1, 3, 5],
+        # Leakage audit tolerance for deterministic numeric drift checks.
+        "leakage_audit_rtol": 2e-2,
+        "leakage_audit_atol": 1e-5,
         # Optional macro features (FRED) - disabled by default.
         # Enable by setting features.macro.enabled=true and providing FRED_API_KEY env var.
         "macro": {

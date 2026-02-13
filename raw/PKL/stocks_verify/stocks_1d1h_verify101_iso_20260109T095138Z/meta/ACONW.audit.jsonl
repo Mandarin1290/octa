@@ -1,5 +1,0 @@
-{"type": "START", "ts_utc": "2026-01-09T10:03:45.104188+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095138Z", "symbol": "ACONW", "asset_profile": "stock"}
-{"type": "LOAD", "ts_utc": "2026-01-09T10:03:45.105710+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095138Z", "symbol": "ACONW", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ACONW_1D.parquet", "parquet_sha256": "2509fb6aaee70a95e2cee290d80c937d55f6a2e45b531e9e6e75311f48b06fe5"}
-{"type": "TRAIN_START", "ts_utc": "2026-01-09T10:03:45.106355+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095138Z", "symbol": "ACONW", "tf": "1D"}
-{"type": "TRAIN_END", "ts_utc": "2026-01-09T10:04:05.873620+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095138Z", "symbol": "ACONW", "tf": "1D", "passed": false, "error": null}
-{"type": "WRITE_META", "ts_utc": "2026-01-09T10:04:05.889679+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095138Z", "symbol": "ACONW", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_verify/stocks_1d1h_verify101_iso_20260109T095138Z/meta/ACONW.meta.json"}

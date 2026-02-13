@@ -28,10 +28,12 @@ def _write_preflight_fixture(preflight_dir: Path) -> None:
     inventory_lines = [
         {
             "symbol": "AAA",
+            "asset_class": "equities",
             "tfs": {tf: [str(preflight_dir / f"AAA_{tf}.parquet")] for tf in DEFAULT_TIMEFRAMES},
         },
         {
             "symbol": "BBB",
+            "asset_class": "futures",
             "tfs": {tf: [str(preflight_dir / f"BBB_{tf}.parquet")] for tf in DEFAULT_TIMEFRAMES},
         },
     ]
@@ -218,6 +220,57 @@ def test_gate_failed_logs_failed_checks(tmp_path: Path) -> None:
         config_path=None,
         skip_preflight=True,
     )
+
+
+def test_asset_class_filtering_and_stage_metadata(tmp_path: Path) -> None:
+    preflight_dir = tmp_path / "preflight"
+    _write_preflight_fixture(preflight_dir)
+    evidence_dir = tmp_path / "evidence"
+    settings = RunSettings(
+        root=tmp_path,
+        preflight_out=preflight_dir,
+        evidence_dir=evidence_dir,
+        batch_size=10,
+        max_symbols=0,
+        resume=False,
+        start_at=None,
+        dry_run=False,
+        config_path=None,
+        skip_preflight=True,
+        asset_classes=("equities",),
+    )
+
+    for tf in DEFAULT_TIMEFRAMES:
+        (tmp_path / f"{tf}.pkl").write_text("ok", encoding="utf-8")
+
+    seen_asset_classes = []
+
+    def stub_train_fn(**kwargs):
+        seen_asset_classes.append(str(kwargs.get("asset_class")))
+        decisions = [SimpleNamespace(timeframe=tf, status="PASS", reason=None) for tf in DEFAULT_TIMEFRAMES]
+        metrics_by_tf = {
+            tf: {
+                "asset_class": str(kwargs.get("asset_class")),
+                "metrics": {"n_trades": 1, "sharpe": 1.0, "max_drawdown": 0.03, "cagr": 0.05},
+                "model_artifacts": [str(tmp_path / f"{tf}.pkl")],
+                **_mandatory_checks(True),
+            }
+            for tf in DEFAULT_TIMEFRAMES
+        }
+        return decisions, metrics_by_tf
+
+    summary = run_full_cascade(settings, train_fn=stub_train_fn)
+    assert summary["total_trainable"] == 1
+    assert summary["passed"] == 1
+    assert seen_asset_classes == ["equities"]
+
+    result = json.loads((evidence_dir / "results" / "AAA.json").read_text(encoding="utf-8"))
+    assert result["asset_class"] == "equities"
+    assert all(str(stage.get("asset_class")) == "equities" for stage in result["stages"])
+
+    log_text = (evidence_dir / "logs" / "runner.log").read_text(encoding="utf-8")
+    assert "[info] selected_asset_classes=['equities'] before_count=2 after_count=1" in log_text
+    assert "[train] symbol=AAA asset_class=equities" in log_text
 
     def stub_train_fn(**kwargs):
         decisions = [SimpleNamespace(timeframe="1D", status="FAIL", reason="gate_failed")]

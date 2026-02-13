@@ -26,6 +26,35 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `octa/core/features/features.py`
 
 
+### [2026-02-13 16:40:51] BUGFIX
+**Beschreibung:** Fehlerbehebung - 25 Code-Dateien - 13 Test-Dateien - 2 Dokumentations-Dateien - (+408429/-481537961 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 25 Dateien
+  - `octa/core/eligibility/__init__.py`
+  - `octa/core/eligibility/filter.py`
+  - `octa/core/execution/costs/model.py`
+  - ... und 22 weitere
+- **TESTS:** 13 Dateien
+  - `tests/test_carry_config_and_rates.py`
+  - `tests/test_carry_risk_gate.py`
+  - `tests/test_carry_signals.py`
+  - ... und 10 weitere
+- **DOCS:** 2 Dateien
+  - `ARCHITECTURE_v0_0_0.md`
+  - `README_v0_0_0.md`
+- **DATA:** 9608 Dateien
+  - `data/altdat/meta/features_AACBR_1D_altdat_20260211T211304Z_AACBR_1D.json`
+  - `data/altdat/meta/features_AACBR_1D_altdat_20260211T211305Z_AACBR_1D.json`
+  - `data/altdat/meta/features_AACBR_1D_altdat_20260211T211413Z_AACBR_1D.json`
+  - ... und 9605 weitere
+- **OTHER:** 9 Dateien
+  - `logs/octa_training.jsonl`
+  - `raw_equities_only/equities`
+  - `state.bak_20260211T062044Z/_cascade_hf/state.db`
+  - ... und 6 weitere
+
+
 ## 2026-02-11
 
 

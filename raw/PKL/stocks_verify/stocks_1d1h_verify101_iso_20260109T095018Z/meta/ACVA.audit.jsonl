@@ -1,5 +1,0 @@
-{"type": "START", "ts_utc": "2026-01-09T10:01:43.561108+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "ACVA", "asset_profile": "stock"}
-{"type": "LOAD", "ts_utc": "2026-01-09T10:01:43.564243+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "ACVA", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ACVA_1D.parquet", "parquet_sha256": "276de23fcbc45631e323b5c4c95a17b5e806dc131bdfd4ea00e60a786b88cd23"}
-{"type": "TRAIN_START", "ts_utc": "2026-01-09T10:01:43.564836+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "ACVA", "tf": "1D"}
-{"type": "TRAIN_END", "ts_utc": "2026-01-09T10:02:22.937117+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "ACVA", "tf": "1D", "passed": false, "error": null}
-{"type": "WRITE_META", "ts_utc": "2026-01-09T10:02:22.960342+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "ACVA", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_verify/stocks_1d1h_verify101_iso_20260109T095018Z/meta/ACVA.meta.json"}

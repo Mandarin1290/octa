@@ -1,0 +1,28 @@
+{
+  "columns": [
+    "altdat_macro_fred_FEDFUNDS_lvl",
+    "altdat_macro_fred_FEDFUNDS_chg_1",
+    "altdat_macro_fred_FEDFUNDS_roc_20",
+    "altdat_macro_fred_FEDFUNDS_z_252",
+    "altdat_macro_fred_DGS2_lvl",
+    "altdat_macro_fred_DGS2_chg_1",
+    "altdat_macro_fred_DGS2_roc_20",
+    "altdat_macro_fred_DGS2_z_252",
+    "altdat_macro_fred_DGS10_lvl",
+    "altdat_macro_fred_DGS10_chg_1",
+    "altdat_macro_fred_DGS10_roc_20",
+    "altdat_macro_fred_DGS10_z_252",
+    "altdat_macro_fred_DGS3MO_lvl",
+    "altdat_macro_fred_DGS3MO_chg_1",
+    "altdat_macro_fred_DGS3MO_roc_20",
+    "altdat_macro_fred_DGS3MO_z_252",
+    "altdat_macro_fred_CPIAUCSL_lvl",
+    "altdat_macro_fred_CPIAUCSL_chg_1",
+    "altdat_macro_fred_CPIAUCSL_roc_20",
+    "altdat_macro_fred_CPIAUCSL_z_252"
+  ],
+  "shape": [
+    653,
+    20
+  ]
+}

@@ -1,3 +1,0 @@
-{"type": "START", "ts_utc": "2026-01-09T07:39:40.693637+00:00", "run_id": "stocks_1d1h_verify101_20260109T073917Z", "symbol": "AMPX", "asset_profile": "stock"}
-{"type": "LOAD", "ts_utc": "2026-01-09T07:39:40.695914+00:00", "run_id": "stocks_1d1h_verify101_20260109T073917Z", "symbol": "AMPX", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/AMPX_1D.parquet", "parquet_sha256": "7fb6f51cb98fb39c3af810ce63ce09fae133c54ff125a89e9fe25563758526da"}
-{"type": "TRAIN_START", "ts_utc": "2026-01-09T07:39:40.696428+00:00", "run_id": "stocks_1d1h_verify101_20260109T073917Z", "symbol": "AMPX", "tf": "1D"}

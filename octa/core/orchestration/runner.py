@@ -18,6 +18,8 @@ from octa.core.orchestration.resources import ensure_run_dirs, get_paths, new_ru
 from octa.core.orchestration.state import RunState
 from octa.core.runtime.run_registry import RunRegistry
 from octa.core.data.providers.parquet import ParquetOHLCVProvider, find_raw_root
+from octa.core.data.sources.altdata.orchestrator import load_altdata_config
+from octa.core.features.altdata.registry import FeatureRegistry
 from octa_ops.autopilot.universe import discover_universe
 
 
@@ -107,17 +109,22 @@ def run_cascade(
     resume: bool = False,
     run_id: Optional[str] = None,
     universe_limit: int = 0,
+    symbols: Optional[Sequence[str]] = None,
+    altdata_config_path: Optional[str] = None,
+    altdata_run_id: Optional[str] = None,
+    var_root: Optional[str] = None,
 ) -> CascadeResult:
     cfg = _load_training_config(config_path)
     cfg_dict = _config_to_dict(cfg)
 
     run_id = run_id or new_run_id("cascade")
-    paths = ensure_run_dirs(run_id)
+    var_root_path = Path(var_root) if var_root else None
+    paths = ensure_run_dirs(run_id, var_root=var_root_path)
     run_root = paths["run_root"]
 
     write_config_snapshot(run_root, cfg_dict)
 
-    registry = RunRegistry(get_paths().metrics_root / "metrics.duckdb")
+    registry = RunRegistry(get_paths(var_root_path).metrics_root / "metrics.duckdb")
     registry.record_run_start(run_id=run_id, config=cfg_dict)
 
     run_state = RunState.load(run_root / "run_state.json", run_id=run_id)
@@ -125,7 +132,38 @@ def run_cascade(
     failures_path = paths["reports_dir"] / "failures.md"
 
     try:
+        raw_root = find_raw_root()
+        provider = ParquetOHLCVProvider(root=raw_root)
         universe = discover_universe(limit=universe_limit)
+        if symbols:
+            requested = [str(s).strip().upper() for s in symbols if str(s).strip()]
+            universe_by_symbol = {u.symbol: u for u in universe}
+            missing = [s for s in requested if s not in universe_by_symbol]
+            if missing:
+                from octa_ops.autopilot.types import UniverseSymbol
+
+                fallback: list[UniverseSymbol] = []
+                for sym in missing:
+                    if not provider.has_timeframe(sym, "1D"):
+                        raise RuntimeError(f"Requested symbols not found in universe: {missing}")
+                    parquet_paths: Dict[str, str] = {}
+                    for tf in ("1D", "1H", "30M", "5M", "1M"):
+                        tf_paths = provider._index.get((sym, tf), [])
+                        if tf_paths:
+                            parquet_paths[tf] = str(tf_paths[0])
+                    fallback.append(
+                        UniverseSymbol(
+                            symbol=sym,
+                            asset_class="unknown",
+                            currency=None,
+                            session="unknown",
+                            source="parquet_index",
+                            parquet_paths=parquet_paths,
+                        )
+                    )
+                for sym in missing:
+                    universe_by_symbol[sym] = next(u for u in fallback if u.symbol == sym)
+            universe = [universe_by_symbol[s] for s in requested]
         universe_rows = [
             {
                 "symbol": u.symbol,
@@ -218,10 +256,17 @@ def run_cascade(
         registry.write_survivors(run_id=run_id, layer=L1_LAYER, rows=l1_rows)
         _write_survivors_parquet(paths["survivors_dir"] / "L1_global_1D.parquet", l1_rows)
 
-        raw_root = find_raw_root()
-        provider = ParquetOHLCVProvider(root=raw_root)
-        l2_adapter = L2SignalAdapter(provider)
-        l3_adapter = L3StructureAdapter(provider)
+        altdata_cfg = load_altdata_config(altdata_config_path) if altdata_config_path else None
+        registry_root = None
+        if isinstance(altdata_cfg, dict):
+            registry_root = altdata_cfg.get("cache_dir")
+        alt_registry = (
+            FeatureRegistry(altdata_run_id or run_id, root=str(registry_root) if registry_root else None)
+            if isinstance(altdata_cfg, dict)
+            else None
+        )
+        l2_adapter = L2SignalAdapter(provider, feature_registry=alt_registry, altdata_config=altdata_cfg)
+        l3_adapter = L3StructureAdapter(provider, feature_registry=alt_registry, altdata_config=altdata_cfg)
         l4_adapter = L4ExecutionAdapter(provider)
         l5_adapter = L5MicroAdapter(provider)
 

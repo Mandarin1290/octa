@@ -1,3 +1,0 @@
-{"type": "START", "ts_utc": "2026-01-09T07:39:40.943778+00:00", "run_id": "stocks_1d1h_verify101_20260109T073917Z", "symbol": "ANGX", "asset_profile": "stock"}
-{"type": "LOAD", "ts_utc": "2026-01-09T07:39:40.946280+00:00", "run_id": "stocks_1d1h_verify101_20260109T073917Z", "symbol": "ANGX", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ANGX_1D.parquet", "parquet_sha256": "0ab1d1dc8b53769504773741cd052d099fe04fe058720ce4298e61ef6496f821"}
-{"type": "TRAIN_START", "ts_utc": "2026-01-09T07:39:40.946859+00:00", "run_id": "stocks_1d1h_verify101_20260109T073917Z", "symbol": "ANGX", "tf": "1D"}

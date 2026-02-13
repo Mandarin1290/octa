@@ -1,5 +1,0 @@
-{"type": "START", "ts_utc": "2026-01-09T11:24:02.611638+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AMBP", "asset_profile": "stock"}
-{"type": "LOAD", "ts_utc": "2026-01-09T11:24:02.617266+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AMBP", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/AMBP_1D.parquet", "parquet_sha256": "bde3eb1cc170cf42e04f8da7cb63d75145c49ef5ac79ac3396d4925d19cdf093"}
-{"type": "TRAIN_START", "ts_utc": "2026-01-09T11:24:02.617942+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AMBP", "tf": "1D"}
-{"type": "TRAIN_END", "ts_utc": "2026-01-09T11:26:30.657431+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AMBP", "tf": "1D", "passed": false, "error": null}
-{"type": "WRITE_META", "ts_utc": "2026-01-09T11:26:30.741396+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "AMBP", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_verify/stocks_1d1h_verify101_iso_20260109T095018Z/meta/AMBP.meta.json"}

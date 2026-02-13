@@ -110,16 +110,20 @@ def _load_trainable_symbols(path: Path) -> List[str]:
     return sorted(dict.fromkeys(symbols))
 
 
-def _load_inventory(path: Path) -> Dict[str, Dict[str, List[str]]]:
-    inventory: Dict[str, Dict[str, List[str]]] = {}
+def _load_inventory(path: Path) -> Dict[str, Dict[str, Any]]:
+    inventory: Dict[str, Dict[str, Any]] = {}
     for line in path.read_text(encoding="utf-8").splitlines():
         if not line.strip():
             continue
         raw = json.loads(line)
         sym = str(raw.get("symbol", "")).upper()
         tfs = raw.get("tfs") or {}
+        asset_class = str(raw.get("asset_class", "unknown")).strip().lower() or "unknown"
         if sym:
-            inventory[sym] = {str(tf).upper(): list(paths) for tf, paths in tfs.items()}
+            inventory[sym] = {
+                "asset_class": asset_class,
+                "tfs": {str(tf).upper(): list(paths) for tf, paths in tfs.items()},
+            }
     return inventory
 
 
@@ -129,8 +133,8 @@ def _pick_rep(paths: Sequence[str]) -> Optional[str]:
     return sorted(paths, key=lambda p: (len(p), p))[0]
 
 
-def _build_parquet_paths(symbol: str, inventory: Dict[str, Dict[str, List[str]]]) -> Dict[str, str]:
-    by_tf = inventory.get(symbol, {})
+def _build_parquet_paths(symbol: str, inventory: Dict[str, Dict[str, Any]]) -> Dict[str, str]:
+    by_tf = (inventory.get(symbol) or {}).get("tfs", {})
     out: Dict[str, str] = {}
     for tf in DEFAULT_TIMEFRAMES:
         rep = _pick_rep(by_tf.get(tf, []))
@@ -394,6 +398,7 @@ def _write_unexplained_gate_artifact(
 def _normalize_decisions(
     decisions: List[Any],
     metrics_by_tf: Dict[str, Any],
+    default_asset_class: str = "unknown",
 ) -> Tuple[List[Dict[str, Any]], bool, Optional[str], Optional[Dict[str, Any]]]:
     out: List[Dict[str, Any]] = []
     prev_pass = True
@@ -431,6 +436,8 @@ def _normalize_decisions(
         regime_stability = None
         cost_stress = None
         liquidity = None
+        leakage_audit = None
+        stage_asset_class = str(default_asset_class or "unknown").strip().lower() or "unknown"
         if tf in metrics_by_tf:
             metrics = (metrics_by_tf.get(tf) or {}).get("metrics")
             model_artifacts = (metrics_by_tf.get(tf) or {}).get("model_artifacts")
@@ -445,6 +452,8 @@ def _normalize_decisions(
             regime_stability = (metrics_by_tf.get(tf) or {}).get("regime_stability")
             cost_stress = (metrics_by_tf.get(tf) or {}).get("cost_stress")
             liquidity = (metrics_by_tf.get(tf) or {}).get("liquidity")
+            leakage_audit = (metrics_by_tf.get(tf) or {}).get("leakage_audit")
+            stage_asset_class = str((metrics_by_tf.get(tf) or {}).get("asset_class", "unknown")).strip().lower() or "unknown"
         if status == "PASS":
             ok_metrics, why_metrics = _metrics_valid(metrics)
             ok_artifacts, why_artifacts = _artifacts_valid(model_artifacts)
@@ -506,6 +515,7 @@ def _normalize_decisions(
         out.append(
             {
                 "timeframe": tf,
+                "asset_class": stage_asset_class,
                 "status": status,
                 "reason": reason,
                 "metrics_summary": _metrics_summary(metrics),
@@ -522,14 +532,17 @@ def _normalize_decisions(
                 "regime_stability": _safe_json_obj(regime_stability) if isinstance(regime_stability, dict) else regime_stability,
                 "cost_stress": _safe_json_obj(cost_stress) if isinstance(cost_stress, dict) else cost_stress,
                 "liquidity": _safe_json_obj(liquidity) if isinstance(liquidity, dict) else liquidity,
+                "leakage_audit": _safe_json_obj(leakage_audit) if isinstance(leakage_audit, dict) else leakage_audit,
                 "decision_detail": decision_detail,
             }
         )
     return out, overall_pass, top_fail_reason, top_detail
 
 
-def _run_preflight(root: Path, preflight_out: Path, log_path: Path) -> None:
+def _run_preflight(root: Path, preflight_out: Path, log_path: Path, *, follow_symlinks: bool = False) -> None:
     cmd = [sys.executable, "-m", "octa.support.ops.universe_preflight", "--root", str(root), "--strict", "--out", str(preflight_out)]
+    if follow_symlinks:
+        cmd.append("--follow-symlinks")
     _log(log_path, f"[cmd] {' '.join(cmd)}")
     res = subprocess.run(cmd, capture_output=True, text=True)
     _log(log_path, res.stdout)
@@ -646,6 +659,8 @@ class RunSettings:
     dry_run: bool
     config_path: Optional[str]
     skip_preflight: bool = False
+    follow_symlinks: bool = False
+    asset_classes: Optional[Tuple[str, ...]] = None
     promote_required_tfs: Tuple[str, ...] = ("1D", "1H")
     paper_registry_dir: Path = Path("octa") / "var" / "models" / "paper_ready"
     symbols_override: Optional[List[str]] = None
@@ -694,7 +709,7 @@ def run_full_cascade(
     error_reason: Optional[str] = None
     total = 0
     symbols: List[str] = []
-    inventory: Dict[str, Dict[str, List[str]]] = {}
+    inventory: Dict[str, Dict[str, Any]] = {}
     passed = 0
     failed = 0
     timed_out = 0
@@ -703,11 +718,17 @@ def run_full_cascade(
 
     try:
         if not settings.skip_preflight:
-            _run_preflight(settings.root, settings.preflight_out, log_path)
+            _run_preflight(settings.root, settings.preflight_out, log_path, follow_symlinks=bool(settings.follow_symlinks))
 
         files = _discover_preflight_files(settings.preflight_out)
         symbols = _load_trainable_symbols(files["trainable"])
         inventory = _load_inventory(files["inventory"])
+        selected_asset_classes = tuple(sorted({str(x).strip().lower() for x in (settings.asset_classes or ()) if str(x).strip()}))
+        if selected_asset_classes:
+            before_count = len(symbols)
+            selected_set = set(selected_asset_classes)
+            symbols = [s for s in symbols if str((inventory.get(s) or {}).get("asset_class", "unknown")).lower() in selected_set]
+            _log(log_path, f"[info] selected_asset_classes={list(selected_asset_classes)} before_count={before_count} after_count={len(symbols)}")
 
         if settings.symbols_override:
             requested: List[str] = []
@@ -818,20 +839,25 @@ def run_full_cascade(
 
                 run_id = settings.evidence_dir.name
                 model_root = Path("octa") / "var" / "models" / "runs" / run_id / sym
-                _log(log_path, f"[train] symbol={sym} run_id={run_id}")
+                symbol_asset_class = str((inventory.get(sym) or {}).get("asset_class", "unknown")).strip().lower() or "unknown"
+                _log(log_path, f"[train] symbol={sym} asset_class={symbol_asset_class} run_id={run_id}")
                 try:
                     decisions, metrics_by_tf = train_fn(
                         run_id=run_id,
                         config_path=settings.config_path or "octa_training/config/training.yaml",
                         symbol=sym,
-                        asset_class="unknown",
+                        asset_class=symbol_asset_class,
                         parquet_paths=parquet_paths,
                         cascade=CascadePolicy(order=list(DEFAULT_TIMEFRAMES)),
                         safe_mode=False,
                         reports_dir=str(settings.evidence_dir),
                         model_root=str(model_root),
                     )
-                    stages, ok, top_reason, top_detail = _normalize_decisions(decisions, metrics_by_tf)
+                    stages, ok, top_reason, top_detail = _normalize_decisions(
+                        decisions,
+                        metrics_by_tf,
+                        default_asset_class=symbol_asset_class,
+                    )
                     status = "PASS" if ok else "FAIL"
                     reason = None if ok else (top_reason or "stage_failed")
                 except Exception as exc:
@@ -850,6 +876,7 @@ def run_full_cascade(
                     stages = [
                         {
                             "timeframe": tf,
+                            "asset_class": symbol_asset_class,
                             "status": "TRAIN_ERROR",
                             "reason": "train_error",
                             "metrics_summary": {},
@@ -906,7 +933,7 @@ def run_full_cascade(
                     ok_art, _ = _artifacts_valid(artifacts)
                     artifacts_written = bool(ok_art)
                     stage_msg = (
-                        f"[stage] symbol={sym} tf={stage.get('timeframe')} "
+                        f"[stage] symbol={sym} asset_class={stage.get('asset_class', symbol_asset_class)} tf={stage.get('timeframe')} "
                         f"status={stage.get('status')} reason={stage.get('reason')} "
                         f"pf={metrics.get('profit_factor')} sharpe={metrics.get('sharpe')} "
                         f"cagr={metrics.get('cagr')} max_dd={metrics.get('max_drawdown')} "
@@ -975,6 +1002,7 @@ def run_full_cascade(
 
                 result = {
                     "symbol": sym,
+                    "asset_class": symbol_asset_class,
                     "status": status,
                     "reason": reason,
                     "detail": top_detail,
@@ -1034,6 +1062,8 @@ def main() -> None:
     p.add_argument("--config", default=None)
     p.add_argument("--symbols", default=None)
     p.add_argument("--symbols-file", default=None)
+    p.add_argument("--asset-class", dest="asset_classes", action="append", default=[])
+    p.add_argument("--follow-symlinks", action="store_true", default=False)
     p.add_argument("--promote-required-tfs", default="1D,1H")
     p.add_argument("--paper-registry-dir", default=str(Path("octa") / "var" / "models" / "paper_ready"))
     args = p.parse_args()
@@ -1054,6 +1084,8 @@ def main() -> None:
         start_at=args.start_at,
         dry_run=bool(args.dry_run),
         config_path=args.config,
+        follow_symlinks=bool(args.follow_symlinks),
+        asset_classes=tuple(str(x).strip().lower() for x in (args.asset_classes or []) if str(x).strip()) or None,
         promote_required_tfs=promote_tfs or ("1D", "1H"),
         paper_registry_dir=Path(args.paper_registry_dir),
         symbols_override=symbols_override or None,
@@ -1075,6 +1107,8 @@ def main() -> None:
             "dry_run": settings.dry_run,
             "config": settings.config_path,
             "symbols_override": settings.symbols_override,
+            "follow_symlinks": bool(settings.follow_symlinks),
+            "asset_classes": list(settings.asset_classes or ()),
             "cascade_order": list(DEFAULT_TIMEFRAMES),
             "pipeline_version": OCTA_VERSION,
             "promote_required_tfs": list(settings.promote_required_tfs),

@@ -1,3 +1,0 @@
-{"type": "START", "ts_utc": "2026-01-09T07:39:20.489421+00:00", "run_id": "stocks_1d1h_verify101_20260109T073917Z", "symbol": "ABAT", "asset_profile": "stock"}
-{"type": "LOAD", "ts_utc": "2026-01-09T07:39:20.494037+00:00", "run_id": "stocks_1d1h_verify101_20260109T073917Z", "symbol": "ABAT", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ABAT_1D.parquet", "parquet_sha256": "7a84e270f5b5c351af3f52fa1561d3289a582b40c94243e27a6c106588c9bd07"}
-{"type": "TRAIN_START", "ts_utc": "2026-01-09T07:39:20.494773+00:00", "run_id": "stocks_1d1h_verify101_20260109T073917Z", "symbol": "ABAT", "tf": "1D"}

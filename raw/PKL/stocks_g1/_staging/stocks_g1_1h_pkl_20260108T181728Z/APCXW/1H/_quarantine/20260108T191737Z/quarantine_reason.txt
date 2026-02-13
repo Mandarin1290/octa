@@ -1,1 +1,0 @@
-Parquet for symbol APCXW not found in /home/n-b/Octa/raw

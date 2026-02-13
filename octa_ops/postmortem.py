@@ -3,13 +3,17 @@ from __future__ import annotations
 import datetime as _dt
 import hashlib
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 
 def canonical_hash(obj: Any) -> str:
     s = json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     return hashlib.sha256(s.encode("utf-8")).hexdigest()
+
+
+def _utc_now_iso_z() -> str:
+    return _dt.datetime.now(_dt.timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 @dataclass
@@ -21,7 +25,7 @@ class PostMortemReport:
     remediation_actions: List[Dict[str, Any]]
     evidence: Dict[str, str]
     metadata: Dict[str, Any]
-    created_at: str = _dt.datetime.utcnow().isoformat() + "Z"
+    created_at: str = field(default_factory=_utc_now_iso_z)
 
     def to_dict(self) -> Dict[str, Any]:
         return {

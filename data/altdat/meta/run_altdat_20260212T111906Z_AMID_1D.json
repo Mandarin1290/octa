@@ -1,0 +1,79 @@
+{
+  "enabled": true,
+  "strict": false,
+  "offline_only": true,
+  "symbol": "AMID",
+  "timeframe": "1D",
+  "start_ts": "2011-07-27 00:00:00+00:00",
+  "end_ts": "2025-12-30 00:00:00+00:00",
+  "duckdb_ok": true,
+  "duckdb_error": null,
+  "sources": {
+    "fred": {
+      "ok": true,
+      "series": [
+        "FEDFUNDS",
+        "DGS10",
+        "DGS2",
+        "UNRATE"
+      ],
+      "errors": []
+    },
+    "edgar": {
+      "ok": false,
+      "error": "missing_cache",
+      "forms": [
+        "10-K",
+        "10-Q",
+        "8-K"
+      ]
+    }
+  },
+  "sources_used": [
+    "fred"
+  ],
+  "cache_paths": [
+    "octa/var/altdata/fred/2025-12-30/fred_2025-12-30.json"
+  ],
+  "coverage": {
+    "macro": 0.09598293636686811
+  },
+  "weights": {
+    "final": {
+      "edgar": 1.0,
+      "macro": 0.0
+    },
+    "reasons": {
+      "macro": "coverage<0.5"
+    }
+  },
+  "leakage": {
+    "detected": false,
+    "rows": 0
+  },
+  "run_id": "altdat_20260212T111906Z_AMID_1D",
+  "config_hash": "db40d13e90ced99ee409bc88cee23c65b0b679f81ddaea06ff2d513ac3abe8a7",
+  "features_used": [
+    "altdat_macro_fred_FEDFUNDS_lvl",
+    "altdat_macro_fred_FEDFUNDS_chg_1",
+    "altdat_macro_fred_FEDFUNDS_roc_20",
+    "altdat_macro_fred_FEDFUNDS_z_252",
+    "altdat_macro_fred_DGS2_lvl",
+    "altdat_macro_fred_DGS2_chg_1",
+    "altdat_macro_fred_DGS2_roc_20",
+    "altdat_macro_fred_DGS2_z_252",
+    "altdat_macro_fred_DGS10_lvl",
+    "altdat_macro_fred_DGS10_chg_1",
+    "altdat_macro_fred_DGS10_roc_20",
+    "altdat_macro_fred_DGS10_z_252",
+    "altdat_macro_fred_DGS3MO_lvl",
+    "altdat_macro_fred_DGS3MO_chg_1",
+    "altdat_macro_fred_DGS3MO_roc_20",
+    "altdat_macro_fred_DGS3MO_z_252",
+    "altdat_macro_fred_CPIAUCSL_lvl",
+    "altdat_macro_fred_CPIAUCSL_chg_1",
+    "altdat_macro_fred_CPIAUCSL_roc_20",
+    "altdat_macro_fred_CPIAUCSL_z_252"
+  ],
+  "status": "OK"
+}

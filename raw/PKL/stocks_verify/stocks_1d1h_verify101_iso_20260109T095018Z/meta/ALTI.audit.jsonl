@@ -1,5 +1,0 @@
-{"type": "START", "ts_utc": "2026-01-09T10:47:45.195541+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "ALTI", "asset_profile": "stock"}
-{"type": "LOAD", "ts_utc": "2026-01-09T10:47:45.200572+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "ALTI", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ALTI_1D.parquet", "parquet_sha256": "a117174a0ebf818819c12c5a44d2855ae8e0594192d55b8e48e77404371eaabe"}
-{"type": "TRAIN_START", "ts_utc": "2026-01-09T10:47:45.201370+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "ALTI", "tf": "1D"}
-{"type": "TRAIN_END", "ts_utc": "2026-01-09T10:48:28.468344+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "ALTI", "tf": "1D", "passed": false, "error": null}
-{"type": "WRITE_META", "ts_utc": "2026-01-09T10:48:28.492755+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095018Z", "symbol": "ALTI", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_verify/stocks_1d1h_verify101_iso_20260109T095018Z/meta/ALTI.meta.json"}

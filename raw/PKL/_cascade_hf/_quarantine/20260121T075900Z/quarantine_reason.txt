@@ -1,1 +1,0 @@
-Parquet for symbol ATLCL not found in /home/n-b/Octa/raw

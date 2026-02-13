@@ -1,0 +1,50 @@
+{
+  "enabled": true,
+  "strict": false,
+  "offline_only": true,
+  "symbol": "AMBI",
+  "timeframe": "1D",
+  "start_ts": "2020-09-09 00:00:00+00:00",
+  "end_ts": "2025-10-28 00:00:00+00:00",
+  "duckdb_ok": true,
+  "duckdb_error": null,
+  "sources": {
+    "fred": {
+      "ok": false,
+      "error": "missing_cache",
+      "series": [
+        "FEDFUNDS",
+        "DGS10",
+        "DGS2",
+        "UNRATE"
+      ]
+    },
+    "edgar": {
+      "ok": false,
+      "error": "missing_cache",
+      "forms": [
+        "10-K",
+        "10-Q",
+        "8-K"
+      ]
+    }
+  },
+  "sources_used": [],
+  "cache_paths": [],
+  "coverage": {},
+  "weights": {
+    "final": {
+      "edgar": 0.5833333333333334,
+      "macro": 0.4166666666666667
+    },
+    "reasons": {}
+  },
+  "leakage": {
+    "detected": false,
+    "rows": 0
+  },
+  "run_id": "altdat_20260212T110126Z_AMBI_1D",
+  "config_hash": "db40d13e90ced99ee409bc88cee23c65b0b679f81ddaea06ff2d513ac3abe8a7",
+  "features_used": [],
+  "status": "MISSING_SOURCES"
+}

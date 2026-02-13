@@ -1,1 +1,0 @@
-Parquet for symbol AHL_E not found in /home/n-b/Octa/raw

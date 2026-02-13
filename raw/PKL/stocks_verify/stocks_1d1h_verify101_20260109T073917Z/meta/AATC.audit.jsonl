@@ -1,3 +1,0 @@
-{"type": "START", "ts_utc": "2026-01-09T07:39:20.479678+00:00", "run_id": "stocks_1d1h_verify101_20260109T073917Z", "symbol": "AATC", "asset_profile": "stock"}
-{"type": "LOAD", "ts_utc": "2026-01-09T07:39:20.485313+00:00", "run_id": "stocks_1d1h_verify101_20260109T073917Z", "symbol": "AATC", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/AATC_1D.parquet", "parquet_sha256": "f7c70bd0cb2f75c9e874bba68c430da7bbe2bc94eed52603a0269b654cf878e5"}
-{"type": "TRAIN_START", "ts_utc": "2026-01-09T07:39:20.486563+00:00", "run_id": "stocks_1d1h_verify101_20260109T073917Z", "symbol": "AATC", "tf": "1D"}

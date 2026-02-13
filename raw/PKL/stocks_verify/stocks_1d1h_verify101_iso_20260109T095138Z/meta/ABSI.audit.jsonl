@@ -1,5 +1,0 @@
-{"type": "START", "ts_utc": "2026-01-09T10:02:18.178588+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095138Z", "symbol": "ABSI", "asset_profile": "stock"}
-{"type": "LOAD", "ts_utc": "2026-01-09T10:02:18.180814+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095138Z", "symbol": "ABSI", "tf": "1D", "ok": true, "parquet_path": "raw/Stock_parquet/ABSI_1D.parquet", "parquet_sha256": "5ccd5a63f97819adebec35fd15e0d30135c1c97e66dff1a0dc5ef7e637fa9d31"}
-{"type": "TRAIN_START", "ts_utc": "2026-01-09T10:02:18.181338+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095138Z", "symbol": "ABSI", "tf": "1D"}
-{"type": "TRAIN_END", "ts_utc": "2026-01-09T10:02:53.776537+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095138Z", "symbol": "ABSI", "tf": "1D", "passed": false, "error": null}
-{"type": "WRITE_META", "ts_utc": "2026-01-09T10:02:53.803140+00:00", "run_id": "stocks_1d1h_verify101_iso_20260109T095138Z", "symbol": "ABSI", "ok": true, "meta": "/home/n-b/Octa/raw/PKL/stocks_verify/stocks_1d1h_verify101_iso_20260109T095138Z/meta/ABSI.meta.json"}
