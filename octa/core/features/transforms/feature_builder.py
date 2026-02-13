@@ -157,7 +157,7 @@ def build_altdata_features(
         except Exception:
             series = []
         if offline_only:
-            payload = read_snapshot(source="fred", asof=asof_date, root=storage_root)
+            payload = read_snapshot(source="fred", asof=asof_date, root=storage_root, fallback_nearest=True)
             if payload is None:
                 meta["sources"]["fred"] = {"ok": False, "error": "missing_cache", "series": series}
                 _duckdb_upsert_source("fred", False, "missing_cache")
@@ -242,7 +242,7 @@ def build_altdata_features(
             forms = ["10-K", "10-Q", "8-K"]
 
         if offline_only:
-            payload = read_snapshot(source="edgar", asof=asof_date, root=storage_root, key_suffix=symbol)
+            payload = read_snapshot(source="edgar", asof=asof_date, root=storage_root, key_suffix=symbol, fallback_nearest=True)
             if payload is None:
                 meta["sources"]["edgar"] = {"ok": False, "error": "missing_cache", "forms": forms}
                 _duckdb_upsert_source("edgar", False, "missing_cache")

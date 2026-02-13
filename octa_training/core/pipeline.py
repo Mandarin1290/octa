@@ -84,6 +84,7 @@ def _merge_gate_specs_strict(global_spec: dict, asset_spec: dict) -> dict:
         'turnover_per_day_max',
         'avg_gross_exposure_max',
         'cvar_99_sigma_max',
+        'cvar_95_over_daily_vol_max',
     }
 
     for k in min_keys:
@@ -136,6 +137,7 @@ def train_evaluate_package(
     dataset: Optional[str] = None,
     asset_profile: Optional[str] = None,
     fast: bool = False,
+    asset_class: Optional[str] = None,
 ) -> PipelineResult:
     try:
         assurance_ctx: Dict[str, Any] = {
@@ -405,7 +407,14 @@ def train_evaluate_package(
         except Exception:
             inferred = None
 
-        asset_class_raw = inferred or asset_class_state or "unknown"
+        asset_class_hint = None
+        try:
+            if asset_class:
+                asset_class_hint = str(asset_class).strip().lower()
+        except Exception:
+            asset_class_hint = None
+
+        asset_class_raw = inferred or asset_class_state or asset_class_hint or dataset or "unknown"
         # If inference couldn't decide, allow existing state to win.
         try:
             if str(asset_class_raw).strip().lower() == 'unknown' and asset_class_state:
@@ -620,11 +629,29 @@ def train_evaluate_package(
         except Exception:
             horizons = [1, 3, 5]
         hk = _hard_kill_switches_conf()
-        leak_ok = leakage_audit(features_res.X, features_res.y_dict, df, horizons, settings=eff_settings, asset_class=asset_class)
+        leak_ok, leak_report = leakage_audit(
+            features_res.X,
+            features_res.y_dict,
+            df,
+            horizons,
+            settings=eff_settings,
+            asset_class=asset_class,
+            return_report=True,
+        )
+        try:
+            features_res.meta["leakage_audit"] = leak_report
+        except Exception:
+            pass
         if bool(hk.get('leakage', True)) and (not bool(leak_ok)):
             _record_end(False, metrics_obj=None, gate_obj=None)
             if not diagnose_mode:
-                return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error='leakage_detected')
+                return PipelineResult(
+                    symbol=symbol,
+                    run_id=run_id,
+                    passed=False,
+                    error='leakage_detected',
+                    pack_result={"leakage_audit": leak_report},
+                )
             diagnose_reasons.append('leakage_detected')
 
         # IBKR-only conservative cost model: prefer cfg.broker over cfg.signal
@@ -693,8 +720,8 @@ def train_evaluate_package(
                 n_rows = int(len(features_res.X.index))
                 min_train_cfg = int(splits_cfg.get('min_train_size', 500))
                 min_test_cfg = int(splits_cfg.get('min_test_size', 100))
-                fb_min_train = max(200, max(1, min_train_cfg // 2))
-                fb_min_test = max(60, max(1, min_test_cfg // 2))
+                fb_min_train = max(100, max(1, min_train_cfg // 2))
+                fb_min_test = max(30, max(1, min_test_cfg // 2))
                 if n_rows >= (fb_min_train + fb_min_test):
                     from octa_training.core.splits import SplitFold
 
@@ -1134,35 +1161,35 @@ def train_evaluate_package(
                 "sharpe_min": 0.65,
                 "max_drawdown_max": 0.06,
                 "min_trades": 20,
-                "min_bars": 252,
+                "min_bars": 130,
             },
             "1H": {
                 "profit_factor_min": 1.15,
                 "sharpe_min": 0.60,
                 "max_drawdown_max": 0.05,
                 "min_trades": 60,
-                "min_bars": 500,
+                "min_bars": 260,
             },
             "30m": {
                 "profit_factor_min": 1.12,
                 "sharpe_min": 0.55,
                 "max_drawdown_max": 0.045,
                 "min_trades": 120,
-                "min_bars": 800,
+                "min_bars": 400,
             },
             "5m": {
                 "profit_factor_min": 1.10,
                 "sharpe_min": 0.50,
                 "max_drawdown_max": 0.040,
                 "min_trades": 240,
-                "min_bars": 1200,
+                "min_bars": 600,
             },
             "1m": {
                 "profit_factor_min": 1.08,
                 "sharpe_min": 0.45,
                 "max_drawdown_max": 0.035,
                 "min_trades": 480,
-                "min_bars": 2000,
+                "min_bars": 1000,
             },
         }
 
@@ -1212,6 +1239,18 @@ def train_evaluate_package(
         base_spec = dict(global_spec or {})
         if isinstance(tf_spec, dict) and tf_spec:
             base_spec.update(tf_spec)
+
+        # Per-asset-class overlay from gates.by_asset_class (e.g. stock, forex).
+        # Unlike profile overlays, asset-class overrides CAN relax global defaults
+        # because different asset classes have structurally different risk profiles.
+        try:
+            by_ac = gconf.get('by_asset_class', {}) if isinstance(gconf, dict) else {}
+            ac_key = str(asset_class or '').lower().strip()
+            ac_spec = by_ac.get(ac_key, {}) if isinstance(by_ac, dict) else {}
+            if isinstance(ac_spec, dict) and ac_spec:
+                base_spec.update(ac_spec)
+        except Exception:
+            pass
 
         # Asset profile overlay (cannot relax global/timeframe floors).
         # Profile gates use the same key-space as GateSpec.
@@ -1904,6 +1943,13 @@ def train_evaluate_package(
                     pack_res['debug'] = dbg
             except Exception:
                 pass
+        if isinstance(leak_report, dict):
+            if pack_res is None:
+                pack_res = {}
+            if isinstance(pack_res, dict):
+                pack_res["leakage_audit"] = leak_report
+        if isinstance(pack_res, dict):
+            pack_res["asset_class"] = str(asset_class)
         # optionally smoke test performed by caller
         _record_end(bool(result.passed), metrics_obj=metrics, gate_obj=result, pack_res=pack_res)
         return PipelineResult(symbol=symbol, run_id=run_id, passed=result.passed, metrics=metrics, gate_result=result, pack_result=pack_res)

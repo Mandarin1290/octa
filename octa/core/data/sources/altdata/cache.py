@@ -58,17 +58,44 @@ def write_snapshot(
     return payload_path, meta_path, h
 
 
+def _find_nearest_prior_date(source: str, target: date, root: str | None = None) -> Optional[date]:
+    """Find the nearest cached date <= target for a given source."""
+    base = resolve_cache_root(root) / source
+    if not base.is_dir():
+        return None
+    best: Optional[date] = None
+    for entry in base.iterdir():
+        if not entry.is_dir():
+            continue
+        try:
+            d = date.fromisoformat(entry.name)
+        except (ValueError, TypeError):
+            continue
+        if d <= target and (best is None or d > best):
+            best = d
+    return best
+
+
 def read_snapshot(
     *,
     source: str,
     asof: date,
     root: str | None = None,
     key_suffix: str | None = None,
+    fallback_nearest: bool = False,
 ) -> Optional[dict[str, Any]]:
     key = cache_key(source, asof, key_suffix)
     payload_path = source_day_dir(source, asof, root) / f"{key}.json"
     if not payload_path.exists():
-        return None
+        if not fallback_nearest:
+            return None
+        nearest = _find_nearest_prior_date(source, asof, root)
+        if nearest is None:
+            return None
+        key = cache_key(source, nearest, key_suffix)
+        payload_path = source_day_dir(source, nearest, root) / f"{key}.json"
+        if not payload_path.exists():
+            return None
     try:
         return json.loads(payload_path.read_text(encoding="utf-8"))
     except Exception:

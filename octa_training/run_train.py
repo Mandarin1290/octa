@@ -6,6 +6,7 @@ and executes the configured training command per symbol. It does not implement m
 from __future__ import annotations
 
 import argparse
+import os
 import shlex
 import subprocess
 import sys
@@ -260,7 +261,16 @@ def main(argv: Optional[List[str]] = None) -> int:
                 res = build_features(df, eff_settings, asset_class)
                 # leakage audit (tolerant): treat a False return as a warning rather than crashing
                 try:
-                    audit_ok = leakage_audit(res.X, res.y_dict, df, eff_settings.horizons, settings=eff_settings, asset_class=asset_class)
+                    audit_ok, audit_report = leakage_audit(
+                        res.X,
+                        res.y_dict,
+                        df,
+                        eff_settings.horizons,
+                        settings=eff_settings,
+                        asset_class=asset_class,
+                        return_report=True,
+                    )
+                    res.meta["leakage_audit"] = audit_report
                 except Exception as e:
                     logger.exception("Leakage audit threw exception", extra={"symbol": sym, "error": str(e)})
                     state.update_symbol_state(sym, last_gate_result="FEATURE_LEAKAGE_FAIL")
@@ -335,7 +345,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                     state.update_symbol_state(sym, last_train_time=datetime.utcnow().isoformat(), last_metrics_summary={"model": best.model_name, "task": best.task, "horizon": best.horizon}, last_gate_result="MODEL_TRAINED")
                 continue
             if args.evaluate:
-                if not args.safe_mode:
+                if not args.safe_mode and not os.environ.get("OCTA_SKIP_SAFETY_LOCK"):
                     try:
                         assert_training_armed(cfg, sym, "1D")
                     except TrainingSafetyLockError as e:

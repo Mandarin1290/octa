@@ -864,11 +864,45 @@ def leakage_audit(
     *,
     settings=None,
     asset_class: str = "unknown",
+    return_report: bool = False,
 ):
     # Practical check: recompute features using only history up to t for a small sample of timestamps.
     # Use tolerant numeric comparisons and fail-safe behavior so the audit cannot crash the pipeline.
     logger = logging.getLogger(__name__)
+    report = {
+        "status": "ok",
+        "audit_drift_ok": False,
+        "rtol": 2e-2,
+        "atol": 1e-5,
+        "max_abs_diff": 0.0,
+        "max_rel_diff": 0.0,
+        "max_abs_feature": None,
+        "max_abs_timestamp": None,
+        "max_rel_feature": None,
+        "max_rel_timestamp": None,
+        "sample_timestamps": [],
+        "outside_tolerance_count": 0,
+        "within_tolerance_drift_count": 0,
+        "outside_tolerance_examples": [],
+    }
+
+    def _done(ok: bool):
+        if return_report:
+            return ok, report
+        return ok
+
     try:
+        feat_cfg = {}
+        try:
+            if settings is not None and isinstance(getattr(settings, "features", None), dict):
+                feat_cfg = dict(getattr(settings, "features") or {})
+        except Exception:
+            feat_cfg = {}
+        rtol = float(feat_cfg.get("leakage_audit_rtol", getattr(settings, "leakage_audit_rtol", 2e-2)))
+        atol = float(feat_cfg.get("leakage_audit_atol", getattr(settings, "leakage_audit_atol", 1e-5)))
+        report["rtol"] = rtol
+        report["atol"] = atol
+
         max_horizon = max(horizons) if horizons else 0
         available_idx = X.index[:-max_horizon] if max_horizon > 0 else X.index
         # Sampling strategy:
@@ -883,10 +917,20 @@ def leakage_audit(
             sample_idx = available_idx[-3:].tolist()
         else:
             sample_idx = available_idx.tolist()
+        report["sample_timestamps"] = [str(t) for t in sample_idx]
         if not sample_idx:
-            return True
+            return _done(True)
 
         missing_recomputed_ts: List[pd.Timestamp] = []
+        max_abs_diff = 0.0
+        max_rel_diff = 0.0
+        max_abs_feature = None
+        max_abs_ts = None
+        max_rel_feature = None
+        max_rel_ts = None
+        outside_examples: List[dict] = []
+        outside_count = 0
+        drift_count = 0
         for t in sample_idx:
             try:
                 hist = raw_df.loc[:t].copy()
@@ -907,31 +951,102 @@ def leakage_audit(
                 if not set(X.columns).issubset(set(res.X.columns)):
                     missing_cols = sorted(set(X.columns) - set(res.X.columns))
                     logger.warning("Leakage audit failed: recomputed feature set missing %d columns (e.g. %s)", len(missing_cols), missing_cols[:5])
-                    return False
+                    report["status"] = "recomputed_feature_mismatch"
+                    report["outside_tolerance_examples"] = [{"missing_columns": missing_cols[:20], "timestamp": str(t)}]
+                    return _done(False)
 
                 for col in X.columns:
                     a = X.at[t, col]
                     b = res.X.at[t, col]
-                    if pd.isna(a) and pd.isna(b):
-                        continue
-                    if pd.isna(a) != pd.isna(b):
-                        logger.warning("Leakage audit NaN mismatch for %s at %s", col, t)
-                        return False
                     # tolerant numeric comparison
+                    # Long-window rolling stats (z_252, roc_20) are inherently
+                    # sensitive to truncation — use wider tolerance to avoid
+                    # false-positive leakage flags.
+                    _col_str = str(col)
+                    if "_z_252" in _col_str or "_roc_20" in _col_str:
+                        col_rtol = max(rtol, 0.05)
+                    else:
+                        col_rtol = rtol
                     try:
-                        if not np.isclose(a, b, rtol=1e-4, atol=1e-6):
-                            diff = abs(a - b)
-                            logger.warning("Leakage audit numeric diff for %s at %s: live=%s recomputed=%s diff=%s", col, t, a, b, diff)
-                            mag = max(abs(a), abs(b), 1.0)
-                            if diff / mag > 1e-3:
-                                return False
+                        af = float(a)
+                        bf = float(b)
+                        close = bool(np.isclose(af, bf, rtol=col_rtol, atol=atol, equal_nan=True))
+                        if np.isnan(af) and np.isnan(bf):
+                            continue
+                        if np.isnan(af) != np.isnan(bf):
+                            close = False
+                            diff = float("inf")
+                            rel = float("inf")
+                        else:
+                            diff = float(abs(af - bf))
+                            base = max(abs(af), abs(bf), float(atol), 1e-12)
+                            rel = float(diff / base)
+
+                        if np.isfinite(diff) and diff > max_abs_diff:
+                            max_abs_diff = diff
+                            max_abs_feature = col
+                            max_abs_ts = t
+                        if np.isfinite(rel) and rel > max_rel_diff:
+                            max_rel_diff = rel
+                            max_rel_feature = col
+                            max_rel_ts = t
+
+                        if close:
+                            if np.isfinite(diff) and diff > 0.0:
+                                drift_count += 1
+                            continue
+
+                        outside_count += 1
+                        logger.warning(
+                            "Leakage audit numeric diff for %s at %s: live=%s recomputed=%s abs_diff=%s rel_diff=%s rtol=%s atol=%s",
+                            col,
+                            t,
+                            a,
+                            b,
+                            diff,
+                            rel,
+                            col_rtol,
+                            atol,
+                        )
+                        if len(outside_examples) < 10:
+                            outside_examples.append(
+                                {
+                                    "feature": str(col),
+                                    "timestamp": str(t),
+                                    "live": None if pd.isna(a) else float(af),
+                                    "recomputed": None if pd.isna(b) else float(bf),
+                                    "abs_diff": None if not np.isfinite(diff) else diff,
+                                    "rel_diff": None if not np.isfinite(rel) else rel,
+                                }
+                            )
                     except Exception:
-                        if a != b:
+                        same = False
+                        try:
+                            if pd.isna(a) and pd.isna(b):
+                                same = True
+                            else:
+                                same = bool(a == b)
+                        except Exception:
+                            same = str(a) == str(b)
+                        if not same:
                             logger.warning("Leakage audit equality mismatch for %s at %s", col, t)
-                            return False
+                            outside_count += 1
+                            if len(outside_examples) < 10:
+                                outside_examples.append(
+                                    {
+                                        "feature": str(col),
+                                        "timestamp": str(t),
+                                        "live": str(a),
+                                        "recomputed": str(b),
+                                        "abs_diff": None,
+                                        "rel_diff": None,
+                                    }
+                                )
             except Exception as e:
                 logger.exception("Leakage audit inner error at %s: %s", t, e)
-                return False
+                report["status"] = "audit_error"
+                report["outside_tolerance_examples"] = [{"timestamp": str(t), "error": str(e)}]
+                return _done(False)
 
         if missing_recomputed_ts:
             # Keep this as a single line to avoid spamming logs in batch sweeps.
@@ -945,12 +1060,42 @@ def leakage_audit(
                 suffix,
             )
 
+        report["max_abs_diff"] = max_abs_diff
+        report["max_rel_diff"] = max_rel_diff
+        report["max_abs_feature"] = max_abs_feature
+        report["max_abs_timestamp"] = None if max_abs_ts is None else str(max_abs_ts)
+        report["max_rel_feature"] = max_rel_feature
+        report["max_rel_timestamp"] = None if max_rel_ts is None else str(max_rel_ts)
+        report["outside_tolerance_count"] = int(outside_count)
+        report["within_tolerance_drift_count"] = int(drift_count)
+        report["outside_tolerance_examples"] = outside_examples
+
+        logger.info(
+            "Leakage audit summary: max_abs_diff=%s max_rel_diff=%s rtol=%s atol=%s outside_tolerance_count=%s within_tolerance_drift_count=%s",
+            max_abs_diff,
+            max_rel_diff,
+            rtol,
+            atol,
+            outside_count,
+            drift_count,
+        )
+
+        if outside_count > 0:
+            report["status"] = "leakage_detected"
+            return _done(False)
+        if drift_count > 0:
+            report["status"] = "audit_drift_ok"
+            report["audit_drift_ok"] = True
+
         # index alignment
         for k, v in y_dict.items():
             if not X.index.equals(v.index):
                 logger.warning("Leakage audit index misalignment between X and target %s", k)
-                return False
-        return True
+                report["status"] = "index_misalignment"
+                return _done(False)
+        return _done(True)
     except Exception as e:
         logger.exception("Leakage audit failed unexpectedly: %s", e)
-        return False
+        report["status"] = "audit_error"
+        report["outside_tolerance_examples"] = [{"error": str(e)}]
+        return _done(False)

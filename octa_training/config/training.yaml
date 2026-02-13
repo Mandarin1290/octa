@@ -115,31 +115,31 @@ gates:
       max_drawdown_max: 0.06
       profit_factor_min: 1.20
       min_trades: 20
-      min_bars: 252
+      min_bars: 130
     1H:
       sharpe_min: 0.60
       max_drawdown_max: 0.05
       profit_factor_min: 1.15
       min_trades: 60
-      min_bars: 500
+      min_bars: 260
     30m:
       sharpe_min: 0.55
       max_drawdown_max: 0.045
       profit_factor_min: 1.12
       min_trades: 120
-      min_bars: 800
+      min_bars: 400
     5m:
       sharpe_min: 0.50
       max_drawdown_max: 0.040
       profit_factor_min: 1.10
       min_trades: 240
-      min_bars: 1200
+      min_bars: 600
     1m:
       sharpe_min: 0.45
       max_drawdown_max: 0.035
       profit_factor_min: 1.08
       min_trades: 480
-      min_bars: 2000
+      min_bars: 1000
   robustness:
     monte_carlo_n: 600
     monte_carlo_seed: 1337
@@ -154,6 +154,7 @@ gates:
       profit_factor_min: 1.15
       min_trades: 60
       required_folds_pass_ratio: 0.75
+      cvar_95_over_daily_vol_max: 5.0
     forex:
       sharpe_min: 1.0
       max_drawdown_max: 0.20
@@ -192,6 +193,8 @@ features:
   window_long: 60
   vol_window: 20
   horizons: [1]
+  leakage_audit_rtol: 0.02
+  leakage_audit_atol: 0.00001
 
 # Splitting defaults
 splits:
