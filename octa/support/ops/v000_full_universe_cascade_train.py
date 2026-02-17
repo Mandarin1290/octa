@@ -53,6 +53,27 @@ def _probe_port(host: str, port: int) -> bool:
         return False
 
 
+def _env_bool(name: str, default: bool) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return bool(default)
+    return str(raw).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _probe_x11(display: str) -> tuple[bool, str]:
+    if not display:
+        return False, "missing_display"
+    has_xdpyinfo = subprocess.run(["/usr/bin/env", "bash", "-lc", "command -v xdpyinfo >/dev/null 2>&1"], check=False).returncode == 0
+    if has_xdpyinfo:
+        ok = subprocess.run(["xdpyinfo", "-display", str(display)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False).returncode == 0
+        return bool(ok), "xdpyinfo"
+    has_xset = subprocess.run(["/usr/bin/env", "bash", "-lc", "command -v xset >/dev/null 2>&1"], check=False).returncode == 0
+    if has_xset:
+        ok = subprocess.run(["xset", "-display", str(display), "-q"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False).returncode == 0
+        return bool(ok), "xset"
+    return True, "display_only"
+
+
 def _sha256(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as f:
@@ -89,25 +110,20 @@ def run(config_path: str, out_dir: Path) -> dict[str, Any]:
     _write_json(out_dir / "discovery_ibkr.json", discovery_payload)
 
     ibkr_cfg = cfg.get("ibkr", {}) if isinstance(cfg.get("ibkr"), dict) else {}
-    display = os.environ.get("DISPLAY", "")
+    display = os.environ.get("DISPLAY", "") or os.environ.get("OCTA_DISPLAY", "") or os.environ.get("OCTA_XVFB_DISPLAY", "")
     xdg = os.environ.get("XDG_SESSION_TYPE", "")
     use_xvfb = bool(ibkr_cfg.get("use_xvfb", False))
-    x11_ok = bool(display) and (bool(use_xvfb) or xdg == "x11")
+    require_x11 = _env_bool("OCTA_REQUIRE_X11", True)
+    x11_probe_ok, x11_probe_method = _probe_x11(str(display))
+    x11_ok = bool(display) and bool(x11_probe_ok)
 
     disclaimer = None
-    if not display:
+    if require_x11 and (not x11_ok):
         disclaimer = {
             "disclaimer_emitted": True,
             "disclaimer_code": "IBKR_X11_UNAVAILABLE",
             "action": "LOCK_EXECUTION_SHADOW_ONLY",
-            "required_operator_action": "Set DISPLAY to an active X11/Xvfb session before enabling IBKR autologin/runtime.",
-        }
-    elif (not use_xvfb) and xdg != "x11":
-        disclaimer = {
-            "disclaimer_emitted": True,
-            "disclaimer_code": "IBKR_X11_REQUIRED",
-            "action": "LOCK_EXECUTION_SHADOW_ONLY",
-            "required_operator_action": "Use an X11 session or set ibkr.use_xvfb=true with valid DISPLAY.",
+            "required_operator_action": "Set a usable DISPLAY (X11 or Xvfb) before enabling IBKR autologin/runtime.",
         }
 
     host = str(ibkr_cfg.get("host", "127.0.0.1"))
@@ -138,7 +154,12 @@ def run(config_path: str, out_dir: Path) -> dict[str, Any]:
     health.update(
         {
             "display": display,
+            "detected_display": display,
             "xdg_session_type": xdg,
+            "use_xvfb": use_xvfb,
+            "require_x11": require_x11,
+            "x11_probe_method": x11_probe_method,
+            "x11_probe_ok": x11_probe_ok,
             "x11_ok": x11_ok,
             "port_reachable": port_reachable,
             "runtime_start": runtime_start,
@@ -260,6 +281,10 @@ def run(config_path: str, out_dir: Path) -> dict[str, Any]:
         "run_id": str(cfg.get("run_id", _utc_compact())),
         "generated_utc": _utc(),
         "ibkr_mode": "x11_xvfb",
+        "detected_display": display,
+        "xdg_session_type": xdg,
+        "x11_probe_method": x11_probe_method,
+        "x11_probe_ok": x11_probe_ok,
         "ibkr_autologin_enabled": autologin_enabled,
         "ibkr_autologin_result": autologin_result,
         "disclaimer_emitted": bool(disclaimer is not None),

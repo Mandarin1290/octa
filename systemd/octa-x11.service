@@ -3,12 +3,15 @@ Description=OCTA X11/Xvfb bootstrap
 After=default.target
 
 [Service]
-Type=oneshot
-RemainAfterExit=yes
+Type=simple
 EnvironmentFile=%h/.config/octa/env
+Environment=OCTA_XVFB_DISPLAY=:99
+Environment=DISPLAY=:99
+Environment=OCTA_X11_SERVICE_MODE=1
 WorkingDirectory=${OCTA_REPO}
-ExecStart=/usr/bin/env bash scripts/octa_systemd_entrypoint.sh
-ExecStart=/usr/bin/env bash scripts/octa_x11_bootstrap.sh
+ExecStartPre=/usr/bin/env bash scripts/octa_systemd_entrypoint.sh
+ExecStartPre=/usr/bin/env bash scripts/octa_x11_bootstrap.sh
+ExecStart=/usr/bin/env bash -lc 'if [[ "${OCTA_USE_XVFB:-1}" == "1" ]]; then exec /usr/bin/Xvfb "${OCTA_XVFB_DISPLAY:-:99}" -screen 0 1920x1080x24 -nolisten tcp -dpi 96; else exec sleep infinity; fi'
 Restart=always
 RestartSec=2
 StartLimitIntervalSec=0

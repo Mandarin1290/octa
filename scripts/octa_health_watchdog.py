@@ -5,6 +5,7 @@ import argparse
 import json
 import os
 import socket
+import subprocess
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -30,6 +31,18 @@ def _probe(host: str, port: int) -> bool:
         return False
 
 
+def _probe_x11(display: str) -> tuple[bool, str]:
+    if not display:
+        return False, "missing_display"
+    if subprocess.run(["/usr/bin/env", "bash", "-lc", "command -v xdpyinfo >/dev/null 2>&1"], check=False).returncode == 0:
+        ok = subprocess.run(["xdpyinfo", "-display", str(display)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False).returncode == 0
+        return bool(ok), "xdpyinfo"
+    if subprocess.run(["/usr/bin/env", "bash", "-lc", "command -v xset >/dev/null 2>&1"], check=False).returncode == 0:
+        ok = subprocess.run(["xset", "-display", str(display), "-q"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False).returncode == 0
+        return bool(ok), "xset"
+    return True, "display_only"
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Lightweight OCTA health watchdog")
     ap.add_argument("--events", default="octa/var/evidence/watchdog.jsonl")
@@ -42,7 +55,7 @@ def main() -> int:
     events = Path(args.events)
     while True:
         display = os.environ.get("DISPLAY", "")
-        x11_ok = bool(display)
+        x11_ok, x11_probe_method = _probe_x11(display)
         port_ok = _probe(str(args.host), int(args.port)) if bool(args.require_port) else True
         healthy = bool(x11_ok and port_ok)
         _append(
@@ -51,6 +64,7 @@ def main() -> int:
                 "event_type": "watchdog_tick",
                 "display": display,
                 "x11_ok": x11_ok,
+                "x11_probe_method": x11_probe_method,
                 "port_ok": port_ok,
                 "healthy": healthy,
             },

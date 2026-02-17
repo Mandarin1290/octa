@@ -8,6 +8,7 @@ OCTA_REPO=/absolute/path/to/Octa
 OCTA_PY=/absolute/path/to/Octa/.venv/bin/python
 OCTA_USE_XVFB=1
 OCTA_REQUIRE_X11=1
+OCTA_XVFB_DISPLAY=:99
 OCTA_IBKR_MODE=tws
 OCTA_TWS_CMD=/path/to/tws/start/script/or/binary
 OCTA_GATEWAY_CMD=/path/to/gateway/start/script/or/binary
@@ -16,6 +17,11 @@ OCTA_IBKR_HOST=127.0.0.1
 OCTA_IBKR_PORT=7497
 OCTA_V000_CONFIG=configs/dev.yaml
 EOF
+```
+
+For boot without interactive login:
+```bash
+loginctl enable-linger "$USER"
 ```
 
 ## 2) Install user services

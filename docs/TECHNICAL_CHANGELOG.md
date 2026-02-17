@@ -3,6 +3,32 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-02-17 15:17:38] DOCS
+Code-Änderungen - 1 Code-Dateien - 1 Test-Dateien - 1 Dokumentations-Dateien - (+186/-36 Zeilen)
+
+**Statistics:**
+- Files Changed: 12
+- Lines Added: +186
+- Lines Deleted: -36
+- Net Change: +150
+
+**File-Level Changes:**
+```
++    6 -    0  docs/SYSTEMD_AUTOSTART.md
++   36 -   11  octa/support/ops/v000_full_universe_cascade_train.py
++    9 -    2  scripts/octa_autologin_bootstrap.sh
++   15 -    1  scripts/octa_health_watchdog.py
++   35 -    1  scripts/octa_ibkr_bootstrap.sh
++    2 -    1  scripts/octa_systemd_entrypoint.sh
++   60 -   16  scripts/octa_x11_bootstrap.sh
++    2 -    0  systemd/octa-autologin.service
++    2 -    0  systemd/octa-ibkr.service
++    2 -    0  systemd/octa-v000.service
++    7 -    4  systemd/octa-x11.service
++   10 -    0  tests/test_systemd_smoke.py
+```
+
+
 ## [2026-02-17 14:48:56] FEATURE
 Neue Funktionalität hinzugefügt - 6 Code-Dateien - 5 Test-Dateien - 1 Dokumentations-Dateien - (+2042/-12 Zeilen)
 

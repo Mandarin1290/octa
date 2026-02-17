@@ -4,14 +4,22 @@ set -euo pipefail
 : "${OCTA_REPO:?OCTA_REPO is required}"
 : "${OCTA_PY:?OCTA_PY is required}"
 MODE="${OCTA_IBKR_MODE:-tws}"
-BOOT_DIR="${OCTA_BOOT_EVIDENCE_DIR:-${OCTA_REPO}/octa/var/evidence/systemd_boot_$(date -u +%Y%m%dT%H%M%SZ)}"
+BOOT_DIR="${OCTA_BOOT_EVIDENCE_DIR:-}"
+if [[ -z "${BOOT_DIR}" ]] && [[ -f "${OCTA_REPO}/octa/var/runtime/systemd_boot_dir" ]]; then
+  BOOT_DIR="$(cat "${OCTA_REPO}/octa/var/runtime/systemd_boot_dir" 2>/dev/null || true)"
+fi
+if [[ -z "${BOOT_DIR}" ]]; then
+  BOOT_DIR="${OCTA_REPO}/octa/var/evidence/systemd_boot_$(date -u +%Y%m%dT%H%M%SZ)"
+fi
 mkdir -p "${BOOT_DIR}"
+export DISPLAY="${OCTA_DISPLAY:-${OCTA_XVFB_DISPLAY:-${DISPLAY:-:99}}}"
 
 TWS_CMD="${OCTA_TWS_CMD:-}"
 GW_CMD="${OCTA_GATEWAY_CMD:-}"
 PROC_MATCH="${OCTA_IBKR_PROCESS_MATCH:-}"
 HOST="${OCTA_IBKR_HOST:-127.0.0.1}"
 PORT="${OCTA_IBKR_PORT:-7497}"
+HEALTH_INTERVAL="${OCTA_IBKR_HEALTH_INTERVAL_SEC:-5}"
 
 if [[ "${MODE}" == "tws" && -z "${TWS_CMD}" ]]; then
   printf '{"event_type":"ibkr_error","reason":"missing_tws_cmd"}\n' >> "${BOOT_DIR}/events.jsonl"
@@ -33,10 +41,36 @@ if [[ -n "${GW_CMD}" ]]; then
   ARGS+=(--gateway-cmd "${GW_CMD}")
 fi
 
+set +e
 OUT="$(${ARGS[@]})"
 RC=$?
+set -e
 printf '%s\n' "${OUT}" > "${BOOT_DIR}/ibkr_process_state.json"
 printf '{"event_type":"ibkr_started","rc":%s,"payload":%s}\n' "${RC}" "$(printf '%s' "${OUT}" | python -c 'import json,sys; print(json.dumps(sys.stdin.read()))')" >> "${BOOT_DIR}/events.jsonl"
 if [[ ${RC} -ne 0 ]]; then
   exit ${RC}
 fi
+
+while true; do
+  HEALTH_ARGS=("${OCTA_PY}" -m octa.execution.ibkr_runtime --mode "${MODE}" --health --host "${HOST}" --port "${PORT}")
+  if [[ -n "${PROC_MATCH}" ]]; then
+    HEALTH_ARGS+=(--process-match "${PROC_MATCH}")
+  fi
+  if [[ -n "${TWS_CMD}" ]]; then
+    HEALTH_ARGS+=(--tws-cmd "${TWS_CMD}")
+  fi
+  if [[ -n "${GW_CMD}" ]]; then
+    HEALTH_ARGS+=(--gateway-cmd "${GW_CMD}")
+  fi
+
+  set +e
+  HEALTH_OUT="$(${HEALTH_ARGS[@]})"
+  HEALTH_RC=$?
+  set -e
+  printf '{"event_type":"ibkr_health_tick","rc":%s,"payload":%s}\n' "${HEALTH_RC}" "$(printf '%s' "${HEALTH_OUT}" | python -c 'import json,sys; print(json.dumps(sys.stdin.read()))')" >> "${BOOT_DIR}/events.jsonl"
+  if [[ ${HEALTH_RC} -ne 0 ]]; then
+    printf '{"event_type":"restart_reason","reason":"ibkr_health_probe_failed","rc":%s}\n' "${HEALTH_RC}" >> "${BOOT_DIR}/events.jsonl"
+    exit "${HEALTH_RC}"
+  fi
+  sleep "${HEALTH_INTERVAL}"
+done

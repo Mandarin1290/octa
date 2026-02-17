@@ -39,8 +39,18 @@ def test_units_reference_env_and_wrappers():
         if rel.endswith(".service"):
             assert "EnvironmentFile=%h/.config/octa/env" in text
             assert "WorkingDirectory=${OCTA_REPO}" in text
+            assert ("Environment=DISPLAY=" in text) or ("OCTA_XVFB_DISPLAY" in text)
             assert "Restart=always" in text
             assert "RestartSec=2" in text
             assert "StartLimitIntervalSec=0" in text
             assert "StandardOutput=journal" in text
             assert "StandardError=journal" in text
+
+
+def test_x11_bootstrap_accepts_xvfb_without_xdg_hard_requirement():
+    p = Path("scripts/octa_x11_bootstrap.sh")
+    text = p.read_text(encoding="utf-8")
+    assert "OCTA_XVFB_DISPLAY" in text
+    assert "XDG_SESSION_TYPE" in text
+    assert "x11_probe_method" in text
+    assert "deferred_xvfb_service_start" in text

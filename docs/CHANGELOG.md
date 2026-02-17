@@ -33,6 +33,28 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - ... und 2 weitere
 
 
+### [2026-02-17 15:17:38] DOCS
+**Beschreibung:** Code-Änderungen - 1 Code-Dateien - 1 Test-Dateien - 1 Dokumentations-Dateien - (+186/-36 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 1 Dateien
+  - `octa/support/ops/v000_full_universe_cascade_train.py`
+- **TESTS:** 1 Dateien
+  - `tests/test_systemd_smoke.py`
+- **DOCS:** 1 Dateien
+  - `docs/SYSTEMD_AUTOSTART.md`
+- **SCRIPTS:** 5 Dateien
+  - `scripts/octa_autologin_bootstrap.sh`
+  - `scripts/octa_health_watchdog.py`
+  - `scripts/octa_ibkr_bootstrap.sh`
+  - ... und 2 weitere
+- **OTHER:** 4 Dateien
+  - `systemd/octa-autologin.service`
+  - `systemd/octa-ibkr.service`
+  - `systemd/octa-v000.service`
+  - ... und 1 weitere
+
+
 ## 2026-02-15
 
 
