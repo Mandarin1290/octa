@@ -9,6 +9,8 @@ OCTA_PY=/absolute/path/to/Octa/.venv/bin/python
 OCTA_USE_XVFB=1
 OCTA_REQUIRE_X11=1
 OCTA_XVFB_DISPLAY=:99
+OCTA_XVFB_SCREEN=1920x1080x24
+OCTA_XVFB_DPI=96
 OCTA_IBKR_MODE=tws
 OCTA_TWS_CMD=/path/to/tws/start/script/or/binary
 OCTA_GATEWAY_CMD=/path/to/gateway/start/script/or/binary
@@ -50,3 +52,15 @@ systemctl --user disable --now octa.target
 - No password automation is implemented.
 - X11 popup auto-click is opt-in and controlled by runtime env + profile DB.
 - Execution defaults are unchanged; this setup does not enable live trading by itself.
+
+## Known-good Xvfb env
+```bash
+OCTA_XVFB_DISPLAY=:99
+OCTA_XVFB_SCREEN=1920x1080x24
+OCTA_XVFB_DPI=96
+```
+
+## Host prerequisites
+- `Xvfb` (required)
+- `xdpyinfo` (optional but recommended)
+- `xdotool` and `xprop` (required for teach/run popup automation)

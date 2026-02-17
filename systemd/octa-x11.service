@@ -6,12 +6,13 @@ After=default.target
 Type=simple
 EnvironmentFile=%h/.config/octa/env
 Environment=OCTA_XVFB_DISPLAY=:99
-Environment=DISPLAY=:99
-Environment=OCTA_X11_SERVICE_MODE=1
+Environment=OCTA_XVFB_SCREEN=1920x1080x24
+Environment=OCTA_XVFB_DPI=96
+Environment=DISPLAY=${OCTA_XVFB_DISPLAY}
 WorkingDirectory=${OCTA_REPO}
 ExecStartPre=/usr/bin/env bash scripts/octa_systemd_entrypoint.sh
 ExecStartPre=/usr/bin/env bash scripts/octa_x11_bootstrap.sh
-ExecStart=/usr/bin/env bash -lc 'if [[ "${OCTA_USE_XVFB:-1}" == "1" ]]; then exec /usr/bin/Xvfb "${OCTA_XVFB_DISPLAY:-:99}" -screen 0 1920x1080x24 -nolisten tcp -dpi 96; else exec sleep infinity; fi'
+ExecStart=/usr/bin/Xvfb ${OCTA_XVFB_DISPLAY} -screen 0 ${OCTA_XVFB_SCREEN} -nolisten tcp -dpi ${OCTA_XVFB_DPI}
 Restart=always
 RestartSec=2
 StartLimitIntervalSec=0

@@ -52,5 +52,14 @@ def test_x11_bootstrap_accepts_xvfb_without_xdg_hard_requirement():
     text = p.read_text(encoding="utf-8")
     assert "OCTA_XVFB_DISPLAY" in text
     assert "XDG_SESSION_TYPE" in text
-    assert "x11_probe_method" in text
-    assert "deferred_xvfb_service_start" in text
+    assert "probe_method_used" in text
+    assert "max_wait_ms=10000" in text
+    assert "sleep 0.2" in text
+    assert "missing_binary:" in text
+    assert "Xvfb \"${DISPLAY}\" -screen" not in text
+
+
+def test_x11_service_runs_xvfb_main_process():
+    text = Path("systemd/octa-x11.service").read_text(encoding="utf-8")
+    assert "ExecStart=/usr/bin/Xvfb ${OCTA_XVFB_DISPLAY}" in text
+    assert "Environment=DISPLAY=${OCTA_XVFB_DISPLAY}" in text

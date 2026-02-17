@@ -13,45 +13,66 @@ if [[ -z "${BOOT_DIR}" ]]; then
 fi
 mkdir -p "${BOOT_DIR}"
 
-USE_XVFB="${OCTA_USE_XVFB:-0}"
 REQUIRE_X11="${OCTA_REQUIRE_X11:-1}"
-DISPLAY_SEL="${OCTA_DISPLAY:-${OCTA_XVFB_DISPLAY:-${DISPLAY:-:99}}}"
+DISPLAY_SEL="${OCTA_XVFB_DISPLAY:-:99}"
+if [[ -n "${OCTA_DISPLAY:-}" ]]; then
+  DISPLAY_SEL="${OCTA_DISPLAY}"
+elif [[ -n "${DISPLAY:-}" ]]; then
+  DISPLAY_SEL="${DISPLAY}"
+fi
 export DISPLAY="${DISPLAY_SEL}"
-XDG_VAL="${XDG_SESSION_TYPE:-}"
-X11_SERVICE_MODE="${OCTA_X11_SERVICE_MODE:-0}"
 
-xvfb_started=false
-xvfb_pid=""
-
-if [[ "${USE_XVFB}" == "1" ]]; then
-  if pgrep -f "Xvfb ${DISPLAY}" >/dev/null 2>&1; then
-    xvfb_pid="$(pgrep -f "Xvfb ${DISPLAY}" | head -n1 || true)"
-  elif [[ "${X11_SERVICE_MODE}" != "1" ]]; then
-    Xvfb "${DISPLAY}" -screen 0 1920x1080x24 -nolisten tcp -dpi 96 >/dev/null 2>&1 &
-    sleep 1
-    xvfb_started=true
-    xvfb_pid="$(pgrep -f "Xvfb ${DISPLAY}" | head -n1 || true)"
-  fi
+if [[ "${DISPLAY}" =~ ^:([0-9]+)$ ]]; then
+  DNUM="${BASH_REMATCH[1]}"
+  SOCKET_PATH="/tmp/.X11-unix/X${DNUM}"
+else
+  DNUM=""
+  SOCKET_PATH=""
 fi
 
-x11_probe_method="display_only"
-x11_probe_ok=false
-if [[ "${X11_SERVICE_MODE}" == "1" && "${USE_XVFB}" == "1" ]]; then
-  x11_probe_method="deferred_xvfb_service_start"
-  x11_probe_ok=true
-elif command -v xdpyinfo >/dev/null 2>&1; then
-  x11_probe_method="xdpyinfo"
-  if xdpyinfo -display "${DISPLAY}" >/dev/null 2>&1; then
-    x11_probe_ok=true
+missing_binary=""
+if ! command -v Xvfb >/dev/null 2>&1; then
+  missing_binary="Xvfb"
+fi
+
+probe_ok=false
+probe_method_used="none"
+socket_path_exists=false
+waited_ms=0
+max_wait_ms=10000
+step_ms=200
+xdg_session_type="${XDG_SESSION_TYPE:-}"
+
+while [[ ${waited_ms} -le ${max_wait_ms} ]]; do
+  if command -v xdpyinfo >/dev/null 2>&1; then
+    probe_method_used="xdpyinfo"
+    if xdpyinfo -display "${DISPLAY}" >/dev/null 2>&1; then
+      probe_ok=true
+      break
+    fi
+  elif command -v xset >/dev/null 2>&1; then
+    probe_method_used="xset"
+    if xset -display "${DISPLAY}" -q >/dev/null 2>&1; then
+      probe_ok=true
+      break
+    fi
+  else
+    probe_method_used="socket"
+    if [[ -n "${SOCKET_PATH}" && -S "${SOCKET_PATH}" ]]; then
+      probe_ok=true
+      break
+    fi
   fi
-elif command -v xset >/dev/null 2>&1; then
-  x11_probe_method="xset"
-  if xset -display "${DISPLAY}" -q >/dev/null 2>&1; then
-    x11_probe_ok=true
+
+  if [[ -n "${SOCKET_PATH}" && -S "${SOCKET_PATH}" ]]; then
+    socket_path_exists=true
   fi
-elif [[ -n "${DISPLAY}" ]]; then
-  x11_probe_method="display_only"
-  x11_probe_ok=true
+  sleep 0.2
+  waited_ms=$((waited_ms + step_ms))
+done
+
+if [[ -n "${SOCKET_PATH}" && -S "${SOCKET_PATH}" ]]; then
+  socket_path_exists=true
 fi
 
 cat > "${BOOT_DIR}/x11_state.json" <<JSON
@@ -59,20 +80,30 @@ cat > "${BOOT_DIR}/x11_state.json" <<JSON
   "event_type": "x11_state",
   "ts": "${UTC_NOW}",
   "display": "${DISPLAY}",
-  "octa_use_xvfb": ${USE_XVFB},
-  "xdg_session_type": "${XDG_VAL}",
-  "xdpyinfo_ok": ${x11_probe_ok},
-  "x11_probe_method": "${x11_probe_method}",
-  "xvfb_started": ${xvfb_started},
-  "pid": "${xvfb_pid}"
+  "probe_method_used": "${probe_method_used}",
+  "probe_ok": ${probe_ok},
+  "socket_path": "${SOCKET_PATH}",
+  "socket_path_exists": ${socket_path_exists},
+  "waited_ms": ${waited_ms},
+  "xdg_session_type": "${xdg_session_type}",
+  "missing_binary": "${missing_binary}"
 }
 JSON
 
-printf '{"event_type":"x11_state","ts":"%s","display":"%s","octa_use_xvfb":%s,"xdg_session_type":"%s","x11_probe_method":"%s","x11_probe_ok":%s,"xvfb_started":%s,"pid":"%s"}\n' \
-  "${UTC_NOW}" "${DISPLAY}" "${USE_XVFB}" "${XDG_VAL}" "${x11_probe_method}" "${x11_probe_ok}" "${xvfb_started}" "${xvfb_pid}" >> "${BOOT_DIR}/events.jsonl"
+printf '{"event_type":"x11_state","ts":"%s","display":"%s","probe_method_used":"%s","probe_ok":%s,"socket_path":"%s","socket_path_exists":%s,"waited_ms":%s,"xdg_session_type":"%s","missing_binary":"%s"}\n' \
+  "${UTC_NOW}" "${DISPLAY}" "${probe_method_used}" "${probe_ok}" "${SOCKET_PATH}" "${socket_path_exists}" "${waited_ms}" "${xdg_session_type}" "${missing_binary}" >> "${BOOT_DIR}/events.jsonl"
 
-if [[ "${REQUIRE_X11}" == "1" && "${x11_probe_ok}" != "true" ]]; then
-  printf '{"event_type":"x11_error","ts":"%s","code":"IBKR_X11_UNAVAILABLE","action":"LOCK_EXECUTION_SHADOW_ONLY","display":"%s","x11_probe_method":"%s"}\n' \
-    "${UTC_NOW}" "${DISPLAY}" "${x11_probe_method}" >> "${BOOT_DIR}/events.jsonl"
+if [[ "${REQUIRE_X11}" == "1" && "${probe_ok}" != "true" ]]; then
+  reason="probe_failed"
+  code="IBKR_X11_UNAVAILABLE"
+  if [[ -n "${missing_binary}" ]]; then
+    reason="missing_binary:${missing_binary}"
+    code="IBKR_X11_UNAVAILABLE"
+  elif [[ -z "${DISPLAY}" ]]; then
+    reason="missing_display"
+    code="IBKR_X11_REQUIRED"
+  fi
+  printf '{"event_type":"x11_error","ts":"%s","code":"%s","reason":"%s","action":"LOCK_EXECUTION_SHADOW_ONLY","display":"%s"}\n' \
+    "${UTC_NOW}" "${code}" "${reason}" "${DISPLAY}" >> "${BOOT_DIR}/events.jsonl"
   exit 2
 fi

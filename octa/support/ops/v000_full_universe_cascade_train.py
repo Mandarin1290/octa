@@ -71,6 +71,11 @@ def _probe_x11(display: str) -> tuple[bool, str]:
     if has_xset:
         ok = subprocess.run(["xset", "-display", str(display), "-q"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False).returncode == 0
         return bool(ok), "xset"
+    if display.startswith(":") and display[1:].isdigit():
+        socket_path = f"/tmp/.X11-unix/X{display[1:]}"
+        if Path(socket_path).exists():
+            return True, "socket"
+        return False, "socket_missing"
     return True, "display_only"
 
 
@@ -119,9 +124,12 @@ def run(config_path: str, out_dir: Path) -> dict[str, Any]:
 
     disclaimer = None
     if require_x11 and (not x11_ok):
+        code = "IBKR_X11_UNAVAILABLE"
+        if not str(display).strip():
+            code = "IBKR_X11_REQUIRED"
         disclaimer = {
             "disclaimer_emitted": True,
-            "disclaimer_code": "IBKR_X11_UNAVAILABLE",
+            "disclaimer_code": code,
             "action": "LOCK_EXECUTION_SHADOW_ONLY",
             "required_operator_action": "Set a usable DISPLAY (X11 or Xvfb) before enabling IBKR autologin/runtime.",
         }
