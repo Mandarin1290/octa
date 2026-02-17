@@ -71,6 +71,22 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `systemd/octa-x11.service`
 
 
+### [2026-02-17 18:05:36] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 1 Code-Dateien - 2 Test-Dateien - 1 Dokumentations-Dateien - (+1360/-22 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 1 Dateien
+  - `octa/execution/ibkr_x11_login.py`
+- **TESTS:** 2 Dateien
+  - `tests/test_bootstrap_no_bare_python.py`
+  - `tests/test_ibkr_x11_login_steps.py`
+- **DOCS:** 1 Dateien
+  - `docs/IBKR_X11_AUTOLOGIN.md`
+- **SCRIPTS:** 2 Dateien
+  - `scripts/octa_autologin_bootstrap.sh`
+  - `scripts/octa_ibkr_bootstrap.sh`
+
+
 ## 2026-02-15
 
 

@@ -3,6 +3,26 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-02-17 18:05:36] FEATURE
+Neue Funktionalität hinzugefügt - 1 Code-Dateien - 2 Test-Dateien - 1 Dokumentations-Dateien - (+1360/-22 Zeilen)
+
+**Statistics:**
+- Files Changed: 6
+- Lines Added: +1360
+- Lines Deleted: -22
+- Net Change: +1338
+
+**File-Level Changes:**
+```
++  184 -    0  docs/IBKR_X11_AUTOLOGIN.md
++  585 -    0  octa/execution/ibkr_x11_login.py
++   79 -    4  scripts/octa_autologin_bootstrap.sh
++  138 -   18  scripts/octa_ibkr_bootstrap.sh
++   52 -    0  tests/test_bootstrap_no_bare_python.py
++  322 -    0  tests/test_ibkr_x11_login_steps.py
+```
+
+
 ## [2026-02-17 15:27:31] DOCS
 Code-Änderungen - 1 Code-Dateien - 1 Test-Dateien - 1 Dokumentations-Dateien - (+111/-48 Zeilen)
 
