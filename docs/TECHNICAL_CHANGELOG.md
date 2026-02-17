@@ -3,6 +3,41 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-02-17 14:48:56] FEATURE
+Neue Funktionalität hinzugefügt - 6 Code-Dateien - 5 Test-Dateien - 1 Dokumentations-Dateien - (+2042/-12 Zeilen)
+
+**Statistics:**
+- Files Changed: 24
+- Lines Added: +2042
+- Lines Deleted: -12
+- Net Change: +2030
+
+**File-Level Changes:**
+```
++   46 -    0  docs/SYSTEMD_AUTOSTART.md
++  194 -    0  octa/execution/ibkr_autologin_store.py
++  139 -    0  octa/execution/ibkr_runtime.py
++  330 -    0  octa/execution/ibkr_x11_autologin.py
++  315 -    0  octa/support/ops/v000_full_universe_cascade_train.py
++  287 -   10  octa_ops/autopilot/cascade_train.py
++  100 -    2  octa_training/core/pipeline.py
++   12 -    0  scripts/octa_autologin_bootstrap.sh
++   65 -    0  scripts/octa_health_watchdog.py
++   42 -    0  scripts/octa_ibkr_bootstrap.sh
++   35 -    0  scripts/octa_ibkr_teach.py
++   18 -    0  scripts/octa_systemd_entrypoint.sh
++   36 -    0  scripts/octa_v000_loop.sh
++   34 -    0  scripts/octa_x11_bootstrap.sh
++   18 -    0  systemd/octa-autologin.service
++   18 -    0  systemd/octa-ibkr.service
++   18 -    0  systemd/octa-v000.service
++   19 -    0  systemd/octa-x11.service
++    4 -    0  systemd/octa.target
++   97 -    0  tests/test_cascade_structural_vs_performance.py
+... and 4 more files
+```
+
+
 ## [2026-02-15 14:40:09] FEATURE
 Neue Funktionalität hinzugefügt - 1 Code-Dateien - 1 Test-Dateien - (+519/-0 Zeilen)
 

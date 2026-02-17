@@ -1,0 +1,18 @@
+[Unit]
+Description=OCTA v000 loop
+After=octa-autologin.service
+Wants=octa-autologin.service
+
+[Service]
+Type=simple
+EnvironmentFile=%h/.config/octa/env
+WorkingDirectory=${OCTA_REPO}
+ExecStart=/usr/bin/env bash scripts/octa_v000_loop.sh
+Restart=always
+RestartSec=2
+StartLimitIntervalSec=0
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=octa.target

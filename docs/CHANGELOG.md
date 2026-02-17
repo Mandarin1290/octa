@@ -2,6 +2,37 @@
 
 Automatisch generiert. Alle Änderungen werden hier dokumentiert.
 
+## 2026-02-17
+
+
+### [2026-02-17 14:48:56] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 6 Code-Dateien - 5 Test-Dateien - 1 Dokumentations-Dateien - (+2042/-12 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 6 Dateien
+  - `octa/execution/ibkr_autologin_store.py`
+  - `octa/execution/ibkr_runtime.py`
+  - `octa/execution/ibkr_x11_autologin.py`
+  - ... und 3 weitere
+- **TESTS:** 5 Dateien
+  - `tests/test_cascade_structural_vs_performance.py`
+  - `tests/test_ibkr_x11_autologin_logic.py`
+  - `tests/test_ibkr_x11_autologin_store.py`
+  - ... und 2 weitere
+- **DOCS:** 1 Dateien
+  - `docs/SYSTEMD_AUTOSTART.md`
+- **SCRIPTS:** 7 Dateien
+  - `scripts/octa_autologin_bootstrap.sh`
+  - `scripts/octa_health_watchdog.py`
+  - `scripts/octa_ibkr_bootstrap.sh`
+  - ... und 4 weitere
+- **OTHER:** 5 Dateien
+  - `systemd/octa-autologin.service`
+  - `systemd/octa-ibkr.service`
+  - `systemd/octa-v000.service`
+  - ... und 2 weitere
+
+
 ## 2026-02-15
 
 
