@@ -2,6 +2,29 @@
 
 Automatisch generiert. Alle Änderungen werden hier dokumentiert.
 
+## 2026-02-18
+
+
+### [2026-02-18 18:15:35] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 19 Code-Dateien - 9 Test-Dateien - 1 Dokumentations-Dateien - (+3753/-16 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 19 Dateien
+  - `octa/accounting/__init__.py`
+  - `octa/accounting/capital_ledger.py`
+  - `octa/accounting/ops/__init__.py`
+  - ... und 16 weitere
+- **TESTS:** 9 Dateien
+  - `tests/test_approved_model_loader.py`
+  - `tests/test_artifact_signing.py`
+  - `tests/test_capital_ledger.py`
+  - ... und 6 weitere
+- **DOCS:** 1 Dateien
+  - `docs/GOVERNANCE_POLICY.md`
+- **OTHER:** 1 Dateien
+  - `.gitignore`
+
+
 ## 2026-02-17
 
 

@@ -3,6 +3,41 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-02-18 18:15:35] FEATURE
+Neue Funktionalität hinzugefügt - 19 Code-Dateien - 9 Test-Dateien - 1 Dokumentations-Dateien - (+3753/-16 Zeilen)
+
+**Statistics:**
+- Files Changed: 30
+- Lines Added: +3753
+- Lines Deleted: -16
+- Net Change: +3737
+
+**File-Level Changes:**
+```
++    8 -    0  .gitignore
++  169 -    0  docs/GOVERNANCE_POLICY.md
++    1 -    0  octa/accounting/__init__.py
++  225 -    0  octa/accounting/capital_ledger.py
++    0 -    0  octa/accounting/ops/__init__.py
++   44 -    0  octa/accounting/ops/reconcile.py
++  204 -    0  octa/core/data/quality/sanitizer.py
++   10 -    0  octa/core/governance/__init__.py
++  172 -    0  octa/core/governance/artifact_signing.py
++  127 -    0  octa/core/governance/derivatives_gate.py
++  161 -    0  octa/core/governance/emir.py
++  137 -    0  octa/core/governance/governance_audit.py
++  174 -    0  octa/core/governance/keystore.py
++  122 -    0  octa/core/governance/lei_registry.py
++  196 -    0  octa/core/orchestration/training_fingerprint.py
++  187 -    0  octa/core/portfolio/preflight.py
++  113 -   16  octa/execution/runner.py
++    0 -    0  octa/models/__init__.py
++  146 -    0  octa/models/approved_loader.py
++    0 -    0  octa/models/ops/__init__.py
+... and 10 more files
+```
+
+
 ## [2026-02-17 18:05:36] FEATURE
 Neue Funktionalität hinzugefügt - 1 Code-Dateien - 2 Test-Dateien - 1 Dokumentations-Dateien - (+1360/-22 Zeilen)
 

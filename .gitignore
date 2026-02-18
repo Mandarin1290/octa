@@ -32,6 +32,7 @@ logs/
 catboost_info/
 mlflow.db
 models/
+!octa/models/
 raw/
 reports/
 
@@ -58,3 +59,10 @@ catboost_info/
 # local runtime state
 state/state.db
 state/*.db
+
+# --- OCTA runtime altdata artifacts (local only) ---
+data/altdat/
+**/altdat/meta/
+**/altdat/cache/
+**/altdat/features_*.json
+**/features_*_altdat_*.json
