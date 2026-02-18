@@ -46,6 +46,7 @@ STAGE2_KEYWORDS = (
 )
 DISCLAIMER_KEYWORDS = (
     "disclaimer",
+    "warnhinweis",
     "haftungsausschluss",
     "haftung",
     "terms",
@@ -60,6 +61,7 @@ DISCLAIMER_KEYWORDS = (
     "risk disclosure",
     "risk warning",
     "risikohinweis",
+    "hinweis",
     "risikowarnung",
     "risk acknowledgement",
     "trading risks",
@@ -86,7 +88,7 @@ POPUP_KEYWORDS = (
     "confirmation",
 )
 DISCLAIMER_TITLE_RX = re.compile(
-    r"(disclaimer|haftungsausschluss|risk disclosure|risikohinweis|agreement|vereinbarung|terms|bedingungen)",
+    r"(disclaimer|warnhinweis|haftungsausschluss|risk disclosure|risikohinweis|agreement|vereinbarung|terms|bedingungen|hinweis)",
     re.IGNORECASE,
 )
 LOGIN_MESSAGE_TITLE_RX = re.compile(
@@ -449,8 +451,16 @@ def classify_window(win: Dict[str, str]) -> Dict[str, object]:
         reasons.append("ibkr_text")
 
     login_hits = [tok for tok in ("login", "log in", "authenticate", "authentication", "username", "password", "anmelden", "sign in") if tok in text]
-    disclaimer_hits = [tok for tok in DISCLAIMER_KEYWORDS if tok in text]
-    disclaimer_title_match = bool(DISCLAIMER_TITLE_RX.search(title))
+    disclaimer_hits_non_generic = [tok for tok in DISCLAIMER_KEYWORDS if tok != "hinweis" and tok in text]
+    warnhinweis_hit = "warnhinweis" in text
+    risikohinweis_hit = "risikohinweis" in text
+    generic_hinweis_hit = "hinweis" in text and bool(disclaimer_hits_non_generic or warnhinweis_hit or risikohinweis_hit)
+    disclaimer_hits = list(disclaimer_hits_non_generic)
+    if generic_hinweis_hit:
+        disclaimer_hits.append("hinweis")
+    title_rx_match = bool(DISCLAIMER_TITLE_RX.search(title))
+    title_has_hinweis_only = "hinweis" in title and not ("warnhinweis" in title or "risikohinweis" in title)
+    disclaimer_title_match = bool(title_rx_match and (not title_has_hinweis_only or bool(disclaimer_hits_non_generic)))
     popup_hits = [tok for tok in POPUP_KEYWORDS if tok in text]
     main_hits = [tok for tok in MAIN_WINDOW_KEYWORDS if tok in text]
     stage2_hits = [tok for tok in STAGE2_KEYWORDS if tok in text]
@@ -518,6 +528,8 @@ def select_candidates(
         reasons = list(cls["reasons"])
         class_allowed = is_ibkr_class_allowed(w)
         title = w.get("title", "") or ""
+        title_is_warnhinweis = "warnhinweis" in normalized_title(title)
+        disclaimer_title_match = bool(DISCLAIMER_TITLE_RX.search(title))
         if class_allowed and LOGIN_MESSAGE_TITLE_RX.search(title) and (main_window_seen or login_submit_recent):
             role = "login_message_popup"
             score = max(score, 6)
@@ -526,12 +538,13 @@ def select_candidates(
 
         # Strict action allowlist: no action phase without IBKR class allowlist match.
         if is_action_phase and not class_allowed:
+            mismatch_reason = "class_mismatch_warnhinweis" if role == "disclaimer" and title_is_warnhinweis else "not_allowlisted"
             ev.event(
                 "unknown_window_ignored",
                 wid=w.get("id", ""),
                 title=w.get("title", ""),
                 wm_class=w.get("class", ""),
-                reason="not_allowlisted",
+                reason=mismatch_reason,
             )
             continue
 
@@ -549,7 +562,27 @@ def select_candidates(
                 reason=f"unsupported_role:{role}",
             )
             continue
-        if role == "disclaimer" and score >= 6:
+        if role == "disclaimer" and class_allowed and not disclaimer_title_match:
+            ev.event(
+                "unknown_window_ignored",
+                wid=w.get("id", ""),
+                title=w.get("title", ""),
+                wm_class=w.get("class", ""),
+                reason="disclaimer_title_mismatch",
+            )
+            continue
+        if role == "disclaimer" and score >= 6 and class_allowed and disclaimer_title_match:
+            ev.event(
+                "disclaimer_detected",
+                role="disclaimer",
+                wid=w.get("id", ""),
+                wm_class=w.get("class", ""),
+                title=w.get("title", ""),
+                score=score,
+                reasons=",".join(reasons),
+                geometry=get_xwininfo_geometry(ev, w.get("id", "")),
+                phase="classification",
+            )
             disclaimer_hits.append(w)
         elif role == "stage2" and score >= 6:
             stage2_hits.append(w)

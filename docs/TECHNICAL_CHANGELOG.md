@@ -3,6 +3,22 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-02-18 20:01:18] DOCS
+Code-Änderungen - 1 Dokumentations-Dateien - (+119/-5 Zeilen)
+
+**Statistics:**
+- Files Changed: 2
+- Lines Added: +119
+- Lines Deleted: -5
+- Net Change: +114
+
+**File-Level Changes:**
+```
++   81 -    0  docs/IBKR_X11_AUTOLOGIN.md
++   38 -    5  scripts/octa_ibkr_autologin_watch.py
+```
+
+
 ## [2026-02-18 19:55:49] FEATURE
 Neue Funktionalität hinzugefügt - (+1438/-0 Zeilen)
 

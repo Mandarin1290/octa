@@ -761,3 +761,84 @@ Schema-correct stuck grep (current watcher event schema):
 ```bash
 rg -n '"event_type":"stuck"' "$EVID"
 ```
+
+## 2026-02-18 Monitor Reliability Hardening (Mode Selection + Disclaimer + Login Messages)
+
+Watcher hardening in `scripts/octa_ibkr_autologin_watch.py`:
+- Mode resolution is deterministic and evidence-backed:
+  - explicit `--mode` wins
+  - fallback to `--once` compat flag
+  - fallback to `OCTA_AUTOLOGIN_MODE`
+  - final fallback `once`
+- Startup emits `event_type=mode_selected` with:
+  - `mode`
+  - `argv_mode`
+  - `env_mode`
+  - `mode_source`
+  - `mode_reason`
+  - `once_explanation` (set when mode resolves to `once`)
+- Disclaimer detection broadened for localized/common strings (including German forms) while keeping strict action allowlist.
+- Disclaimer action is deterministic: focused relative click (`80%`,`90%`) then focused `Tab N + Return` ladder, with disappearance validation.
+- Login Messages popup handling is restricted to focused `Alt+F4` on that popup window only, with disappearance validation and persisted-reason evidence if it remains.
+
+Prove selected mode from evidence:
+
+```bash
+BOOT_DIR="$(cat /home/n-b/Octa/octa/var/runtime/systemd_boot_dir)"
+EVID="$BOOT_DIR/octa_ibkr_autologin_watch/events.jsonl"
+rg -n '"event_type":"mode_selected"' "$EVID" | tail -n 3
+rg -n '"event_type":"mode_selected".*"mode":"monitor"' "$EVID" | tail -n 1
+rg -n '"event_type":"mode_selected".*"once_explanation":"' "$EVID" | tail -n 3
+```
+
+Prove disclaimer/login-messages handling outcomes:
+
+```bash
+rg -n '"event_type":"disclaimer_detected"|"event_type":"disclaimer_action_done"|"event_type":"popup_closed"' "$EVID" | tail -n 80
+rg -n '"event_type":"popup_close_attempt".*"role":"login_message_popup".*"step":"alt_f4"' "$EVID" | tail -n 20
+rg -n 'login_messages_persisted_after_alt_f4|disclaimer_persisted_after_actions' "$EVID" | tail -n 20
+```
+
+Capture WM_CLASS/title for unknown windows (strict allowlist triage):
+
+```bash
+# Evidence-driven capture
+rg -n '"event_type":"unknown_window_ignored"' "$EVID" | tail -n 50
+
+# Live X11 capture for a target window id
+WID="0x01234567"
+xprop -id "$WID" WM_CLASS WM_NAME _NET_WM_NAME WM_WINDOW_ROLE
+xwininfo -id "$WID"
+
+# Enumerate visible windows with title + class
+xdotool search --onlyvisible --name '.*' | while read -r wid; do
+  printf '\nWID=%s\n' "$wid"
+  xprop -id "$wid" WM_CLASS WM_NAME _NET_WM_NAME WM_WINDOW_ROLE 2>/dev/null | sed 's/^/  /'
+done
+```
+
+## 2026-02-18 German Disclaimer Detection (Warnhinweis)
+
+German disclaimer window title is now explicitly recognized:
+- `Warnhinweis`
+- `Risikohinweis`
+- `Hinweis` only when paired with other disclaimer signals
+
+Action safety remains strict and fail-closed:
+- Disclaimer actions run only when both conditions are true:
+  - `WM_CLASS` is allowlisted
+  - window title matches disclaimer title pattern
+- Unknown/non-allowlisted windows are never clicked.
+- If title contains `Warnhinweis` but class is not allowlisted, evidence emits:
+  - `event_type=unknown_window_ignored`
+  - `reason=class_mismatch_warnhinweis`
+
+Verification grep patterns:
+
+```bash
+BOOT_DIR="$(cat /home/n-b/Octa/octa/var/runtime/systemd_boot_dir)"
+EVID="$BOOT_DIR/octa_ibkr_autologin_watch/events.jsonl"
+rg -n '"event_type":"disclaimer_detected".*"phase":"classification"' "$EVID" | tail -n 20
+rg -n 'class_mismatch_warnhinweis|disclaimer_title_mismatch' "$EVID" | tail -n 20
+rg -n '"event_type":"popup_close_attempt".*"role":"disclaimer"|"event_type":"disclaimer_action_done"' "$EVID" | tail -n 40
+```
