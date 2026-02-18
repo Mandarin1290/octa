@@ -65,6 +65,24 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `docs/IBKR_X11_AUTOLOGIN.md`
 
 
+### [2026-02-18 22:09:01] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 3 Code-Dateien - 1 Test-Dateien - (+951/-0 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 3 Dateien
+  - `octa/core/data/quality/series_validator.py`
+  - `octa/execution/risk_fail_closed.py`
+  - `octa/execution/risk_fail_closed_harness.py`
+- **TESTS:** 1 Dateien
+  - `tests/test_risk_fail_closed.py`
+- **CONFIG:** 1 Dateien
+  - `pyproject.toml`
+- **SCRIPTS:** 1 Dateien
+  - `scripts/octa_smoke_chain.py`
+- **OTHER:** 1 Dateien
+  - `octa/var/releases/v0.0.0/manifest.json`
+
+
 ## 2026-02-17
 
 
