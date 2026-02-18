@@ -3,6 +3,22 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-02-18 20:09:17] DOCS
+Code-Änderungen - 1 Test-Dateien - 1 Dokumentations-Dateien - (+324/-0 Zeilen)
+
+**Statistics:**
+- Files Changed: 2
+- Lines Added: +324
+- Lines Deleted: -0
+- Net Change: +324
+
+**File-Level Changes:**
+```
++   38 -    0  docs/IBKR_X11_AUTOLOGIN.md
++  286 -    0  scripts/octa_ibkr_autologin_e2e_test.sh
+```
+
+
 ## [2026-02-18 20:01:18] DOCS
 Code-Änderungen - 1 Dokumentations-Dateien - (+119/-5 Zeilen)
 

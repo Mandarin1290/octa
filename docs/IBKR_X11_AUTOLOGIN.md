@@ -842,3 +842,41 @@ rg -n '"event_type":"disclaimer_detected".*"phase":"classification"' "$EVID" | t
 rg -n 'class_mismatch_warnhinweis|disclaimer_title_mismatch' "$EVID" | tail -n 20
 rg -n '"event_type":"popup_close_attempt".*"role":"disclaimer"|"event_type":"disclaimer_action_done"' "$EVID" | tail -n 40
 ```
+
+## Autologin E2E Test (PAPER)
+
+Operator harness for deterministic end-to-end validation of TWS PAPER autologin flow:
+- monitor mode selection proof (`mode_selected`)
+- login handled or explicitly not needed
+- disclaimer handled (`Warnhinweis`/`Risikohinweis`) or explicitly not present
+- login messages popup closed or explicitly not present
+- strict allowlist evidence (`unknown_window_ignored`) for non-actionable windows
+
+Run:
+
+```bash
+chmod +x scripts/octa_ibkr_autologin_e2e_test.sh
+bash scripts/octa_ibkr_autologin_e2e_test.sh
+```
+
+Overrides:
+
+```bash
+MAX_WAIT_SEC=240 POLL_SEC=2 bash scripts/octa_ibkr_autologin_e2e_test.sh
+```
+
+Exit codes:
+- `0`: PASS
+- `2`: FAIL (stuck or persisted disclaimer/popup)
+- `3`: FAIL (autologin_error/tooling/misconfig/multi-instance)
+- `4`: FAIL (timeout/no progress/evidence missing)
+
+Verification grep patterns (against harness-selected evidence file):
+
+```bash
+rg -n '"event_type":"mode_selected"' "$EVID"
+rg -n '"event_type":"disclaimer_detected"|"event_type":"disclaimer_action_done"' "$EVID"
+rg -n '"event_type":"window_detected".*"role":"login_message_popup"|"event_type":"popup_closed".*"role":"login_message_popup"' "$EVID"
+rg -n '"event_type":"unknown_window_ignored"' "$EVID"
+rg -n '"event_type":"stuck"|"event_type":"autologin_error"|persisted_after_' "$EVID"
+```
