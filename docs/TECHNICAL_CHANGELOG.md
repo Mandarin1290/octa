@@ -3,6 +3,25 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-02-19 18:07:15] DOCS
+Code-Änderungen - 2 Dokumentations-Dateien - (+332/-35 Zeilen)
+
+**Statistics:**
+- Files Changed: 5
+- Lines Added: +332
+- Lines Deleted: -35
+- Net Change: +297
+
+**File-Level Changes:**
+```
++   50 -    0  configs/execution_ibkr.yaml
++   48 -    0  docs/IBKR_X11_AUTOLOGIN.md
++   39 -    0  docs/SYSTEMD_AUTOSTART.md
++  132 -   20  scripts/octa_autopilot.py
++   63 -   15  scripts/octa_smoke_chain.py
+```
+
+
 ## [2026-02-19 18:07:03] CHANGE
 Code-Änderungen - 1 Code-Dateien - (+229/-0 Zeilen)
 

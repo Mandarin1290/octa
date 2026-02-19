@@ -16,6 +16,13 @@ from typing import Any, Dict, Sequence
 
 import yaml
 
+from octa.support.branding import (
+    BRAND_NAME,
+    PLATFORM_NAME,
+    TAGLINE,
+    print_banner_once,
+)
+
 
 SIGNAL_NO_MARKET_DATA_PERMISSIONS = "NO_MARKET_DATA_PERMISSIONS"
 SIGNAL_DELAYED_DATA_ONLY = "DELAYED_DATA_ONLY"
@@ -91,7 +98,9 @@ def _read_text_if_exists(path_raw: str) -> str:
     return p.read_text(encoding="utf-8")
 
 
-def _deterministic_run_suffix(*, steps: Sequence[StepSpec], meta_args: dict[str, Any] | None) -> str:
+def _deterministic_run_suffix(
+    *, steps: Sequence[StepSpec], meta_args: dict[str, Any] | None
+) -> str:
     args = dict(meta_args or {})
     cfg_paths = {
         "config_yaml": str(args.get("config_yaml") or ""),
@@ -120,7 +129,9 @@ def _deterministic_run_suffix(*, steps: Sequence[StepSpec], meta_args: dict[str,
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:12]
 
 
-def _run_id(*, offline_safe: bool, steps: Sequence[StepSpec], meta_args: dict[str, Any] | None) -> str:
+def _run_id(
+    *, offline_safe: bool, steps: Sequence[StepSpec], meta_args: dict[str, Any] | None
+) -> str:
     ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     if offline_safe:
         return f"{ts}_{_deterministic_run_suffix(steps=steps, meta_args=meta_args)}"
@@ -129,7 +140,9 @@ def _run_id(*, offline_safe: bool, steps: Sequence[StepSpec], meta_args: dict[st
 
 def _git_sha() -> str:
     try:
-        cp = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=False)
+        cp = subprocess.run(
+            ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=False
+        )
         out = (cp.stdout or "").strip()
         return out if out else "UNKNOWN"
     except Exception:
@@ -212,11 +225,15 @@ def _suggested_actions(signals: Sequence[str]) -> list[str]:
     if SIGNAL_NO_MARKET_DATA_PERMISSIONS in sigs:
         actions.append("Verify IBKR market data subscriptions for requested symbols/exchanges.")
     if SIGNAL_DELAYED_DATA_ONLY in sigs:
-        actions.append("Use --enable-delayed-data when config has delayed flag, or enable live market data permissions.")
+        actions.append(
+            "Use --enable-delayed-data when config has delayed flag, or enable live market data permissions."
+        )
     if SIGNAL_PACING_VIOLATION in sigs:
         actions.append("Reduce request rate/burst and retry after pacing window cooldown.")
     if SIGNAL_FARM_DISCONNECTED in sigs:
-        actions.append("Wait for IBKR market data farm reconnect; verify TWS/Gateway connectivity state.")
+        actions.append(
+            "Wait for IBKR market data farm reconnect; verify TWS/Gateway connectivity state."
+        )
     if SIGNAL_CONNECTION_REFUSED in sigs:
         actions.append("Check TWS/Gateway is running and API socket host/port are correct.")
     if SIGNAL_TIMEOUT in sigs:
@@ -228,7 +245,9 @@ def _suggested_actions(signals: Sequence[str]) -> list[str]:
     return actions
 
 
-def _build_summary(*, run_id: str, started_at_utc: str, finished_at_utc: str, step_results: Sequence[StepResult]) -> Dict[str, Any]:
+def _build_summary(
+    *, run_id: str, started_at_utc: str, finished_at_utc: str, step_results: Sequence[StepResult]
+) -> Dict[str, Any]:
     all_signals: list[str] = []
     per_step: list[Dict[str, Any]] = []
     for r in step_results:
@@ -269,8 +288,7 @@ def _is_offline_probe_step(spec: StepSpec) -> bool:
     tokens = [spec.name.lower()] + [str(x).lower() for x in spec.argv]
     marker = " ".join(tokens)
     return any(
-        tok in marker
-        for tok in ("ibkr", "tws", "ib_insync", "connectasync", "run_nexus_paper.py")
+        tok in marker for tok in ("ibkr", "tws", "ib_insync", "connectasync", "run_nexus_paper.py")
     )
 
 
@@ -339,7 +357,9 @@ def _ibkr_connect_async_probe_code() -> str:
     ).strip()
 
 
-def _default_steps(*, autopilot_config: str | None, limit: int, with_nexus: bool, ibkr_config: str) -> list[StepSpec]:
+def _default_steps(
+    *, autopilot_config: str | None, limit: int, with_nexus: bool, ibkr_config: str
+) -> list[StepSpec]:
     if not autopilot_config:
         raise SystemExit("--autopilot-config is required when using the default chain")
 
@@ -502,7 +522,12 @@ def run_smoke_chain(
 
         result = _run_step(spec.name, list(spec.argv))
         rerun_applied = False
-        if idx == 1 and (not result.ok) and enable_delayed_data and (SIGNAL_DELAYED_DATA_ONLY in result.signals):
+        if (
+            idx == 1
+            and (not result.ok)
+            and enable_delayed_data
+            and (SIGNAL_DELAYED_DATA_ONLY in result.signals)
+        ):
             cfg_path = Path(delayed_data_config)
             if cfg_path.exists():
                 before = cfg_path.read_text(encoding="utf-8")
@@ -510,7 +535,9 @@ def run_smoke_chain(
                 if patched:
                     rerun_applied = True
                     _write_text(out_dir / "marketdata_ibkr.before.yaml", before)
-                    _write_text(out_dir / "marketdata_ibkr.after.yaml", cfg_path.read_text(encoding="utf-8"))
+                    _write_text(
+                        out_dir / "marketdata_ibkr.after.yaml", cfg_path.read_text(encoding="utf-8")
+                    )
                     result = _run_step(spec.name, list(spec.argv))
 
         result = StepResult(
@@ -541,10 +568,20 @@ def run_smoke_chain(
 
 
 def _parse_args() -> argparse.Namespace:
-    ap = argparse.ArgumentParser(description="Run configured smoke-chain steps with evidence artifacts.")
-    ap.add_argument("--step", action="append", default=[], help="Repeatable: <name>::<command string>")
-    ap.add_argument("--config-yaml", default=None, help="YAML file containing steps: [{name, argv|command}]")
-    ap.add_argument("--autopilot-config", default=None, help="Required for default chain step autopilot_universe_train")
+    ap = argparse.ArgumentParser(
+        description="Run configured smoke-chain steps with evidence artifacts."
+    )
+    ap.add_argument(
+        "--step", action="append", default=[], help="Repeatable: <name>::<command string>"
+    )
+    ap.add_argument(
+        "--config-yaml", default=None, help="YAML file containing steps: [{name, argv|command}]"
+    )
+    ap.add_argument(
+        "--autopilot-config",
+        default=None,
+        help="Required for default chain step autopilot_universe_train",
+    )
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--with-nexus", action="store_true", default=False)
     ap.add_argument("--ibkr-config", default="configs/execution_ibkr.yaml")
@@ -552,11 +589,22 @@ def _parse_args() -> argparse.Namespace:
     ap.add_argument("--enable-delayed-data", action="store_true", default=False)
     ap.add_argument("--offline-safe", action="store_true", default=False)
     ap.add_argument("--out-root", default="artifacts/smoke_chain")
+    ap.add_argument("--version", action="store_true", default=False)
+    ap.add_argument("--about", action="store_true", default=False)
+    ap.add_argument("--no-banner", action="store_true", default=False)
     return ap.parse_args()
 
 
 def main() -> int:
     args = _parse_args()
+    if args.version:
+        print(PLATFORM_NAME)
+        return 0
+    if args.about:
+        print(f"{BRAND_NAME} | {TAGLINE}")
+        return 0
+
+    print_banner_once(enabled=not args.no_banner)
     steps = _resolve_steps(
         steps_raw=list(args.step),
         config_yaml=str(args.config_yaml) if args.config_yaml else None,

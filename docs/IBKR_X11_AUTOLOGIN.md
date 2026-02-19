@@ -869,6 +869,54 @@ Exit codes:
 - `0`: PASS
 - `2`: FAIL (stuck or persisted disclaimer/popup)
 - `3`: FAIL (autologin_error/tooling/misconfig/multi-instance)
+
+## IBKR API_READY Supervisor Command
+
+Deterministic bring-up command (paper/shadow only, no live enable):
+
+```bash
+python scripts/octa_ibkr_supervisor.py --config configs/execution_ibkr.yaml --no-skip
+```
+
+Behavior:
+- Starts `octa-ibkr.service` via `systemctl --user` when available.
+- Falls back to bootstrap paths if needed.
+- Waits with fixed polling for process + port readiness.
+- Runs the existing OCTA `ibkr_api_ready` probe in no-skip mode.
+- Writes evidence under `octa/var/evidence/ibkr_supervisor_<UTCSTAMP>/`.
+
+Exit codes:
+- `0` API_READY achieved
+- `2` process not running after start attempt
+- `3` port remained closed after start attempt
+- `4` API probe failed after process+port became ready
+- `5` configuration parse error
+
+## TWS X11 Autologin Chain (Prototype)
+
+Run deterministic preflight only:
+
+```bash
+python scripts/tws_x11_autologin_chain.py --preflight-only
+```
+
+Run full chain:
+
+```bash
+python scripts/tws_x11_autologin_chain.py --config configs/execution_ibkr.yaml --timeout-sec 180
+```
+
+Behavior:
+- Fails closed on X11 preflight failure (no TWS launch attempted).
+- Launches TWS from `tws.launch.command` in `configs/execution_ibkr.yaml`.
+- Detects login/main windows via `wmctrl` title substrings.
+- Performs login using `OCTA_IBKR_USERNAME` and `OCTA_IBKR_PASSWORD` env vars only.
+- Handles only whitelisted popup titles from config.
+- Unknown popup halts with screenshot and explicit reason.
+
+Evidence per run:
+- `octa/var/evidence/tws_x11_autologin_<UTCSTAMP>/`
+- `report.md`, `health.json`, `ui_events.jsonl`, `wmctrl_windows.txt`, `commands.txt`, `screenshots/`, `sha256sum.txt`
 - `4`: FAIL (timeout/no progress/evidence missing)
 
 Verification grep patterns (against harness-selected evidence file):

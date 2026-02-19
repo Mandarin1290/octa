@@ -47,6 +47,22 @@ systemctl --user restart octa.target
 systemctl --user disable --now octa.target
 ```
 
+## 5) Canonical IBKR Bring-Up + Verify
+Start broker runtime (paper/shadow setup):
+```bash
+systemctl --user restart octa-ibkr.service
+```
+
+Verify API readiness with the supervisor (no-skip):
+```bash
+python scripts/octa_ibkr_supervisor.py --config configs/execution_ibkr.yaml --no-skip --timeout-sec 60
+```
+
+Stop broker runtime:
+```bash
+systemctl --user stop octa-ibkr.service
+```
+
 ## Notes
 - Services are fail-closed and restart on failure (`Restart=always`, `RestartSec=2`).
 - No password automation is implemented.
@@ -64,3 +80,26 @@ OCTA_XVFB_DPI=96
 - `Xvfb` (required)
 - `xdpyinfo` (optional but recommended)
 - `xdotool` and `xprop` (required for teach/run popup automation)
+
+## Broker Mode Runbook
+
+### Gateway mode (preferred headless)
+- Confirm gateway binary exists:
+```bash
+ls -l /home/n-b/Jts/ibgateway/1041/ibgateway
+```
+- Use explicit launch config in `configs/execution_ibkr.yaml` (`launch.providers[0].provider=direct`).
+- Required API settings in IB Gateway:
+  - Enable API socket clients.
+  - Paper API port matches config (commonly `4002`).
+  - Allow localhost / trusted IPs.
+  - Ensure clientId is not in conflict.
+
+### TWS mode (requires real X11 session)
+- Ensure an X11 display is reachable:
+```bash
+xset q
+xdpyinfo -display "${DISPLAY}"
+```
+- If not using active desktop X11, configure Xvfb and `DISPLAY`/`XAUTHORITY` explicitly.
+- Set `ibkr.mode=tws` and provide a valid TWS executable in launch command.

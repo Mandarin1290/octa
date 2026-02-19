@@ -39,6 +39,20 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `scripts/brand_guard.py`
 
 
+### [2026-02-19 18:07:15] DOCS
+**Beschreibung:** Code-Änderungen - 2 Dokumentations-Dateien - (+332/-35 Zeilen)
+
+**Geänderte Dateien:**
+- **DOCS:** 2 Dateien
+  - `docs/IBKR_X11_AUTOLOGIN.md`
+  - `docs/SYSTEMD_AUTOSTART.md`
+- **CONFIG:** 1 Dateien
+  - `configs/execution_ibkr.yaml`
+- **SCRIPTS:** 2 Dateien
+  - `scripts/octa_autopilot.py`
+  - `scripts/octa_smoke_chain.py`
+
+
 ## 2026-02-18
 
 

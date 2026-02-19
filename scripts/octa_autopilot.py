@@ -27,6 +27,12 @@ from octa_ops.autopilot.paper_runner import run_paper
 from octa_ops.autopilot.registry import ArtifactRegistry
 from octa_ops.autopilot.types import GateDecision, normalize_timeframe, now_utc_iso
 from octa_ops.autopilot.universe import discover_universe
+from octa.support.branding import (
+    BRAND_NAME,
+    PLATFORM_NAME,
+    TAGLINE,
+    print_banner_once,
+)
 
 
 def _load_yaml(path: str) -> dict:
@@ -34,15 +40,42 @@ def _load_yaml(path: str) -> dict:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="OCTA Autopilot: universe→gates→cascade training→promote to paper")
+    pre = argparse.ArgumentParser(add_help=False)
+    pre.add_argument("--version", action="store_true", default=False)
+    pre.add_argument("--about", action="store_true", default=False)
+    pre.add_argument("--no-banner", action="store_true", default=False)
+    pre_args, _ = pre.parse_known_args()
+    if pre_args.version:
+        print(PLATFORM_NAME)
+        return
+    if pre_args.about:
+        print(f"{BRAND_NAME} | {TAGLINE}")
+        return
+
+    ap = argparse.ArgumentParser(
+        description="OCTA Autopilot: universe→gates→cascade training→promote to paper"
+    )
     ap.add_argument("--config", required=True, help="Autopilot config YAML")
     ap.add_argument("--run-id", default=None)
     ap.add_argument("--limit", type=int, default=0)
-    ap.add_argument("--run-paper", action="store_true", help="After promotion, attempt to run paper_runner (fail-closed if broker not wired)")
+    ap.add_argument(
+        "--run-paper",
+        action="store_true",
+        help="After promotion, attempt to run paper_runner (fail-closed if broker not wired)",
+    )
+    ap.add_argument("--version", action="store_true", default=False)
+    ap.add_argument("--about", action="store_true", default=False)
+    ap.add_argument("--no-banner", action="store_true", default=False)
     args = ap.parse_args()
 
+    print_banner_once(enabled=not args.no_banner)
+
     cfg = _load_yaml(args.config)
-    run_id = args.run_id or cfg.get("run_id") or now_utc_iso().replace(":", "").replace("-", "")[:15] + "Z"
+    run_id = (
+        args.run_id
+        or cfg.get("run_id")
+        or now_utc_iso().replace(":", "").replace("-", "")[:15] + "Z"
+    )
 
     budgets = cfg.get("budgets", {}) if isinstance(cfg.get("budgets"), dict) else {}
     budget = ResourceBudgetController(
@@ -78,7 +111,9 @@ def main() -> None:
 
     # Data quality gate
     dq_policy = DataQualityPolicy(**(cfg.get("data_quality", {}) or {}))
-    tfs = [normalize_timeframe(t) for t in (cfg.get("timeframes") or ["1D", "1H", "30M", "5M", "1M"])]
+    tfs = [
+        normalize_timeframe(t) for t in (cfg.get("timeframes") or ["1D", "1H", "30M", "5M", "1M"])
+    ]
 
     dq_decisions = []
     for u in universe:
@@ -86,12 +121,30 @@ def main() -> None:
         for tf in tfs:
             pq = (u.parquet_paths or {}).get(tf)
             if not pq:
-                dq_decisions.append(GateDecision(u.symbol, tf, "data_quality", "SKIP", "missing_parquet", {"expected": tf}))
+                dq_decisions.append(
+                    GateDecision(
+                        u.symbol, tf, "data_quality", "SKIP", "missing_parquet", {"expected": tf}
+                    )
+                )
                 continue
             dq_decisions.append(
-                evaluate_data_quality(symbol=u.symbol, timeframe=tf, parquet_path=pq, asset_class=u.asset_class, policy=dq_policy)
+                evaluate_data_quality(
+                    symbol=u.symbol,
+                    timeframe=tf,
+                    parquet_path=pq,
+                    asset_class=u.asset_class,
+                    policy=dq_policy,
+                )
             )
-            reg.upsert_gate(run_id, u.symbol, tf, "data_quality", dq_decisions[-1].status, dq_decisions[-1].reason, json.dumps(dq_decisions[-1].details or {}, default=str))
+            reg.upsert_gate(
+                run_id,
+                u.symbol,
+                tf,
+                "data_quality",
+                dq_decisions[-1].status,
+                dq_decisions[-1].reason,
+                json.dumps(dq_decisions[-1].details or {}, default=str),
+            )
 
     write_quality_outputs(run_dir=str(run_dir), decisions=dq_decisions, timeframes=tfs)
 
@@ -102,16 +155,34 @@ def main() -> None:
         budget.checkpoint("global")
         pq1d = (u.parquet_paths or {}).get("1D")
         if not pq1d:
-            global_decisions[u.symbol] = GateDecision(u.symbol, "1D", "global", "SKIP", "missing_1d", {})
+            global_decisions[u.symbol] = GateDecision(
+                u.symbol, "1D", "global", "SKIP", "missing_1d", {}
+            )
             continue
-        d = evaluate_global_gate(symbol=u.symbol, parquet_1d_path=pq1d, policy=gg_policy, cache_dir=str(run_dir / "global_features_store"))
+        d = evaluate_global_gate(
+            symbol=u.symbol,
+            parquet_1d_path=pq1d,
+            policy=gg_policy,
+            cache_dir=str(run_dir / "global_features_store"),
+        )
         global_decisions[u.symbol] = d
-        reg.upsert_gate(run_id, u.symbol, "1D", "global", d.status, d.reason, json.dumps(d.details or {}, default=str))
+        reg.upsert_gate(
+            run_id,
+            u.symbol,
+            "1D",
+            "global",
+            d.status,
+            d.reason,
+            json.dumps(d.details or {}, default=str),
+        )
 
     write_global_outputs(run_dir=str(run_dir), decisions=global_decisions)
 
     # Cascaded training
-    cascade_order = [normalize_timeframe(t) for t in (cfg.get("cascade_order") or ["1D", "1H", "30M", "5M", "1M"])]
+    cascade_order = [
+        normalize_timeframe(t)
+        for t in (cfg.get("cascade_order") or ["1D", "1H", "30M", "5M", "1M"])
+    ]
     cascade = CascadePolicy(order=cascade_order)
     train_cfg_path = str(cfg.get("training_config", "configs/dev.yaml"))
 
@@ -119,7 +190,14 @@ def main() -> None:
     for u in universe:
         budget.checkpoint("train")
         # Eligibility: require data_quality PASS for 1D + global PASS
-        dq1d = next((d for d in dq_decisions if d.symbol == u.symbol and normalize_timeframe(d.timeframe) == "1D"), None)
+        dq1d = next(
+            (
+                d
+                for d in dq_decisions
+                if d.symbol == u.symbol and normalize_timeframe(d.timeframe) == "1D"
+            ),
+            None,
+        )
         gg = global_decisions.get(u.symbol)
         if not dq1d or dq1d.status != "PASS":
             continue
@@ -136,9 +214,18 @@ def main() -> None:
             reports_dir=str(Path(cfg.get("reports_dir", "reports"))),
         )
         # Read the metrics bundle written by run_cascade_training for this symbol.
-        metrics_path = Path(cfg.get("reports_dir", "reports")) / "autopilot" / run_id / f"model_metrics_{u.symbol}.json"
+        metrics_path = (
+            Path(cfg.get("reports_dir", "reports"))
+            / "autopilot"
+            / run_id
+            / f"model_metrics_{u.symbol}.json"
+        )
         try:
-            metrics_bundle: Dict[str, Any] = json.loads(metrics_path.read_text(encoding="utf-8")) if metrics_path.exists() else {}
+            metrics_bundle: Dict[str, Any] = (
+                json.loads(metrics_path.read_text(encoding="utf-8"))
+                if metrics_path.exists()
+                else {}
+            )
         except Exception:
             metrics_bundle = {}
 
@@ -152,8 +239,12 @@ def main() -> None:
                     symbol=u.symbol,
                     timeframe=tf,
                     stage="train",
-                    metrics_json=json.dumps(mb.get("metrics"), default=str) if mb.get("metrics") is not None else None,
-                    gate_json=json.dumps(mb.get("gate"), default=str) if mb.get("gate") is not None else None,
+                    metrics_json=json.dumps(mb.get("metrics"), default=str)
+                    if mb.get("metrics") is not None
+                    else None,
+                    gate_json=json.dumps(mb.get("gate"), default=str)
+                    if mb.get("gate") is not None
+                    else None,
                 )
 
             # Fail-closed packaging invariant: a PASS decision must have a PKL.
@@ -163,12 +254,31 @@ def main() -> None:
             sha_txt = str((pack or {}).get("pkl_sha") or "") if isinstance(pack, dict) else ""
 
             if d.status == "PASS":
-                pkl_ok = bool(pkl_path) and Path(pkl_path).exists() and Path(pkl_path.replace(".pkl", ".sha256")).exists()
+                pkl_ok = (
+                    bool(pkl_path)
+                    and Path(pkl_path).exists()
+                    and Path(pkl_path.replace(".pkl", ".sha256")).exists()
+                )
                 if not pkl_ok:
-                    effective = GateDecision(u.symbol, tf, d.stage, "FAIL", "packaging_missing_pkl", {"expected_pkl": pkl_path})
+                    effective = GateDecision(
+                        u.symbol,
+                        tf,
+                        d.stage,
+                        "FAIL",
+                        "packaging_missing_pkl",
+                        {"expected_pkl": pkl_path},
+                    )
 
             train_decisions.append(effective)
-            reg.upsert_gate(run_id, u.symbol, tf, "train", effective.status, effective.reason, json.dumps(effective.details or {}, default=str))
+            reg.upsert_gate(
+                run_id,
+                u.symbol,
+                tf,
+                "train",
+                effective.status,
+                effective.reason,
+                json.dumps(effective.details or {}, default=str),
+            )
 
             # Fail-closed demotion: if the latest run does not PASS, remove any existing paper promotion.
             if effective.status in {"FAIL", "SKIP"}:
@@ -186,7 +296,9 @@ def main() -> None:
                         meta_json = Path(meta_path).read_text(encoding="utf-8")
                 except Exception:
                     meta_json = None
-                art_id = reg.add_artifact(run_id, u.symbol, tf, "tradeable", pkl_path, sha_txt, 1, meta_json=meta_json)
+                art_id = reg.add_artifact(
+                    run_id, u.symbol, tf, "tradeable", pkl_path, sha_txt, 1, meta_json=meta_json
+                )
                 reg.promote(u.symbol, tf, art_id, level="paper")
 
     write_gate_matrix(run_dir=str(run_dir), decisions=train_decisions, cascade_order=cascade_order)
