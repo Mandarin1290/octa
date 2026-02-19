@@ -1,0 +1,15 @@
+[Unit]
+Description=OCTA OS Brain
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/n-b/Octa
+ExecStart=/usr/bin/python3 /home/n-b/Octa/scripts/octa_os_start.py --config /home/n-b/Octa/configs/dev.yaml --policy /home/n-b/Octa/configs/policy.yaml --mode shadow
+ExecStop=/usr/bin/python3 /home/n-b/Octa/scripts/octa_os_stop.py
+Restart=on-failure
+RestartSec=5
+User=n-b
+
+[Install]
+WantedBy=multi-user.target
