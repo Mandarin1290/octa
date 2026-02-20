@@ -54,6 +54,32 @@ def _normalize_asset_class(label: Optional[str]) -> str:
 _TIMEFRAME_PAT = re.compile(r"_(1D|1H|30M|15M|5M|1M)\.parquet$", re.IGNORECASE)
 
 
+def resolve_parquet_for_symbol_tf(
+    *, symbol: str, tf: str, raw_root: str = "raw"
+) -> tuple[Optional[str], str]:
+    """Resolve a local parquet path for symbol/timeframe with deterministic precedence."""
+    sym = str(symbol or "").strip().upper()
+    if not sym:
+        return None, "invalid_symbol"
+    tf_n = normalize_timeframe(str(tf or ""))
+    if not tf_n:
+        return None, "invalid_timeframe"
+
+    filename = f"{sym}_{tf_n}.parquet"
+    root = Path(raw_root)
+    candidates = [
+        root / "equities" / sym / filename,
+        root / "Stock_parquet" / filename,
+        root / "FX_parquet" / filename,
+        root / "Crypto_parquet" / filename,
+        root / "Future_parquet" / filename,
+    ]
+    for p in candidates:
+        if p.exists() and p.is_file():
+            return str(p), "found_local_real"
+    return None, "not_found"
+
+
 def discover_universe(
     *,
     raw_root: str = "raw",

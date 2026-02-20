@@ -124,12 +124,9 @@ def run(config_path: str, out_dir: Path) -> dict[str, Any]:
 
     disclaimer = None
     if require_x11 and (not x11_ok):
-        code = "IBKR_X11_UNAVAILABLE"
-        if not str(display).strip():
-            code = "IBKR_X11_REQUIRED"
         disclaimer = {
             "disclaimer_emitted": True,
-            "disclaimer_code": code,
+            "disclaimer_code": "IBKR_X11_UNAVAILABLE",
             "action": "LOCK_EXECUTION_SHADOW_ONLY",
             "required_operator_action": "Set a usable DISPLAY (X11 or Xvfb) before enabling IBKR autologin/runtime.",
         }

@@ -42,6 +42,12 @@ class ChainConfig:
     popup_timeout_sec: int
 
 
+@dataclass(frozen=True)
+class ActionRule:
+    action: str
+    retries: int = 1
+
+
 def _utc_stamp() -> str:
     from datetime import datetime, timezone
 
@@ -129,12 +135,46 @@ def _parse_windows(raw: str) -> list[dict[str, str]]:
     return out
 
 
+def _parse_wmctrl_windows(raw: str) -> list[dict[str, str]]:
+    return _parse_windows(raw)
+
+
 def _find_window(windows: list[dict[str, str]], title_substr: str) -> dict[str, str] | None:
     want = str(title_substr).lower()
     for w in windows:
         if want in str(w.get("title", "")).lower():
             return w
     return None
+
+
+def _match_title(windows: list[dict[str, str]], title_substr: str) -> dict[str, str] | None:
+    return _find_window(windows, title_substr)
+
+
+def _pick_action_rule(
+    title: str, whitelist: list[str], action_map: dict[str, ActionRule]
+) -> tuple[str | None, ActionRule]:
+    default = ActionRule(action="Return", retries=1)
+    title_l = str(title or "").lower()
+    for token in whitelist:
+        tok = str(token or "").strip()
+        if not tok:
+            continue
+        if tok.lower() in title_l:
+            return tok, action_map.get(tok, default)
+    return None, default
+
+
+def _recommended_offsets(geom: dict[str, int]) -> dict[str, dict[str, int]]:
+    x = int(geom.get("x", 0))
+    y = int(geom.get("y", 0))
+    w = max(1, int(geom.get("width", 1)))
+    h = max(1, int(geom.get("height", 1)))
+    return {
+        "user": {"x": x + max(1, int(w * 0.20)), "y": y + max(1, int(h * 0.35))},
+        "pass": {"x": x + max(1, int(w * 0.20)), "y": y + max(1, int(h * 0.45))},
+        "warnhinweis_button": {"x": x + max(1, int(w * 0.80)), "y": y + max(1, int(h * 0.90))},
+    }
 
 
 def _focus_window(wid: str, root_env: dict[str, str], commands_log: list[str]) -> bool:
@@ -185,6 +225,8 @@ def _load_config(path: Path) -> ChainConfig:
     popup_action_map = {str(k): str(v) for k, v in (popups.get("action_map") or {}).items()} if isinstance(popups.get("action_map"), dict) else {}
     if not popup_whitelist:
         popup_whitelist = ["Disclaimer", "Important", "Agreement", "API Connection"]
+    if not any("warnhinweis" in t.lower() for t in popup_whitelist):
+        raise ValueError("popup_whitelist_missing_warnhinweis")
 
     return ChainConfig(
         launch_cmd=cmd,

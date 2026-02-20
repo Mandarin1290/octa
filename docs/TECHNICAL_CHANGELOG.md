@@ -3,6 +3,27 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-02-20 13:46:42] CHANGE
+Code-Änderungen - 3 Code-Dateien - (+157/-11 Zeilen)
+
+**Statistics:**
+- Files Changed: 7
+- Lines Added: +157
+- Lines Deleted: -11
+- Net Change: +146
+
+**File-Level Changes:**
+```
++    1 -    4  octa/support/ops/v000_full_universe_cascade_train.py
++    4 -    0  octa_core/config/octa_features.yaml
++   71 -    1  octa_core/control_plane/api.py
++   26 -    0  octa_ops/autopilot/universe.py
++    9 -    4  scripts/run_octa.py
++   42 -    0  scripts/tws_x11_autologin_chain.py
++    4 -    2  systemd/octa-autologin.service
+```
+
+
 ## [2026-02-19 18:07:22] FEATURE
 Neue Funktionalität hinzugefügt - 1 Code-Dateien - 2 Test-Dateien - (+1724/-0 Zeilen)
 

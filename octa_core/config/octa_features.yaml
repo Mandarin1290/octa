@@ -58,3 +58,7 @@ thresholds:
   max_data_dir_gb_warn: 200
   min_tradeable_symbols_paper: 10
   min_tradeable_symbols_live: 30
+
+dashboard:
+  ticker_banner:
+    enabled: false

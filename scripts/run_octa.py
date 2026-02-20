@@ -159,10 +159,15 @@ def main() -> int:
     env2["PYTHONPATH"] = "."
 
     if mode == "autopilot":
-        cmd = [sys.executable, "scripts/octa_autopilot.py", "--config", args.autopilot_config]
-        if args.run_id:
-            cmd.extend(["--run-id", args.run_id])
-        cmd.append("--run-paper")
+        # Canonical orchestration path: smoke chain owns autopilot sequencing.
+        cmd = [
+            sys.executable,
+            "scripts/octa_smoke_chain.py",
+            "--autopilot-config",
+            args.autopilot_config,
+            "--limit",
+            "0",
+        ]
         return subprocess.call(cmd, env=env2)
 
     if mode == "training_daemon":
