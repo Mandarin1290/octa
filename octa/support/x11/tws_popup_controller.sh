@@ -31,19 +31,27 @@ readonly EXIT_PRECHECK_FAIL=10
 readonly EXIT_POPUP_STILL_PRESENT=25
 
 # Popup title tokens — case-insensitive substring match.
-# WARNING: "Trader Workstation" and "Interactive Brokers" also appear
-# on the main TWS window; the TWS PID filter prevents accidental closure,
-# but operators should verify if the main window is unexpectedly targeted.
+# IMPORTANT: Do NOT add "Trader Workstation" or "Interactive Brokers" here —
+# those strings appear in the main TWS window title and the PID filter alone
+# is insufficient to distinguish the main window from popup dialogs sharing
+# the same JVM PID.
 readonly -a POPUP_TOKENS=(
     "Warnhinweis"
+    "Risikohinweis"
     "Disclaimer"
     "Haftung"
     "Login Messages"
+    "Login Message"
+    "Login Messenger"
+    "IBKR Login Messenger"
     "Message Center"
+    "Messages"
     "Börsenspiegel"
+    "Boersenspiegel"
     "Programm wird geschlossen"
-    "Trader Workstation"
-    "Interactive Brokers"
+    "Dow Jones"
+    "Heutige Top 10"
+    "Top 10 Today"
 )
 
 # Hardcoded relative click offsets (from window upper-left corner, pixels).

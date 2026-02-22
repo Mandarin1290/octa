@@ -40,6 +40,21 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `run_tws_autologin.sh.example`
 
 
+### [2026-02-22 15:25:22] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 1 Code-Dateien - 1 Test-Dateien - (+1615/-7 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 1 Dateien
+  - `octa/support/x11/popup_rules.py`
+- **TESTS:** 1 Dateien
+  - `tests/test_tws_popup_rules.py`
+- **SCRIPTS:** 2 Dateien
+  - `scripts/tws_popup_smoke_harness.py`
+  - `scripts/tws_x11_autologin_chain.py`
+- **OTHER:** 1 Dateien
+  - `octa/support/x11/tws_popup_controller.sh`
+
+
 ## 2026-02-20
 
 

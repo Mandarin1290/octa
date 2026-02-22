@@ -46,6 +46,7 @@ BLOCKING_TOKENS = [
     "Börsenspiegel",
     "Boersenspiegel",
     "Warnhinweis",
+    "Risikohinweis",
     "Disclaimer",
     "Login Messages",
     "Login Message",
@@ -56,6 +57,11 @@ BLOCKING_TOKENS = [
     "Programm wird geschlossen",
     "Programm wird geschlossen...",
     "win0",
+    # Dow Jones news popups (German + English locale variants)
+    "Dow Jones Heutige Top 10",
+    "Dow Jones",
+    "Heutige Top 10",
+    "Top 10 Today",
 ]
 
 _UI_EVENTS_PATH: Path | None = None
@@ -854,6 +860,7 @@ def _load_config(path: Path) -> ChainConfig:
         popup_whitelist = ["Disclaimer", "Important", "Agreement", "API Connection"]
     required_tokens = [
         "Warnhinweis",
+        "Risikohinweis",
         "Disclaimer",
         "Agreement",
         "Important",
@@ -872,6 +879,11 @@ def _load_config(path: Path) -> ChainConfig:
         "Messenger",
         "Messages",
         "IBKR Login Messenger",
+        # Dow Jones / Top-10 news popups
+        "Dow Jones Heutige Top 10",
+        "Dow Jones",
+        "Heutige Top 10",
+        "Top 10 Today",
     ]
     seen_tokens = {str(t).strip().lower() for t in popup_whitelist if str(t).strip()}
     for tok in required_tokens:
@@ -893,6 +905,11 @@ def _load_config(path: Path) -> ChainConfig:
     popup_action_map.setdefault("Messenger", "ALT+F4")
     popup_action_map.setdefault("Messages", "ALT+F4")
     popup_action_map.setdefault("IBKR Login Messenger", "ALT+F4")
+    popup_action_map.setdefault("Risikohinweis", "CLICK_WARNHINWEIS")
+    popup_action_map.setdefault("Dow Jones Heutige Top 10", "ALT+F4")
+    popup_action_map.setdefault("Dow Jones", "ALT+F4")
+    popup_action_map.setdefault("Heutige Top 10", "ALT+F4")
+    popup_action_map.setdefault("Top 10 Today", "ALT+F4")
     ibkr = data.get("ibkr") if isinstance(data.get("ibkr"), dict) else {}
     api_host = str(ibkr.get("host") or "127.0.0.1")
     api_port = int(ibkr.get("port") or 7497)
@@ -1403,8 +1420,10 @@ def main() -> int:
             if popup_candidates:
                 def _prio(w: WindowInfo) -> int:
                     t = w.title.lower()
+                    # prio 0: Börsenspiegel market news
                     if "börsenspiegel" in t or "boersenspiegel" in t:
                         return 0
+                    # prio 1: Login Messages
                     if (
                         "login messages" in t
                         or "login message" in t
@@ -1414,16 +1433,21 @@ def main() -> int:
                         or " messenger" in t
                     ):
                         return 1
+                    # prio 2: transient closing / artefact windows
                     if "programm wird geschlossen" in t or t == "win0":
                         return 2
-                    if "warnhinweis" in t or "disclaimer" in t:
+                    # prio 2: Dow Jones / Top 10 news (same urgency as transient)
+                    if "dow jones" in t or "heutige top 10" in t or "top 10 today" in t:
+                        return 2
+                    # prio 3: Disclaimer / Warnhinweis / Risikohinweis
+                    if "warnhinweis" in t or "risikohinweis" in t or "disclaimer" in t:
                         return 3
                     return 9
 
                 popup_candidates = sorted(popup_candidates, key=lambda w: (_prio(w), w.title.lower()))
                 current_target = popup_candidates[0]
                 ctitle = current_target.title.lower()
-                if "warnhinweis" in ctitle or "disclaimer" in ctitle:
+                if "warnhinweis" in ctitle or "risikohinweis" in ctitle or "disclaimer" in ctitle:
                     current_action = "CLICK_WARNHINWEIS"
                 else:
                     current_action = "ALT+F4"
