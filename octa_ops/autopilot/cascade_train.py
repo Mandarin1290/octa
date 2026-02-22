@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -156,6 +157,23 @@ def _is_structural_failure(*, reason: Optional[str], error_text: Optional[str], 
     return any(marker in blob for marker in structural_markers)
 
 
+def _trace_emit(trace_dir: Optional[str], payload: Dict[str, Any]) -> None:
+    if not trace_dir:
+        return
+    p = Path(str(trace_dir)) / "train_step_progress.jsonl"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    with p.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(payload, sort_keys=True, default=str) + "\n")
+
+
+def _trace_write_json(trace_dir: Optional[str], name: str, payload: Dict[str, Any]) -> None:
+    if not trace_dir:
+        return
+    p = Path(str(trace_dir)) / str(name)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True, default=str), encoding="utf-8")
+
+
 def run_cascade_training(
     *,
     run_id: str,
@@ -168,8 +186,15 @@ def run_cascade_training(
     reports_dir: str,
     model_root: Optional[str] = None,
     config_overrides: Optional[Dict[str, Any]] = None,
+    trace_dir: Optional[str] = None,
 ) -> Tuple[List[GateDecision], Dict[str, Any]]:
+    root_timer = time.monotonic()
+    _trace_emit(trace_dir, {"ts": time.time(), "step": "run_cascade_training", "event": "start", "elapsed_s": 0.0, "symbol": str(symbol)})
+    durations: Dict[str, float] = {}
+    cfg_start = time.monotonic()
     cfg = load_config(config_path)
+    durations["load_config"] = float(time.monotonic() - cfg_start)
+    _trace_emit(trace_dir, {"ts": time.time(), "step": "load_config", "event": "end", "elapsed_s": float(time.monotonic() - root_timer), "duration_s": float(durations["load_config"])})
     if config_overrides:
         try:
             merged = cfg.dict() if hasattr(cfg, "dict") else {}
@@ -196,6 +221,8 @@ def run_cascade_training(
     prev_structural_pass = True
     normalized_order = [normalize_timeframe(t) for t in cascade.order]
     for idx, tf in enumerate(normalized_order):
+        stage_timer = time.monotonic()
+        _trace_emit(trace_dir, {"ts": time.time(), "step": "timeframe_stage", "event": "start", "elapsed_s": float(time.monotonic() - root_timer), "timeframe": str(tf)})
         # IMPORTANT: packaging writes <pkl_dir>/<symbol>.pkl. To support multi-timeframe
         # cascades without overwriting, we stage a per-timeframe PKL directory.
         try:
@@ -277,6 +304,21 @@ def run_cascade_training(
             prev_structural_pass = False
             continue
         wf_elig = _walkforward_eligibility(parquet_path=str(pq), cfg=cfg_layer)
+        durations[f"{tf}.walkforward_eligibility"] = float(time.monotonic() - stage_timer)
+        _trace_emit(
+            trace_dir,
+            {
+                "ts": time.time(),
+                "step": "walkforward_eligibility",
+                "event": "end",
+                "elapsed_s": float(time.monotonic() - root_timer),
+                "timeframe": str(tf),
+                "eligible": bool(wf_elig.get("eligible", False)),
+                "available_bars": wf_elig.get("available_bars"),
+                "required_bars": wf_elig.get("required_bars"),
+                "duration_s": float(durations[f"{tf}.walkforward_eligibility"]),
+            },
+        )
         if not bool(wf_elig.get("eligible", True)):
             metrics_by_tf[tf] = {
                 "walk_forward": {
@@ -330,6 +372,8 @@ def run_cascade_training(
                             gate_overrides = None
             except Exception:
                 gate_overrides = None
+            train_start = time.monotonic()
+            _trace_emit(trace_dir, {"ts": time.time(), "step": "train_evaluate_package", "event": "start", "elapsed_s": float(time.monotonic() - root_timer), "timeframe": str(tf)})
             res = train_evaluate_package(
                 symbol=symbol,
                 cfg=cfg_layer,
@@ -341,6 +385,18 @@ def run_cascade_training(
                 dataset=asset_class,
                 asset_class=asset_class,
                 gate_overrides=gate_overrides,
+            )
+            durations[f"{tf}.train_evaluate_package"] = float(time.monotonic() - train_start)
+            _trace_emit(
+                trace_dir,
+                {
+                    "ts": time.time(),
+                    "step": "train_evaluate_package",
+                    "event": "end",
+                    "elapsed_s": float(time.monotonic() - root_timer),
+                    "timeframe": str(tf),
+                    "duration_s": float(durations[f"{tf}.train_evaluate_package"]),
+                },
             )
             passed = bool(getattr(res, "passed", False))
             gate_obj = getattr(res, "gate_result", None)
@@ -457,10 +513,32 @@ def run_cascade_training(
                     },
                 )
             )
+            _trace_emit(
+                trace_dir,
+                {
+                    "ts": time.time(),
+                    "step": "decision_assembly",
+                    "event": "end",
+                    "elapsed_s": float(time.monotonic() - root_timer),
+                    "timeframe": str(tf),
+                    "status": str(fail_status),
+                    "passed": bool(passed),
+                },
+            )
             metrics_by_tf[tf]["structural_pass"] = bool(structural_pass)
             metrics_by_tf[tf]["performance_pass"] = bool(performance_pass)
             prev_structural_pass = bool(structural_pass)
         except Exception as e:
+            _trace_write_json(
+                trace_dir,
+                "exception.json",
+                {
+                    "step": "train_evaluate_package",
+                    "timeframe": str(tf),
+                    "error": str(e),
+                },
+            )
+            _trace_emit(trace_dir, {"ts": time.time(), "step": "train_evaluate_package", "event": "error", "elapsed_s": float(time.monotonic() - root_timer), "timeframe": str(tf), "error": str(e)})
             decisions.append(
                 GateDecision(
                     symbol=symbol,
@@ -489,6 +567,8 @@ def run_cascade_training(
     out_dir.mkdir(parents=True, exist_ok=True)
     p = out_dir / f"model_metrics_{symbol}.json"
     p.write_text(json.dumps(metrics_by_tf, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+    _trace_write_json(trace_dir, "train_step_durations.json", durations)
+    _trace_emit(trace_dir, {"ts": time.time(), "step": "run_cascade_training", "event": "end", "elapsed_s": float(time.monotonic() - root_timer), "symbol": str(symbol)})
 
     return decisions, metrics_by_tf
 

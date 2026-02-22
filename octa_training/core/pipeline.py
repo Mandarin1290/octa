@@ -1232,7 +1232,17 @@ def train_evaluate_package(
                     sharpe=m.get('sharpe'),
                     sharpe_is=m.get('sharpe_is'),
                     max_drawdown=m.get('max_drawdown'),
-                    n_trades=m.get('n_trades')
+                    n_trades=m.get('n_trades'),
+                    is_start=m.get('is_start'),
+                    is_end=m.get('is_end'),
+                    oos_start=m.get('oos_start'),
+                    oos_end=m.get('oos_end'),
+                    is_ret_count=m.get('is_ret_count'),
+                    oos_ret_count=m.get('oos_ret_count'),
+                    is_ret_mean=m.get('is_ret_mean'),
+                    oos_ret_mean=m.get('oos_ret_mean'),
+                    is_ret_std=m.get('is_ret_std'),
+                    oos_ret_std=m.get('oos_ret_std'),
                 )
                 fold_lites.append(lite)
             metrics.fold_metrics = fold_lites

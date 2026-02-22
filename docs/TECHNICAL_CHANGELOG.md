@@ -3,6 +3,38 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-02-22 13:00:58] TEST
+Code-Änderungen - 6 Code-Dateien - 5 Test-Dateien - (+5610/-211 Zeilen)
+
+**Statistics:**
+- Files Changed: 18
+- Lines Added: +5610
+- Lines Deleted: -211
+- Net Change: +5399
+
+**File-Level Changes:**
+```
++   36 -    1  configs/autonomous_paper.yaml
++    1 -    1  configs/execution_ibkr.yaml
++  318 -    0  octa/core/gates/training_selection_gate.py
++  423 -    0  octa/support/x11/tws_popup_controller.sh
++   80 -    0  octa_ops/autopilot/cascade_train.py
++   25 -    4  octa_ops/autopilot/data_quality.py
++   10 -    0  octa_training/core/metrics_contract.py
++   27 -    0  octa_training/core/models.py
++   11 -    1  octa_training/core/pipeline.py
++   90 -    0  run_tws_autologin.sh
++ 1960 -   63  scripts/octa_autopilot.py
++   30 -    8  scripts/octa_smoke_chain.py
++ 1728 -  133  scripts/tws_x11_autologin_chain.py
++   57 -    0  tests/test_autopilot_data_quality_basic.py
++  106 -    0  tests/test_autopilot_dynamic_gate_config.py
++  573 -    0  tests/test_autopilot_structural_audit.py
++  116 -    0  tests/test_training_selection_gate.py
++   19 -    0  tests/test_training_selection_gate_boundaries.py
+```
+
+
 ## [2026-02-20 18:16:57] DOCS
 Code-Änderungen - 1 Dokumentations-Dateien - (+164/-0 Zeilen)
 

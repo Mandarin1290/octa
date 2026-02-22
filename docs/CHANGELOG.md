@@ -2,6 +2,35 @@
 
 Automatisch generiert. Alle Änderungen werden hier dokumentiert.
 
+## 2026-02-22
+
+
+### [2026-02-22 13:00:58] TEST
+**Beschreibung:** Code-Änderungen - 6 Code-Dateien - 5 Test-Dateien - (+5610/-211 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 6 Dateien
+  - `octa/core/gates/training_selection_gate.py`
+  - `octa_ops/autopilot/cascade_train.py`
+  - `octa_ops/autopilot/data_quality.py`
+  - ... und 3 weitere
+- **TESTS:** 5 Dateien
+  - `tests/test_autopilot_data_quality_basic.py`
+  - `tests/test_autopilot_dynamic_gate_config.py`
+  - `tests/test_autopilot_structural_audit.py`
+  - ... und 2 weitere
+- **CONFIG:** 2 Dateien
+  - `configs/autonomous_paper.yaml`
+  - `configs/execution_ibkr.yaml`
+- **SCRIPTS:** 3 Dateien
+  - `scripts/octa_autopilot.py`
+  - `scripts/octa_smoke_chain.py`
+  - `scripts/tws_x11_autologin_chain.py`
+- **OTHER:** 2 Dateien
+  - `octa/support/x11/tws_popup_controller.sh`
+  - `run_tws_autologin.sh`
+
+
 ## 2026-02-20
 
 

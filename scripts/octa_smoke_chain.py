@@ -29,6 +29,7 @@ SIGNAL_DELAYED_DATA_ONLY = "DELAYED_DATA_ONLY"
 SIGNAL_PACING_VIOLATION = "PACING_VIOLATION"
 SIGNAL_FARM_DISCONNECTED = "FARM_DISCONNECTED"
 SIGNAL_CONNECTION_REFUSED = "CONNECTION_REFUSED"
+SIGNAL_MISSING_DEPENDENCY = "MISSING_DEPENDENCY"
 SIGNAL_TIMEOUT = "TIMEOUT"
 SIGNAL_UNKNOWN_ERROR = "UNKNOWN_ERROR"
 
@@ -38,6 +39,7 @@ KNOWN_SIGNALS: tuple[str, ...] = (
     SIGNAL_PACING_VIOLATION,
     SIGNAL_FARM_DISCONNECTED,
     SIGNAL_CONNECTION_REFUSED,
+    SIGNAL_MISSING_DEPENDENCY,
     SIGNAL_TIMEOUT,
     SIGNAL_UNKNOWN_ERROR,
 )
@@ -49,6 +51,7 @@ FATAL_SIGNALS: frozenset[str] = frozenset(
         SIGNAL_PACING_VIOLATION,
         SIGNAL_FARM_DISCONNECTED,
         SIGNAL_CONNECTION_REFUSED,
+        SIGNAL_MISSING_DEPENDENCY,
         SIGNAL_TIMEOUT,
         SIGNAL_UNKNOWN_ERROR,
     }
@@ -63,7 +66,6 @@ _SIG_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
         SIGNAL_CONNECTION_REFUSED,
         re.compile(r"(connection refused|failed to connect|could not connect)", re.IGNORECASE),
     ),
-    (SIGNAL_TIMEOUT, re.compile(r"(timeout|timed out)", re.IGNORECASE)),
 )
 
 
@@ -149,12 +151,22 @@ def _git_sha() -> str:
         return "UNKNOWN"
 
 
-def parse_failure_signals(stdout: str, stderr: str, rc: int) -> list[str]:
+def parse_failure_signals(stdout: str, stderr: str, rc: int, *, timeout_expired: bool = False) -> list[str]:
     blob = f"{stdout}\n{stderr}"
+    blob_l = blob.lower()
     out: list[str] = []
+    if timeout_expired or int(rc) == 124:
+        out.append(SIGNAL_TIMEOUT)
+    if "modulenotfounderror" in blob_l:
+        out.append(SIGNAL_MISSING_DEPENDENCY)
+    if any(tok in blob_l for tok in ("connectionrefusederror", "connect call failed", "econnrefused")):
+        out.append(SIGNAL_CONNECTION_REFUSED)
     for signal, pat in _SIG_PATTERNS:
         if pat.search(blob):
             out.append(signal)
+    if SIGNAL_CONNECTION_REFUSED in out and SIGNAL_TIMEOUT in out:
+        out = [s for s in out if s != SIGNAL_TIMEOUT]
+    out = list(dict.fromkeys(out))
     if rc != 0 and not out:
         out.append(SIGNAL_UNKNOWN_ERROR)
     return out
@@ -236,6 +248,8 @@ def _suggested_actions(signals: Sequence[str]) -> list[str]:
         )
     if SIGNAL_CONNECTION_REFUSED in sigs:
         actions.append("Check TWS/Gateway is running and API socket host/port are correct.")
+    if SIGNAL_MISSING_DEPENDENCY in sigs:
+        actions.append("Install required Python dependency in the active environment and retry.")
     if SIGNAL_TIMEOUT in sigs:
         actions.append("Increase step timeout or verify local loopback/API responsiveness.")
     if SIGNAL_UNKNOWN_ERROR in sigs:
@@ -267,15 +281,23 @@ def _build_summary(
 
 
 def _run_step(name: str, command: list[str]) -> StepResult:
-    cp = subprocess.run(command, capture_output=True, text=True, check=False)
-    stdout = cp.stdout or ""
-    stderr = cp.stderr or ""
-    signals = parse_failure_signals(stdout=stdout, stderr=stderr, rc=int(cp.returncode))
-    ok = is_step_ok(rc=int(cp.returncode), signals=signals)
+    timeout_expired = False
+    try:
+        cp = subprocess.run(command, capture_output=True, text=True, check=False)
+        rc = int(cp.returncode)
+        stdout = cp.stdout or ""
+        stderr = cp.stderr or ""
+    except subprocess.TimeoutExpired as exc:
+        timeout_expired = True
+        rc = 124
+        stdout = (exc.stdout or "") if isinstance(exc.stdout, str) else ""
+        stderr = (exc.stderr or "") if isinstance(exc.stderr, str) else str(exc)
+    signals = parse_failure_signals(stdout=stdout, stderr=stderr, rc=rc, timeout_expired=timeout_expired)
+    ok = is_step_ok(rc=rc, signals=signals)
     return StepResult(
         name=name,
         command=command,
-        rc=int(cp.returncode),
+        rc=rc,
         stdout=stdout,
         stderr=stderr,
         signals=signals,

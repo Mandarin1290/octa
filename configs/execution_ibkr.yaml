@@ -14,7 +14,7 @@ tws:
       DISPLAY: ":0"
   window:
     main_title_contains: "Trader Workstation"
-    login_title_contains: "Login"
+    login_title_contains: "Anmelden"
   login:
     username_env: OCTA_IBKR_USERNAME
     password_env: OCTA_IBKR_PASSWORD

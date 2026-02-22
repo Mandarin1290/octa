@@ -14,6 +14,16 @@ class MetricsSummaryLite(BaseModel):
     sharpe_is: Optional[float] = None
     max_drawdown: Optional[float] = None
     n_trades: Optional[int] = None
+    is_start: Optional[str] = None
+    is_end: Optional[str] = None
+    oos_start: Optional[str] = None
+    oos_end: Optional[str] = None
+    is_ret_count: Optional[int] = None
+    oos_ret_count: Optional[int] = None
+    is_ret_mean: Optional[float] = None
+    oos_ret_mean: Optional[float] = None
+    is_ret_std: Optional[float] = None
+    oos_ret_std: Optional[float] = None
 
 
 class MetricsMetadata(BaseModel):
