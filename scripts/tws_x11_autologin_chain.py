@@ -25,6 +25,11 @@ EXIT_LAUNCH_FAILED = 24
 EXIT_LOGIN_FAILED = 25
 EXIT_CONFIG_INVALID = 26
 
+# Number of consecutive clean polls required before the confirm loop exits OK.
+# A single clean poll is not sufficient because a popup may appear between
+# the popup-drain phase and the final sweep.
+_STABLE_OK_NEEDED = 3
+
 STATE_CLASSIFY = "CLASSIFY"
 STATE_ROUTE = "ROUTE"
 STATE_ACT = "ACT"
@@ -2026,6 +2031,7 @@ def main() -> int:
     blocking_titles_present: list[dict[str, str]] = []
     confirm_deadline = time.monotonic() + max(1, int(args.timeout_sec))
     wins: list[dict[str, str]] = []
+    stable_ok = 0  # consecutive clean-poll counter; must reach _STABLE_OK_NEEDED before break
     while time.monotonic() < confirm_deadline:
         rc, out = _wmctrl_windows(root_env, commands_log)
         if rc != 0:
@@ -2055,10 +2061,22 @@ def main() -> int:
         blocking_titles_present = _collect_blocking_popups_for_pid(root_env, commands_log, blocking_tokens, tws_pid)
         api_open, api_check_last_error = _api_connectable(cfg.api_host, cfg.api_port)
         api_check_result = "open" if api_open else "closed"
-        if args.drain_only and (not blocking_titles_present):
-            break
-        if (not args.drain_only) and (main_win or api_open) and (not login_win) and (not blocking_titles_present):
-            break
+        # clean_now: all success conditions satisfied on this poll.
+        # Both drain-only and full mode require _STABLE_OK_NEEDED consecutive
+        # clean polls to guard against popups appearing between the popup-drain
+        # phase and the final sweep (the race that caused false-OK returns).
+        _clean_now = (args.drain_only and not blocking_titles_present) or (
+            (not args.drain_only)
+            and bool(main_win or api_open)
+            and not login_win
+            and not blocking_titles_present
+        )
+        if _clean_now:
+            stable_ok += 1
+            if stable_ok >= _STABLE_OK_NEEDED:
+                break
+        else:
+            stable_ok = 0
         time.sleep(0.5)
     _write_wmctrl_snapshots(
         evidence_dir / "wmctrl_windows.txt",
