@@ -66,3 +66,4 @@ data/altdat/
 **/altdat/cache/
 **/altdat/features_*.json
 **/features_*_altdat_*.json
+run_tws_autologin.sh
