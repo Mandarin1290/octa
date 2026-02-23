@@ -18,6 +18,28 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `scripts/tws_x11_autologin_chain.py`
 
 
+### [2026-02-23 20:34:40] CONFIG
+**Beschreibung:** Code-Änderungen - 26 Code-Dateien - 3 Test-Dateien - (+4785/-294 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 26 Dateien
+  - `octa/core/cascade/registry.py`
+  - `octa/core/data/sources/altdata/sidecar.py`
+  - `octa/core/execution/state.py`
+  - ... und 23 weitere
+- **TESTS:** 3 Dateien
+  - `tests/test_multiasset_cascade_phase_c.py`
+  - `tests/test_multiasset_cascade_phase_d.py`
+  - `tests/test_multiasset_cascade_phase_e.py`
+- **CONFIG:** 2 Dateien
+  - `config/altdat.yaml`
+  - `config/release.yaml`
+- **SCRIPTS:** 3 Dateien
+  - `scripts/aggregate_option_snapshots.py`
+  - `scripts/train_options_lstm.py`
+  - `scripts/tws_e2e.sh`
+
+
 ## 2026-02-22
 
 

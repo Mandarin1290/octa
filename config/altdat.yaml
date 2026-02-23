@@ -1,7 +1,7 @@
 # AltData Platform Config (safe defaults)
 # Default: disabled to avoid any silent behavior change.
 
-enabled: false
+enabled: true
 
 # If true, any detected future-leakage will mark features invalid.
 # Strict mode can also be set via env `OKTA_ALTDATA_STRICT=1`.
@@ -13,7 +13,7 @@ auto_install: false
 
 storage:
   # Optional override; otherwise uses env OKTA_ALTDATA_ROOT or ./data/altdat
-  root: null
+  root: octa/var/altdata
 
 asof:
   # tolerance in seconds per inferred timeframe
@@ -30,12 +30,20 @@ sources:
     api_key_env: FRED_API_KEY
     series: ["FEDFUNDS", "DGS10", "DGS2", "UNRATE"]
   edgar:
-    enabled: true
+    enabled: false  # PILOT: disabled (no sec_edgar_downloader)
     forms: ["10-K", "10-Q", "8-K"]
+  earnings:
+    enabled: false  # PILOT: disabled (no cache)
+  xbrl:
+    enabled: false  # PILOT: disabled (no cache)
   gdelt:
-    enabled: false
+    enabled: true
   satellite:
-    enabled: false
+    enabled: true
+    nasa_firms:
+      enabled: true
+    viirs_nightlights:
+      enabled: true
 
 weights:
   base:

@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import json
+import logging
 from datetime import datetime, timezone
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterable, Mapping, Optional
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -27,10 +30,12 @@ def ensure_store(paths: StorePaths) -> None:
     if _has_duckdb():
         _init_duckdb(paths.db_path)
         _ensure_columns_duckdb(paths.db_path)
+        _ensure_schema_version_duckdb(paths.db_path)
     else:
         sqlite_path = paths.db_path.with_suffix(".sqlite")
         _init_sqlite(sqlite_path)
         _ensure_columns_sqlite(sqlite_path)
+        _ensure_schema_version_sqlite(sqlite_path)
 
 
 def _has_duckdb() -> bool:
@@ -54,6 +59,9 @@ def _init_sqlite(path: Path) -> None:
 
     with sqlite3.connect(str(path)) as conn:
         conn.executescript(_schema_sql())
+
+
+_SCHEMA_VERSION = 2  # increment when schema changes
 
 
 def _schema_sql() -> str:
@@ -84,6 +92,12 @@ def _schema_sql() -> str:
       fetched_at TEXT,
       hash TEXT,
       meta_json TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS altdata_schema_version (
+      version INTEGER PRIMARY KEY,
+      applied_utc TEXT,
+      description TEXT
     );
     """
 
@@ -119,6 +133,43 @@ def _add_column_sqlite(conn, table: str, column: str, col_type: str) -> None:
         conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}")
     except Exception:
         return
+
+
+def _ensure_schema_version_duckdb(path: Path) -> None:
+    import duckdb  # type: ignore
+
+    now = datetime.now(timezone.utc).isoformat()
+    with duckdb.connect(str(path)) as conn:
+        try:
+            rows = conn.execute("SELECT version FROM altdata_schema_version ORDER BY version DESC LIMIT 1").fetchall()
+            current = rows[0][0] if rows else 0
+        except Exception:
+            current = 0
+        if current < _SCHEMA_VERSION:
+            conn.execute(
+                "INSERT INTO altdata_schema_version (version, applied_utc, description) VALUES (?, ?, ?)",
+                [_SCHEMA_VERSION, now, f"schema v{_SCHEMA_VERSION}"],
+            )
+            logger.info("altdata_schema_version_applied", extra={"version": _SCHEMA_VERSION})
+
+
+def _ensure_schema_version_sqlite(path: Path) -> None:
+    import sqlite3
+
+    now = datetime.now(timezone.utc).isoformat()
+    with sqlite3.connect(str(path)) as conn:
+        try:
+            rows = conn.execute("SELECT version FROM altdata_schema_version ORDER BY version DESC LIMIT 1").fetchall()
+            current = rows[0][0] if rows else 0
+        except Exception:
+            current = 0
+        if current < _SCHEMA_VERSION:
+            conn.execute(
+                "INSERT INTO altdata_schema_version (version, applied_utc, description) VALUES (?, ?, ?)",
+                (_SCHEMA_VERSION, now, f"schema v{_SCHEMA_VERSION}"),
+            )
+            conn.commit()
+            logger.info("altdata_schema_version_applied", extra={"version": _SCHEMA_VERSION})
 
 
 class FeatureRegistry:

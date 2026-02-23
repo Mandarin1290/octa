@@ -1,3 +1,10 @@
+# Hedge Fund (HF) Quality Gates
+# Target: Institutional-grade risk-adjusted returns
+# 1D: Optimal calibration (30% pass-rate is perfect) - daily positioning
+# 1H/30m: Intraday strategies with institutional quality bars
+# 5m/1m: Not primary focus for hedge fund strategies (optional, high bars)
+
+# Default gates (used if no timeframe-specific override)
 paper:
   min_sharpe: 1.2
   max_drawdown: 0.1
@@ -5,6 +12,7 @@ paper:
   max_split_cv: 0.4
   mc_dd_prob_max: 0.08
   min_improvement: 0.05
+
 live_shadow:
   min_sharpe: 1.0
   max_drawdown: 0.12
@@ -12,3 +20,178 @@ live_shadow:
   max_split_cv: 0.5
   mc_dd_prob_max: 0.1
   min_improvement: 0.05
+
+# Timeframe-specific gates for Hedge Fund strategies
+# Target pass-rates: 1D: 10-30%, 1H: 2-10%, 30m: 1-5%
+# Focus: Risk-adjusted returns, drawdown control, statistical robustness
+timeframe_gates:
+  "1D":
+    # OPTIMAL - current pass-rate 30.36% is perfect
+    min_sharpe: 1.2
+    min_trades: 60
+    max_drawdown: 0.10
+    max_split_cv: 0.4
+    mc_dd_prob_max: 0.08
+    # Citadel-Level Robustness Suite
+    # 1. Monte Carlo Bootstrap (300 iterations)
+    bootstrap_sharpe_p05_min: 0.8
+    bootstrap_maxdd_p95_max: 0.15
+    bootstrap_prob_sharpe_below_max: 0.25
+    bootstrap_n: 300
+    bootstrap_block: 10
+    bootstrap_seed: 1337
+    # 2. Overfitting Detection (Permutation Test)
+    robustness_permutation_auc_max: 0.55
+    # 3. Sub-Window Stability
+    robustness_subwindow_min_sharpe_ratio: 0.5
+    robustness_subwindow_abs_sharpe_min: 0.5
+    # 4. Stress Testing (2x cost multiplier)
+    robustness_stress_min_sharpe: 0.5
+    # 5. Regime Testing (High-Vol periods)
+    robustness_regime_top_quantile: 0.8
+    robustness_regime_max_drawdown: 0.5
+    # 6. Tail Risk Kill-Switch (CVaR95/Daily-Vol)
+    cvar_95_over_daily_vol_max: 2.5
+    # 7. Statistical Sufficiency
+    folds_min_evaluable: 3
+    sharpe_wf_std_min_folds: 3
+    sharpe_oos_over_is_min_folds: 1
+    
+  "1H":
+    # Hedge Fund quality - institutional-grade intraday (current: 48% → target: 2-10%)
+    min_sharpe: 1.3
+    sortino_min: 1.0
+    min_trades: 80
+    max_drawdown: 0.12
+    profit_factor_min: 1.10
+    max_split_cv: 0.45
+    mc_dd_prob_max: 0.10
+    net_to_gross_min: 0.40
+    sharpe_wf_std_max: 3.0
+    sharpe_oos_over_is_min: 0.50
+    # Citadel-Level Robustness Suite
+    # 1. Monte Carlo Bootstrap (300 iterations)
+    bootstrap_sharpe_p05_min: 0.9
+    bootstrap_maxdd_p95_max: 0.18
+    bootstrap_prob_sharpe_below_max: 0.30
+    bootstrap_n: 300
+    bootstrap_block: 10
+    bootstrap_seed: 1337
+    # 2. Overfitting Detection (Permutation Test)
+    robustness_permutation_auc_max: 0.55
+    # 3. Sub-Window Stability
+    robustness_subwindow_min_sharpe_ratio: 0.5
+    robustness_subwindow_abs_sharpe_min: 0.5
+    # 4. Stress Testing (2x cost multiplier)
+    robustness_stress_min_sharpe: 0.5
+    # 5. Regime Testing (High-Vol periods)
+    robustness_regime_top_quantile: 0.8
+    robustness_regime_max_drawdown: 0.5
+    # 6. Tail Risk Kill-Switch (CVaR95/Daily-Vol)
+    cvar_95_over_daily_vol_max: 2.5
+    # 7. Statistical Sufficiency
+    folds_min_evaluable: 3
+    sharpe_wf_std_min_folds: 3
+    sharpe_oos_over_is_min_folds: 1
+    
+  "30m":
+    # Hedge Fund quality - tighter than 1H (current: 27% → target: 1-5%)
+    min_sharpe: 1.5
+    sortino_min: 1.2
+    min_trades: 100
+    max_drawdown: 0.15
+    profit_factor_min: 1.12
+    max_split_cv: 0.50
+    mc_dd_prob_max: 0.12
+    net_to_gross_min: 0.50
+    sharpe_wf_std_max: 1.5
+    sharpe_oos_over_is_min: 0.55
+    # Citadel-Level Robustness Suite
+    # 1. Monte Carlo Bootstrap (300 iterations)
+    bootstrap_sharpe_p05_min: 1.1
+    bootstrap_maxdd_p95_max: 0.20
+    bootstrap_prob_sharpe_below_max: 0.30
+    bootstrap_n: 300
+    bootstrap_block: 10
+    bootstrap_seed: 1337
+    # 2. Overfitting Detection (Permutation Test)
+    robustness_permutation_auc_max: 0.53
+    # 3. Sub-Window Stability (stricter for intraday)
+    robustness_subwindow_min_sharpe_ratio: 0.6
+    robustness_subwindow_abs_sharpe_min: 0.7
+    # 4. Stress Testing (2x cost multiplier)
+    robustness_stress_min_sharpe: 0.6
+    # 5. Regime Testing (High-Vol periods)
+    robustness_regime_top_quantile: 0.8
+    robustness_regime_max_drawdown: 0.5
+    # 6. Tail Risk Kill-Switch (CVaR95/Daily-Vol)
+    cvar_95_over_daily_vol_max: 2.5
+    # 7. Statistical Sufficiency
+    folds_min_evaluable: 3
+    sharpe_wf_std_min_folds: 3
+    sharpe_oos_over_is_min_folds: 1
+    
+  # 5m/1m: High bars (not typical for hedge fund strategies, only exceptional cases)
+  "5m":
+    min_sharpe: 1.8
+    sortino_min: 1.5
+    min_trades: 150
+    max_drawdown: 0.15
+    profit_factor_min: 1.15
+    net_to_gross_min: 0.65
+    # Citadel-Level Robustness Suite (VERY STRICT)
+    # 1. Monte Carlo Bootstrap (300 iterations)
+    bootstrap_sharpe_p05_min: 1.4
+    bootstrap_maxdd_p95_max: 0.20
+    bootstrap_prob_sharpe_below_max: 0.25
+    bootstrap_n: 300
+    bootstrap_block: 10
+    bootstrap_seed: 1337
+    # 2. Overfitting Detection (Permutation Test - strict)
+    robustness_permutation_auc_max: 0.52
+    # 3. Sub-Window Stability (very strict)
+    robustness_subwindow_min_sharpe_ratio: 0.7
+    robustness_subwindow_abs_sharpe_min: 1.0
+    # 4. Stress Testing (2x cost multiplier)
+    robustness_stress_min_sharpe: 0.8
+    # 5. Regime Testing (High-Vol periods)
+    robustness_regime_top_quantile: 0.8
+    robustness_regime_max_drawdown: 0.4
+    # 6. Tail Risk Kill-Switch (CVaR95/Daily-Vol - strict)
+    cvar_95_over_daily_vol_max: 2.0
+    # 7. Statistical Sufficiency
+    folds_min_evaluable: 4
+    sharpe_wf_std_min_folds: 4
+    sharpe_oos_over_is_min_folds: 2
+    
+  "1m":
+    min_sharpe: 2.0
+    sortino_min: 1.6
+    min_trades: 200
+    max_drawdown: 0.15
+    profit_factor_min: 1.18
+    net_to_gross_min: 0.70
+    # Citadel-Level Robustness Suite (ULTRA-STRICT)
+    # 1. Monte Carlo Bootstrap (300 iterations)
+    bootstrap_sharpe_p05_min: 1.6
+    bootstrap_maxdd_p95_max: 0.20
+    bootstrap_prob_sharpe_below_max: 0.20
+    bootstrap_n: 300
+    bootstrap_block: 10
+    bootstrap_seed: 1337
+    # 2. Overfitting Detection (Permutation Test - ultra-strict)
+    robustness_permutation_auc_max: 0.51
+    # 3. Sub-Window Stability (ultra-strict)
+    robustness_subwindow_min_sharpe_ratio: 0.8
+    robustness_subwindow_abs_sharpe_min: 1.2
+    # 4. Stress Testing (2x cost multiplier)
+    robustness_stress_min_sharpe: 1.0
+    # 5. Regime Testing (High-Vol periods)
+    robustness_regime_top_quantile: 0.8
+    robustness_regime_max_drawdown: 0.3
+    # 6. Tail Risk Kill-Switch (CVaR95/Daily-Vol - ultra-strict)
+    cvar_95_over_daily_vol_max: 1.8
+    # 7. Statistical Sufficiency
+    folds_min_evaluable: 5
+    sharpe_wf_std_min_folds: 5
+    sharpe_oos_over_is_min_folds: 2

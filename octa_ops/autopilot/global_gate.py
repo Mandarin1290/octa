@@ -90,7 +90,7 @@ def evaluate_global_gate(
         fred_ctx: Dict[str, Any] = {"enabled": True, "series": list(policy.fred_series)}
         try:
             # Try to use our optional AltData connector if available.
-            from okta_altdat.connectors.fred_connector import (
+            from octa_altdat.connectors.fred_connector import (
                 fetch_fred_series,  # type: ignore
             )
 

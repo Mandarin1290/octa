@@ -13,14 +13,20 @@ class RollManager:
         self.roll_window_days = int(roll_window_days)
         self.oi_multiplier_trigger = float(oi_multiplier_trigger)
 
-    def days_to_expiry(self, expiry: date) -> int:
-        return (expiry - date.today()).days
+    def days_to_expiry(self, expiry: date, sim_date: Optional[date] = None) -> int:
+        """Return calendar days from sim_date (or today) to expiry.
+
+        Pass sim_date explicitly for deterministic backtest behaviour.
+        Defaults to date.today() when not provided (non-deterministic outside tests).
+        """
+        return (expiry - (sim_date or date.today())).days
 
     def decide_roll(
         self,
         current_symbol: str,
         candidates: Dict[str, Dict],
         contracts_meta: Dict[str, Dict],
+        sim_date: Optional[date] = None,
     ) -> Optional[str]:
         """Decide which contract to be the active front-month.
 
@@ -37,7 +43,7 @@ class RollManager:
 
         current_meta = contracts_meta[current_symbol]
         cur_expiry = current_meta["expiry"]
-        dte = self.days_to_expiry(cur_expiry)
+        dte = self.days_to_expiry(cur_expiry, sim_date=sim_date)
         current_oi = candidates[current_symbol].get("open_interest", 0)
 
         # choose next candidate by earliest expiry after current

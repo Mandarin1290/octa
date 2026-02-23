@@ -73,7 +73,45 @@ def _parquet_num_rows(path: str) -> Optional[int]:
         return None
 
 
-def _walkforward_eligibility(*, parquet_path: str, cfg: Any) -> Dict[str, Any]:
+def _check_futures_parquet_columns(df: Any, *, parquet_path: Optional[str] = None) -> Optional[str]:
+    """Return an error reason string if required futures columns are missing, else None.
+
+    Reads column names from the raw parquet file metadata when parquet_path is provided,
+    because load_parquet strips non-OHLCV columns before returning the DataFrame.
+    Falls back to checking df.columns if pyarrow metadata read fails.
+    """
+    # Primary: read raw schema from file (load_parquet strips extra columns)
+    if parquet_path is not None:
+        try:
+            import pyarrow.parquet as _pq
+            raw_cols = set(str(c).lower() for c in _pq.ParquetFile(str(parquet_path)).schema_arrow.names)
+            if "roll_flag" not in raw_cols:
+                return "missing_required_futures_columns:roll_flag"
+            # Validate roll_flag not all-NaN by reading just that column
+            roll_series = _pq.read_table(str(parquet_path), columns=["roll_flag"]).to_pandas()["roll_flag"]
+            if hasattr(roll_series, "isna") and bool(roll_series.isna().all()):
+                return "roll_flag_all_nan"
+            return None
+        except Exception:
+            pass
+    # Fallback: check the loaded DataFrame (may be stripped of roll_flag)
+    try:
+        cols = set(str(c).lower() for c in df.columns)
+        if "roll_flag" not in cols:
+            return "missing_required_futures_columns:roll_flag"
+        rf = df["roll_flag"] if "roll_flag" in df.columns else df.get("roll_flag")
+        if rf is not None:
+            try:
+                if hasattr(rf, "isna") and bool(rf.isna().all()):
+                    return "roll_flag_all_nan"
+            except Exception:
+                pass
+    except Exception:
+        pass
+    return None
+
+
+def _walkforward_eligibility(*, parquet_path: str, cfg: Any, asset_class: str = "unknown") -> Dict[str, Any]:
     resolved = _walkforward_resolver(cfg)
     available_bars = None
     data_invalid_reason = None
@@ -86,6 +124,19 @@ def _walkforward_eligibility(*, parquet_path: str, cfg: Any) -> Dict[str, Any]:
             resample_enabled=getattr(getattr(cfg, "parquet", {}), "resample_enabled", False),
             resample_bar_size=getattr(getattr(cfg, "parquet", {}), "resample_bar_size", "1D"),
         )
+        # Futures: enforce roll_flag column presence
+        if str(asset_class).lower() in {"future", "futures"}:
+            col_err = _check_futures_parquet_columns(df, parquet_path=parquet_path)
+            if col_err:
+                return {
+                    "eligible": False,
+                    "reason": col_err,
+                    "available_bars": 0,
+                    "required_bars": int(resolved["required_bars_fallback"]),
+                    "resolver": resolved,
+                    "proof": "futures_schema_check",
+                    "asset_class": str(asset_class),
+                }
         health = validate_price_series(df, close_col="close")
         data_health_stats = dict(health.stats)
         if not bool(health.ok):
@@ -187,7 +238,37 @@ def run_cascade_training(
     model_root: Optional[str] = None,
     config_overrides: Optional[Dict[str, Any]] = None,
     trace_dir: Optional[str] = None,
+    underlying_performance_pass: Optional[bool] = None,
 ) -> Tuple[List[GateDecision], Dict[str, Any]]:
+    """Run cascade training for one symbol.
+
+    underlying_performance_pass:
+        For asset_class="option" symbols, the caller must set this to
+        True/False to indicate whether the base asset's 1D stage passed.
+        When False, all cascade stages are immediately skipped with
+        reason="underlying_cascade_not_passed" (spec §3.1 hard requirement).
+        When None (default), the check is skipped (backward compatible).
+    """
+    # --- Options base-asset cascade dependency check (spec §3.1) ---
+    if str(asset_class).lower() in {"option", "options"} and underlying_performance_pass is False:
+        normalized_order = [normalize_timeframe(t) for t in cascade.order]
+        skip_decisions = [
+            GateDecision(
+                symbol=symbol,
+                timeframe=tf,
+                stage="train",
+                status="SKIP",
+                reason="underlying_cascade_not_passed",
+                details={
+                    "structural_pass": False,
+                    "performance_pass": False,
+                    "underlying_performance_pass": False,
+                },
+            )
+            for tf in normalized_order
+        ]
+        return skip_decisions, {}
+
     root_timer = time.monotonic()
     _trace_emit(trace_dir, {"ts": time.time(), "step": "run_cascade_training", "event": "start", "elapsed_s": 0.0, "symbol": str(symbol)})
     durations: Dict[str, float] = {}
@@ -303,7 +384,7 @@ def run_cascade_training(
             )
             prev_structural_pass = False
             continue
-        wf_elig = _walkforward_eligibility(parquet_path=str(pq), cfg=cfg_layer)
+        wf_elig = _walkforward_eligibility(parquet_path=str(pq), cfg=cfg_layer, asset_class=asset_class)
         durations[f"{tf}.walkforward_eligibility"] = float(time.monotonic() - stage_timer)
         _trace_emit(
             trace_dir,

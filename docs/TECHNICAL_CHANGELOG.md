@@ -3,6 +3,41 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-02-23 20:34:40] CONFIG
+Code-Änderungen - 26 Code-Dateien - 3 Test-Dateien - (+4785/-294 Zeilen)
+
+**Statistics:**
+- Files Changed: 34
+- Lines Added: +4785
+- Lines Deleted: -294
+- Net Change: +4491
+
+**File-Level Changes:**
+```
++   13 -    5  config/altdat.yaml
++  183 -    0  config/release.yaml
++   29 -    0  octa/core/cascade/registry.py
++   11 -    1  octa/core/data/sources/altdata/sidecar.py
++  134 -    3  octa/core/execution/state.py
++   77 -    0  octa/core/features/altdata/basis_features.py
++   61 -    0  octa/core/features/altdata/builders.py
++   39 -    0  octa/core/features/altdata/cot_features.py
++   36 -    0  octa/core/features/altdata/eco_calendar_features.py
++   39 -    0  octa/core/features/altdata/funding_rate_features.py
++   43 -    0  octa/core/features/altdata/greeks_features.py
++   40 -    0  octa/core/features/altdata/iv_surface_features.py
++   58 -    0  octa/core/features/altdata/onchain_features.py
++   43 -    0  octa/core/features/altdata/pack.py
++   51 -    0  octa/core/features/altdata/registry.py
++  216 -    0  octa/core/features/altdata/weighting.py
++   12 -    1  octa/core/portfolio/correlation.py
++    0 -    0  octa/support/cli/__init__.py
++    6 -    0  octa/support/cli/banner.py
++    5 -    0  octa/support/ops/run_institutional_train.py
+... and 14 more files
+```
+
+
 ## [2026-02-23 07:05:57] FEATURE
 Neue Funktionalität hinzugefügt - 1 Code-Dateien - 1 Test-Dateien - (+784/-3 Zeilen)
 

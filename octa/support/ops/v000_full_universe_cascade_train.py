@@ -257,7 +257,10 @@ def run(config_path: str, out_dir: Path) -> dict[str, Any]:
         sym_rows = [r for r in decisions_sorted if str(r.get("symbol")) == sym and str(r.get("stage")) == "train"]
         s1d, p1d = _structural_perf_by_tf(sym_rows, "1D")
         s1h, p1h = _structural_perf_by_tf(sym_rows, "1H")
-        eligible_strict = bool(p1d and p1h)
+        s30m, p30m = _structural_perf_by_tf(sym_rows, "30M")
+        # 30M is required for eligibility only if it was trained in this run.
+        trained_30m = any(str(r.get("timeframe")) == "30M" for r in sym_rows)
+        eligible_strict = bool(p1d and p1h and (p30m if trained_30m else True))
         symbol_rows.append(
             {
                 "symbol": sym,
@@ -265,6 +268,8 @@ def run(config_path: str, out_dir: Path) -> dict[str, Any]:
                 "performance_1D": p1d,
                 "structural_1H": s1h,
                 "performance_1H": p1h,
+                "structural_30M": s30m,
+                "performance_30M": p30m,
                 "eligible_strict": eligible_strict,
             }
         )

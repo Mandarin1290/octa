@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import importlib
+import json
 import logging
+import os
+from pathlib import Path
 from typing import Any, Callable, Iterable, Sequence
 
 from .adapters import (
@@ -99,11 +102,37 @@ def build_default_gate_stack(ohlcv_provider: OHLCVProvider | None = None) -> lis
         ),
     )
 
+    noop_entries: list[dict] = []
+
     for paths, adapter, name, timeframe in gates:
         built = _try_build_gate_paths(paths, adapter, ohlcv_provider)
         if built is None:
             defaults.append(SafeNoopGate(name=name, timeframe=timeframe))
+            logger.warning(
+                "cascade_noop_gate_inserted",
+                extra={"gate": name, "timeframe": timeframe, "paths_tried": list(paths)},
+            )
+            noop_entries.append({"gate": name, "timeframe": timeframe, "paths_tried": list(paths)})
             continue
         defaults.append(built)
 
+    if noop_entries:
+        _write_noop_artifact(noop_entries)
+
     return defaults
+
+
+def _write_noop_artifact(entries: list[dict]) -> None:
+    """Write noop_gates.json to the run evidence directory if configured."""
+    out_dir = os.environ.get("OCTA_CASCADE_RUN_DIR", "")
+    if not out_dir:
+        return
+    try:
+        p = Path(out_dir) / "noop_gates.json"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(
+            json.dumps({"noop_gates_present": True, "gates": entries}, indent=2),
+            encoding="utf-8",
+        )
+    except Exception as exc:
+        logger.warning("cascade_noop_artifact_write_failed", extra={"error": str(exc)})
