@@ -28,3 +28,60 @@ def test_data_quality_fails_duplicates(tmp_path: Path):
     pol = DataQualityPolicy(min_spacing_match_frac=1.0)
     dec = evaluate_data_quality(symbol="FOO", timeframe="1H", parquet_path=str(p), asset_class="fx", policy=pol)
     assert dec.status == "FAIL"
+
+
+def test_data_quality_allows_1d_equity_weekend_gaps(tmp_path: Path):
+    p = tmp_path / "EQ_1D.parquet"
+    ts = pd.to_datetime(
+        [
+            "2024-01-05T00:00:00Z",  # Fri
+            "2024-01-08T00:00:00Z",  # Mon (3-day gap)
+            "2024-01-09T00:00:00Z",
+            "2024-01-10T00:00:00Z",
+        ],
+        utc=True,
+    )
+    df = pd.DataFrame({"timestamp": ts, "open": 1.0, "high": 1.0, "low": 1.0, "close": 1.0, "volume": 1.0})
+    df.to_parquet(p, index=False)
+
+    dec = evaluate_data_quality(symbol="EQ", timeframe="1D", parquet_path=str(p), asset_class="equity", policy=DataQualityPolicy())
+    assert dec.status == "PASS"
+
+
+def test_data_quality_allows_1h_equity_overnight_gaps(tmp_path: Path):
+    p = tmp_path / "EQ_1H.parquet"
+    ts = pd.to_datetime(
+        [
+            "2024-01-02T14:00:00Z",
+            "2024-01-02T15:00:00Z",
+            "2024-01-02T16:00:00Z",
+            "2024-01-03T14:00:00Z",
+            "2024-01-03T15:00:00Z",
+            "2024-01-03T16:00:00Z",
+        ],
+        utc=True,
+    )
+    df = pd.DataFrame({"timestamp": ts, "open": 1.0, "high": 1.0, "low": 1.0, "close": 1.0, "volume": 1.0})
+    df.to_parquet(p, index=False)
+
+    dec = evaluate_data_quality(symbol="EQ", timeframe="1H", parquet_path=str(p), asset_class="equity", policy=DataQualityPolicy())
+    assert dec.status == "PASS"
+
+
+def test_data_quality_still_fails_1h_equity_intraday_offgrid(tmp_path: Path):
+    p = tmp_path / "EQ_1H.parquet"
+    ts = pd.to_datetime(
+        [
+            "2024-01-02T14:00:00Z",
+            "2024-01-02T14:30:00Z",
+            "2024-01-02T15:00:00Z",
+            "2024-01-02T16:00:00Z",
+            "2024-01-03T14:00:00Z",
+        ],
+        utc=True,
+    )
+    df = pd.DataFrame({"timestamp": ts, "open": 1.0, "high": 1.0, "low": 1.0, "close": 1.0, "volume": 1.0})
+    df.to_parquet(p, index=False)
+
+    dec = evaluate_data_quality(symbol="EQ", timeframe="1H", parquet_path=str(p), asset_class="equity", policy=DataQualityPolicy())
+    assert dec.status == "FAIL"

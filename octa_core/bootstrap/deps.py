@@ -141,7 +141,7 @@ def select_required_packages(feature_flags: dict) -> List[PackageSpec]:
     Only installs heavy optional dependencies when explicitly enabled.
     """
 
-    # Base runtime deps (already used by Octa broadly). Keep conservative ranges.
+    # Base runtime deps (already used by octa broadly). Keep conservative ranges.
     specs: List[PackageSpec] = [
         PackageSpec("numpy", "numpy", ">=1.23,<3", critical=True),
         PackageSpec("pandas", "pandas", ">=1.5,<3", critical=True),

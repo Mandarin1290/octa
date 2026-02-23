@@ -28,8 +28,18 @@ def try_run(
     except Exception:
         tz = "UTC"
 
+    raw_root = None
+    for attr in ("raw_root", "raw_dir", "raw_data_root"):
+        try:
+            candidate = getattr(settings, attr)
+        except Exception:
+            candidate = None
+        if candidate:
+            raw_root = candidate
+            break
+
     try:
-        res = run_altdata(bars_df=bars_df, symbol=symbol, tz=tz)
+        res = run_altdata(bars_df=bars_df, symbol=symbol, tz=tz, asset_class=asset_class, raw_root=raw_root)
         f = res.features_df
         # Align with existing feature convention (most core features are shifted by 1 bar).
         try:

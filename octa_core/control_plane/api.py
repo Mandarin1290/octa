@@ -46,8 +46,76 @@ def _audit_path(features_cfg: dict) -> str:
 def _start_autopilot(config_path: str) -> int:
     env = os.environ.copy()
     env["PYTHONPATH"] = "."
-    p = subprocess.Popen([os.environ.get("PYTHON", "python"), "scripts/octa_autopilot.py", "--config", config_path, "--run-paper"], env=env)
+    # Canonical orchestration path: smoke chain drives autopilot steps.
+    p = subprocess.Popen(
+        [
+            os.environ.get("PYTHON", "python"),
+            "scripts/octa_smoke_chain.py",
+            "--autopilot-config",
+            config_path,
+            "--limit",
+            "0",
+        ],
+        env=env,
+    )
     return int(p.pid)
+
+
+def _ticker_banner_payload(cfg: dict) -> Dict[str, Any]:
+    dashboard = cfg.get("dashboard") if isinstance(cfg.get("dashboard"), dict) else {}
+    ticker_cfg = (
+        dashboard.get("ticker_banner") if isinstance((dashboard or {}).get("ticker_banner"), dict) else {}
+    )
+    enabled = bool((ticker_cfg or {}).get("enabled", False))
+    if not enabled:
+        return {"enabled": False, "text": "N/A", "source": "disabled", "warning": None}
+
+    candidates = [
+        Path("artifacts/last_prices.json"),
+        Path("artifacts/prices_snapshot.json"),
+        Path("octa/var/cache/last_prices.json"),
+    ]
+    for path in candidates:
+        if not path.exists() or not path.is_file():
+            continue
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            if not isinstance(payload, dict):
+                continue
+            rows = []
+            for sym, px in sorted(payload.items(), key=lambda x: str(x[0]))[:12]:
+                try:
+                    rows.append(f"{str(sym).upper()} {float(px):.4f}")
+                except Exception:
+                    continue
+            if rows:
+                return {
+                    "enabled": True,
+                    "text": " | ".join(rows),
+                    "source": str(path),
+                    "warning": None,
+                }
+        except Exception as exc:
+            return {
+                "enabled": True,
+                "text": "N/A",
+                "source": "error",
+                "warning": {
+                    "event_type": "dashboard.ticker_banner.local_read_failed",
+                    "path": str(path),
+                    "error": f"{type(exc).__name__}:{exc}",
+                },
+            }
+
+    return {
+        "enabled": True,
+        "text": "N/A",
+        "source": "no_local_data",
+        "warning": {
+            "event_type": "dashboard.ticker_banner.local_data_missing",
+            "paths_checked": [str(p) for p in candidates],
+        },
+    }
 
 
 def create_app(*, features_path: str = "octa_core/config/octa_features.yaml"):
@@ -58,12 +126,14 @@ def create_app(*, features_path: str = "octa_core/config/octa_features.yaml"):
     @app.get("/status")
     def status() -> Dict[str, Any]:
         cfg = _load_yaml(features_path)
+        ticker_banner = _ticker_banner_payload(cfg)
         return {
             "mode": STATE.mode,
             "last_run_id": STATE.last_run_id,
             "autopilot_pid": STATE.autopilot_pid,
             "features_path": features_path,
             "allow_live": bool((cfg.get("modes") or {}).get("allow_live", False)),
+            "ticker_banner": ticker_banner,
         }
 
     @app.post("/start")

@@ -566,6 +566,33 @@ def train_models(
                                 m['sharpe_is'] = float(v) if v is not None else float('nan')
                             except Exception:
                                 pass
+                            # Deterministic IS/OOS window metadata for OOS degradation autopsy.
+                            try:
+                                m['is_start'] = str(y_tr.index.min()) if len(y_tr.index) else None
+                                m['is_end'] = str(y_tr.index.max()) if len(y_tr.index) else None
+                                m['oos_start'] = str(y_val.index.min()) if len(y_val.index) else None
+                                m['oos_end'] = str(y_val.index.max()) if len(y_val.index) else None
+                            except Exception:
+                                m['is_start'] = None
+                                m['is_end'] = None
+                                m['oos_start'] = None
+                                m['oos_end'] = None
+                            try:
+                                is_ret = pd.to_numeric(prices.reindex(y_tr.index), errors='coerce').pct_change().dropna()
+                                oos_ret = pd.to_numeric(prices.reindex(y_val.index), errors='coerce').pct_change().dropna()
+                                m['is_ret_count'] = int(len(is_ret))
+                                m['oos_ret_count'] = int(len(oos_ret))
+                                m['is_ret_mean'] = float(is_ret.mean()) if len(is_ret) else None
+                                m['oos_ret_mean'] = float(oos_ret.mean()) if len(oos_ret) else None
+                                m['is_ret_std'] = float(is_ret.std(ddof=0)) if len(is_ret) else None
+                                m['oos_ret_std'] = float(oos_ret.std(ddof=0)) if len(oos_ret) else None
+                            except Exception:
+                                m['is_ret_count'] = None
+                                m['oos_ret_count'] = None
+                                m['is_ret_mean'] = None
+                                m['oos_ret_mean'] = None
+                                m['is_ret_std'] = None
+                                m['oos_ret_std'] = None
 
                         fold_metrics.append(FoldMetric(fold=i, metric=m))
 

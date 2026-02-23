@@ -2,6 +2,390 @@
 
 Automatisch generiert. Alle Änderungen werden hier dokumentiert.
 
+## 2026-02-23
+
+
+### [2026-02-23 07:05:57] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 1 Code-Dateien - 1 Test-Dateien - (+784/-3 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 1 Dateien
+  - `octa/support/ibkr_credentials.py`
+- **TESTS:** 1 Dateien
+  - `tests/test_ibkr_credentials.py`
+- **SCRIPTS:** 2 Dateien
+  - `scripts/tws_e2e.sh`
+  - `scripts/tws_x11_autologin_chain.py`
+
+
+### [2026-02-23 20:34:40] CONFIG
+**Beschreibung:** Code-Änderungen - 26 Code-Dateien - 3 Test-Dateien - (+4785/-294 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 26 Dateien
+  - `octa/core/cascade/registry.py`
+  - `octa/core/data/sources/altdata/sidecar.py`
+  - `octa/core/execution/state.py`
+  - ... und 23 weitere
+- **TESTS:** 3 Dateien
+  - `tests/test_multiasset_cascade_phase_c.py`
+  - `tests/test_multiasset_cascade_phase_d.py`
+  - `tests/test_multiasset_cascade_phase_e.py`
+- **CONFIG:** 2 Dateien
+  - `config/altdat.yaml`
+  - `config/release.yaml`
+- **SCRIPTS:** 3 Dateien
+  - `scripts/aggregate_option_snapshots.py`
+  - `scripts/train_options_lstm.py`
+  - `scripts/tws_e2e.sh`
+
+
+## 2026-02-22
+
+
+### [2026-02-22 13:00:58] TEST
+**Beschreibung:** Code-Änderungen - 6 Code-Dateien - 5 Test-Dateien - (+5610/-211 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 6 Dateien
+  - `octa/core/gates/training_selection_gate.py`
+  - `octa_ops/autopilot/cascade_train.py`
+  - `octa_ops/autopilot/data_quality.py`
+  - ... und 3 weitere
+- **TESTS:** 5 Dateien
+  - `tests/test_autopilot_data_quality_basic.py`
+  - `tests/test_autopilot_dynamic_gate_config.py`
+  - `tests/test_autopilot_structural_audit.py`
+  - ... und 2 weitere
+- **CONFIG:** 2 Dateien
+  - `configs/autonomous_paper.yaml`
+  - `configs/execution_ibkr.yaml`
+- **SCRIPTS:** 3 Dateien
+  - `scripts/octa_autopilot.py`
+  - `scripts/octa_smoke_chain.py`
+  - `scripts/tws_x11_autologin_chain.py`
+- **OTHER:** 2 Dateien
+  - `octa/support/x11/tws_popup_controller.sh`
+  - `run_tws_autologin.sh`
+
+
+### [2026-02-22 13:05:39] CHANGE
+**Beschreibung:** Code-Änderungen - (+91/-0 Zeilen)
+
+**Geänderte Dateien:**
+- **OTHER:** 2 Dateien
+  - `.gitignore`
+  - `run_tws_autologin.sh.example`
+
+
+### [2026-02-22 15:25:22] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 1 Code-Dateien - 1 Test-Dateien - (+1615/-7 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 1 Dateien
+  - `octa/support/x11/popup_rules.py`
+- **TESTS:** 1 Dateien
+  - `tests/test_tws_popup_rules.py`
+- **SCRIPTS:** 2 Dateien
+  - `scripts/tws_popup_smoke_harness.py`
+  - `scripts/tws_x11_autologin_chain.py`
+- **OTHER:** 1 Dateien
+  - `octa/support/x11/tws_popup_controller.sh`
+
+
+### [2026-02-22 15:45:07] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 2 Code-Dateien - 1 Test-Dateien - (+537/-4 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 2 Dateien
+  - `octa/support/x11/__init__.py`
+  - `octa/support/x11/x11_actions.py`
+- **TESTS:** 1 Dateien
+  - `tests/test_tws_x11_close_ladder.py`
+- **SCRIPTS:** 1 Dateien
+  - `scripts/tws_x11_autologin_chain.py`
+
+
+## 2026-02-20
+
+
+### [2026-02-20 13:46:42] CHANGE
+**Beschreibung:** Code-Änderungen - 3 Code-Dateien - (+157/-11 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 3 Dateien
+  - `octa/support/ops/v000_full_universe_cascade_train.py`
+  - `octa_core/control_plane/api.py`
+  - `octa_ops/autopilot/universe.py`
+- **CONFIG:** 1 Dateien
+  - `octa_core/config/octa_features.yaml`
+- **SCRIPTS:** 2 Dateien
+  - `scripts/run_octa.py`
+  - `scripts/tws_x11_autologin_chain.py`
+- **OTHER:** 1 Dateien
+  - `systemd/octa-autologin.service`
+
+
+### [2026-02-20 18:16:57] DOCS
+**Beschreibung:** Code-Änderungen - 1 Dokumentations-Dateien - (+164/-0 Zeilen)
+
+**Geänderte Dateien:**
+- **DOCS:** 1 Dateien
+  - `docs/RUNBOOK_HOST_X11_IBKR_VERIFY.md`
+
+
+## 2026-02-19
+
+
+### [2026-02-19 18:06:48] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 18 Code-Dateien - 2 Test-Dateien - 1 Dokumentations-Dateien - (+2021/-0 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 18 Dateien
+  - `octa/os/__init__.py`
+  - `octa/os/capabilities.py`
+  - `octa/os/eligibility.py`
+  - ... und 15 weitere
+- **TESTS:** 2 Dateien
+  - `tests/test_octa_os_brain.py`
+  - `tests/test_octa_os_eligibility.py`
+- **DOCS:** 1 Dateien
+  - `docs/OCTA_OS.md`
+- **CONFIG:** 1 Dateien
+  - `configs/policy.yaml`
+- **SCRIPTS:** 3 Dateien
+  - `scripts/octa_os_gate.sh`
+  - `scripts/octa_os_start.py`
+  - `scripts/octa_os_stop.py`
+- **OTHER:** 1 Dateien
+  - `systemd/octa-os.service.example`
+
+
+### [2026-02-19 18:07:03] CHANGE
+**Beschreibung:** Code-Änderungen - 1 Code-Dateien - (+229/-0 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 1 Dateien
+  - `octa/support/branding.py`
+- **SCRIPTS:** 1 Dateien
+  - `scripts/brand_guard.py`
+
+
+### [2026-02-19 18:07:15] DOCS
+**Beschreibung:** Code-Änderungen - 2 Dokumentations-Dateien - (+332/-35 Zeilen)
+
+**Geänderte Dateien:**
+- **DOCS:** 2 Dateien
+  - `docs/IBKR_X11_AUTOLOGIN.md`
+  - `docs/SYSTEMD_AUTOSTART.md`
+- **CONFIG:** 1 Dateien
+  - `configs/execution_ibkr.yaml`
+- **SCRIPTS:** 2 Dateien
+  - `scripts/octa_autopilot.py`
+  - `scripts/octa_smoke_chain.py`
+
+
+### [2026-02-19 18:07:22] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 1 Code-Dateien - 2 Test-Dateien - (+1724/-0 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 1 Dateien
+  - `octa/execution/x11_preflight.py`
+- **TESTS:** 2 Dateien
+  - `tests/test_ibkr_supervisor.py`
+  - `tests/test_x11_preflight.py`
+- **SCRIPTS:** 2 Dateien
+  - `scripts/octa_ibkr_supervisor.py`
+  - `scripts/tws_x11_autologin_chain.py`
+
+
+## 2026-02-18
+
+
+### [2026-02-18 18:15:35] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 19 Code-Dateien - 9 Test-Dateien - 1 Dokumentations-Dateien - (+3753/-16 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 19 Dateien
+  - `octa/accounting/__init__.py`
+  - `octa/accounting/capital_ledger.py`
+  - `octa/accounting/ops/__init__.py`
+  - ... und 16 weitere
+- **TESTS:** 9 Dateien
+  - `tests/test_approved_model_loader.py`
+  - `tests/test_artifact_signing.py`
+  - `tests/test_capital_ledger.py`
+  - ... und 6 weitere
+- **DOCS:** 1 Dateien
+  - `docs/GOVERNANCE_POLICY.md`
+- **OTHER:** 1 Dateien
+  - `.gitignore`
+
+
+### [2026-02-18 19:35:07] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 1 Dokumentations-Dateien - (+745/-17 Zeilen)
+
+**Geänderte Dateien:**
+- **DOCS:** 1 Dateien
+  - `docs/IBKR_X11_AUTOLOGIN.md`
+- **SCRIPTS:** 1 Dateien
+  - `scripts/octa_ibkr_autologin_healthcheck.sh`
+- **OTHER:** 1 Dateien
+  - `systemd/octa-autologin.service`
+
+
+### [2026-02-18 19:55:49] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - (+1438/-0 Zeilen)
+
+**Geänderte Dateien:**
+- **SCRIPTS:** 1 Dateien
+  - `scripts/octa_ibkr_autologin_watch.py`
+
+
+### [2026-02-18 20:01:18] DOCS
+**Beschreibung:** Code-Änderungen - 1 Dokumentations-Dateien - (+119/-5 Zeilen)
+
+**Geänderte Dateien:**
+- **DOCS:** 1 Dateien
+  - `docs/IBKR_X11_AUTOLOGIN.md`
+- **SCRIPTS:** 1 Dateien
+  - `scripts/octa_ibkr_autologin_watch.py`
+
+
+### [2026-02-18 20:09:17] DOCS
+**Beschreibung:** Code-Änderungen - 1 Test-Dateien - 1 Dokumentations-Dateien - (+324/-0 Zeilen)
+
+**Geänderte Dateien:**
+- **TESTS:** 1 Dateien
+  - `scripts/octa_ibkr_autologin_e2e_test.sh`
+- **DOCS:** 1 Dateien
+  - `docs/IBKR_X11_AUTOLOGIN.md`
+
+
+### [2026-02-18 22:09:01] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 3 Code-Dateien - 1 Test-Dateien - (+951/-0 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 3 Dateien
+  - `octa/core/data/quality/series_validator.py`
+  - `octa/execution/risk_fail_closed.py`
+  - `octa/execution/risk_fail_closed_harness.py`
+- **TESTS:** 1 Dateien
+  - `tests/test_risk_fail_closed.py`
+- **CONFIG:** 1 Dateien
+  - `pyproject.toml`
+- **SCRIPTS:** 1 Dateien
+  - `scripts/octa_smoke_chain.py`
+- **OTHER:** 1 Dateien
+  - `octa/var/releases/v0.0.0/manifest.json`
+
+
+### [2026-02-18 22:11:40] DOCS
+**Beschreibung:** Code-Änderungen - 1 Dokumentations-Dateien - (+70/-0 Zeilen)
+
+**Geänderte Dateien:**
+- **DOCS:** 1 Dateien
+  - `docs/RELEASE_CUT_V0_0_0.md`
+
+
+## 2026-02-17
+
+
+### [2026-02-17 14:48:56] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 6 Code-Dateien - 5 Test-Dateien - 1 Dokumentations-Dateien - (+2042/-12 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 6 Dateien
+  - `octa/execution/ibkr_autologin_store.py`
+  - `octa/execution/ibkr_runtime.py`
+  - `octa/execution/ibkr_x11_autologin.py`
+  - ... und 3 weitere
+- **TESTS:** 5 Dateien
+  - `tests/test_cascade_structural_vs_performance.py`
+  - `tests/test_ibkr_x11_autologin_logic.py`
+  - `tests/test_ibkr_x11_autologin_store.py`
+  - ... und 2 weitere
+- **DOCS:** 1 Dateien
+  - `docs/SYSTEMD_AUTOSTART.md`
+- **SCRIPTS:** 7 Dateien
+  - `scripts/octa_autologin_bootstrap.sh`
+  - `scripts/octa_health_watchdog.py`
+  - `scripts/octa_ibkr_bootstrap.sh`
+  - ... und 4 weitere
+- **OTHER:** 5 Dateien
+  - `systemd/octa-autologin.service`
+  - `systemd/octa-ibkr.service`
+  - `systemd/octa-v000.service`
+  - ... und 2 weitere
+
+
+### [2026-02-17 15:17:38] DOCS
+**Beschreibung:** Code-Änderungen - 1 Code-Dateien - 1 Test-Dateien - 1 Dokumentations-Dateien - (+186/-36 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 1 Dateien
+  - `octa/support/ops/v000_full_universe_cascade_train.py`
+- **TESTS:** 1 Dateien
+  - `tests/test_systemd_smoke.py`
+- **DOCS:** 1 Dateien
+  - `docs/SYSTEMD_AUTOSTART.md`
+- **SCRIPTS:** 5 Dateien
+  - `scripts/octa_autologin_bootstrap.sh`
+  - `scripts/octa_health_watchdog.py`
+  - `scripts/octa_ibkr_bootstrap.sh`
+  - ... und 2 weitere
+- **OTHER:** 4 Dateien
+  - `systemd/octa-autologin.service`
+  - `systemd/octa-ibkr.service`
+  - `systemd/octa-v000.service`
+  - ... und 1 weitere
+
+
+### [2026-02-17 15:27:31] DOCS
+**Beschreibung:** Code-Änderungen - 1 Code-Dateien - 1 Test-Dateien - 1 Dokumentations-Dateien - (+111/-48 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 1 Dateien
+  - `octa/support/ops/v000_full_universe_cascade_train.py`
+- **TESTS:** 1 Dateien
+  - `tests/test_systemd_smoke.py`
+- **DOCS:** 1 Dateien
+  - `docs/SYSTEMD_AUTOSTART.md`
+- **SCRIPTS:** 1 Dateien
+  - `scripts/octa_x11_bootstrap.sh`
+- **OTHER:** 1 Dateien
+  - `systemd/octa-x11.service`
+
+
+### [2026-02-17 18:05:36] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 1 Code-Dateien - 2 Test-Dateien - 1 Dokumentations-Dateien - (+1360/-22 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 1 Dateien
+  - `octa/execution/ibkr_x11_login.py`
+- **TESTS:** 2 Dateien
+  - `tests/test_bootstrap_no_bare_python.py`
+  - `tests/test_ibkr_x11_login_steps.py`
+- **DOCS:** 1 Dateien
+  - `docs/IBKR_X11_AUTOLOGIN.md`
+- **SCRIPTS:** 2 Dateien
+  - `scripts/octa_autologin_bootstrap.sh`
+  - `scripts/octa_ibkr_bootstrap.sh`
+
+
+## 2026-02-15
+
+
+### [2026-02-15 14:40:09] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 1 Code-Dateien - 1 Test-Dateien - (+519/-0 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 1 Dateien
+  - `octa/support/ops/v000_finish_paper_ready_local_only.py`
+- **TESTS:** 1 Dateien
+  - `tests/test_v000_finish_paper_ready_local_only_synth.py`
+
+
 ## 2026-02-13
 
 

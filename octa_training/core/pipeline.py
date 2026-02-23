@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -29,6 +30,7 @@ from octa_training.core.notify import send_telegram
 from octa_training.core.packaging import save_tradeable_artifact
 from octa_training.core.robustness import run_all_tests, run_risk_overlay_tests
 from octa_training.core.splits import walk_forward_splits
+from octa.core.data.quality.series_validator import validate_price_series
 
 
 @dataclass
@@ -36,6 +38,8 @@ class PipelineResult:
     symbol: str
     run_id: str
     passed: bool
+    structural_pass: Optional[bool] = None
+    performance_pass: Optional[bool] = None
     metrics: Optional[Any] = None
     gate_result: Optional[Any] = None
     pack_result: Optional[Dict[str, Any]] = None
@@ -394,6 +398,64 @@ def train_evaluate_package(
                 _record_end(False, metrics_obj=None, gate_obj=gate_obj)
                 return PipelineResult(symbol=symbol, run_id=run_id, passed=False, metrics=None, gate_result=gate_obj, pack_result=None, error=None)
             raise
+        # Strict data-health validation prior to feature/model steps.
+        health = validate_price_series(df, close_col="close")
+        if not bool(health.ok):
+            from octa_training.core.gates import GateResult
+
+            try:
+                data_health_path = Path(cfg.paths.reports_dir) / "autopilot" / str(run_id) / f"data_health_{symbol}.json"
+                data_health_path.parent.mkdir(parents=True, exist_ok=True)
+                data_health_path.write_text(
+                    json.dumps(
+                        {
+                            "symbol": symbol,
+                            "run_id": run_id,
+                            "code": str(health.code),
+                            "stats": dict(health.stats),
+                            "parquet_path": str(pinfo.path),
+                        },
+                        indent=2,
+                        sort_keys=True,
+                    ),
+                    encoding="utf-8",
+                )
+            except Exception:
+                data_health_path = None
+
+            reason = f"DATA_INVALID:{health.code}"
+            gate_obj = GateResult(
+                passed=False,
+                status="FAIL_DATA",
+                gate_version=None,
+                reasons=[reason],
+                passed_checks=[],
+                robustness=None,
+                diagnostics=[
+                    {
+                        "name": "data_health_code",
+                        "value": str(health.code),
+                        "threshold": None,
+                        "op": None,
+                        "passed": False,
+                        "evaluable": True,
+                        "confidence": 1.0,
+                        "reason": reason,
+                    },
+                    {
+                        "name": "data_health_stats",
+                        "value": dict(health.stats),
+                        "threshold": None,
+                        "op": None,
+                        "passed": False,
+                        "evaluable": True,
+                        "confidence": 1.0,
+                        "reason": reason,
+                    },
+                ],
+            )
+            _record_end(False, metrics_obj=None, gate_obj=gate_obj, pack_res={"data_health_path": str(data_health_path) if data_health_path else None})
+            return PipelineResult(symbol=symbol, run_id=run_id, passed=False, metrics=None, gate_result=gate_obj, pack_result={"data_health_path": str(data_health_path) if data_health_path else None}, error=None)
         # Auto asset classification (prefer inference).
         asset_class_state = None
         try:
@@ -605,6 +667,32 @@ def train_evaluate_package(
             eff_settings.features = cfg.features if isinstance(cfg.features, dict) else {}
         except Exception:
             eff_settings.features = {}
+        try:
+            # Freeze altdata as-of date per symbol run so leakage audits compare
+            # against the same snapshot vintage across recomputation windows.
+            eff_settings.altdat_asof_date = pd.Timestamp(df.index.max()).date().isoformat()
+        except Exception:
+            pass
+        try:
+            splits_cfg = cfg.splits if hasattr(cfg, 'splits') else {}
+            min_train_size = int(splits_cfg.get('min_train_size', 500))
+            min_test_size = int(splits_cfg.get('min_test_size', 100))
+            eff_settings.walk_forward_resolver = {
+                "n_folds": int(splits_cfg.get('n_folds', 5)),
+                "train_window": int(splits_cfg.get('train_window', 1000)),
+                "test_window": int(splits_cfg.get('test_window', 200)),
+                "step": int(splits_cfg.get('step', 200)),
+                "purge_size": int(splits_cfg.get('purge_size', 10)),
+                "embargo_size": int(splits_cfg.get('embargo_size', 5)),
+                "min_train_size": min_train_size,
+                "min_test_size": min_test_size,
+                "min_folds_required": int(splits_cfg.get('min_folds_required', 1)),
+                "expanding": bool(splits_cfg.get('expanding', True)),
+                "fallback_min_train_size": max(100, max(1, min_train_size // 2)),
+                "fallback_min_test_size": max(30, max(1, min_test_size // 2)),
+            }
+        except Exception:
+            pass
         # Optional context for sidecar integrations (no behavioral impact unless used).
         try:
             eff_settings.symbol = symbol
@@ -745,7 +833,7 @@ def train_evaluate_package(
         if bool(hk.get('walk_forward', True)) and (not folds):
             _record_end(False, metrics_obj=None, gate_obj=None)
             if not diagnose_mode:
-                return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error='missing_walk_forward')
+                return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error='insufficient_history_for_walkforward')
             # Cannot proceed without folds; return with recorded diagnose reason.
             from octa_training.core.gates import GateResult
 
@@ -915,7 +1003,7 @@ def train_evaluate_package(
                 passed=False,
                 status='FAIL_STRUCTURAL',
                 gate_version=None,
-                reasons=['missing_walk_forward'],
+                reasons=['insufficient_history_for_walkforward'],
                 passed_checks=[],
                 robustness=None,
                 diagnostics=diag,
@@ -1144,7 +1232,17 @@ def train_evaluate_package(
                     sharpe=m.get('sharpe'),
                     sharpe_is=m.get('sharpe_is'),
                     max_drawdown=m.get('max_drawdown'),
-                    n_trades=m.get('n_trades')
+                    n_trades=m.get('n_trades'),
+                    is_start=m.get('is_start'),
+                    is_end=m.get('is_end'),
+                    oos_start=m.get('oos_start'),
+                    oos_end=m.get('oos_end'),
+                    is_ret_count=m.get('is_ret_count'),
+                    oos_ret_count=m.get('oos_ret_count'),
+                    is_ret_mean=m.get('is_ret_mean'),
+                    oos_ret_mean=m.get('oos_ret_mean'),
+                    is_ret_std=m.get('is_ret_std'),
+                    oos_ret_std=m.get('oos_ret_std'),
                 )
                 fold_lites.append(lite)
             metrics.fold_metrics = fold_lites
@@ -1361,6 +1459,16 @@ def train_evaluate_package(
             if isinstance(hf_overlay, dict):
                 for k, v in hf_overlay.items():
                     merged[k] = v
+        except Exception:
+            pass
+
+        # Explicit per-call overrides must win last (micro harness / diagnostic runs).
+        # This preserves production defaults unless gate_overrides is provided by caller.
+        try:
+            if isinstance(gate_overrides, dict) and gate_overrides:
+                for k, v in gate_overrides.items():
+                    if v is not None:
+                        merged[k] = v
         except Exception:
             pass
 

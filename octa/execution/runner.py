@@ -7,10 +7,18 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from octa.core.governance.governance_audit import (
+    EVENT_EXECUTION_PREFLIGHT,
+    EVENT_PORTFOLIO_PREFLIGHT,
+    GovernanceAudit,
+)
+from octa.core.portfolio.preflight import PreflightConfig, run_preflight
+
 from .broker_router import BrokerRouter, BrokerRouterConfig
 from .carry import generate_carry_intents, load_json_file, resolve_carry_rates
 from .evidence_selection import build_ml_selection
 from .notifier import ExecutionNotifier
+from .risk_fail_closed import incident_to_dict, safe_decide
 from .risk_engine import RiskDecision, RiskEngine, RiskEngineConfig
 
 
@@ -62,6 +70,18 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
     run_log_dir = cfg.evidence_dir
     notifier = ExecutionNotifier(cfg.evidence_dir)
     risk_engine = RiskEngine(RiskEngineConfig())
+
+    gov_audit = GovernanceAudit(run_id=cfg.evidence_dir.name)
+    gov_audit.emit(
+        EVENT_EXECUTION_PREFLIGHT,
+        {
+            "mode": cfg.mode,
+            "enable_live": cfg.enable_live,
+            "max_symbols": cfg.max_symbols,
+            "training_run_id": cfg.training_run_id,
+            "evidence_dir": str(cfg.evidence_dir),
+        },
+    )
     carry_cfg = load_json_file(cfg.carry_config_path) if cfg.enable_carry else {}
     supported_instruments = tuple(
         sorted(
@@ -140,11 +160,33 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
                 )
             last_scaling[symbol] = scaling_level
 
-            ml_decision = risk_engine.decide_ml(
-                nav=nav,
-                scaling_level=scaling_level,
-                current_gross_exposure_pct=ml_current_gross,
+            blocked, ml_decision_obj, incident = safe_decide(
+                decide_fn=risk_engine.decide_ml,
+                decide_kwargs={
+                    "nav": nav,
+                    "scaling_level": scaling_level,
+                    "current_gross_exposure_pct": ml_current_gross,
+                },
+                evidence_dir=cfg.evidence_dir,
+                strategy="ml",
+                symbol=symbol,
+                cycle=cycle_idx,
             )
+            if blocked:
+                reason = "risk=ERROR => BLOCK"
+                blocks.append({"cycle": cycle_idx, "strategy": "ml", "symbol": symbol, "reason": reason})
+                notifier.emit(
+                    "risk_block",
+                    {
+                        "strategy": "ml",
+                        "instrument": symbol,
+                        "reason": reason,
+                        "incident": incident_to_dict(incident) if incident is not None else None,
+                    },
+                )
+                continue
+            assert ml_decision_obj is not None
+            ml_decision = ml_decision_obj
             if not ml_decision.allow:
                 blocks.append({"cycle": cycle_idx, "strategy": "ml", "symbol": symbol, "reason": ml_decision.reason})
                 notifier.emit(
@@ -231,19 +273,48 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
                 }
                 for idx, intent in enumerate(intents, start=1):
                     live_mode = str(cfg.mode).lower() == "live"
-                    decision: RiskDecision = risk_engine.decide_carry(
-                        nav=nav,
-                        carry_confidence=float(intent.confidence),
-                        expected_net_carry_after_costs=float(intent.expected_net_carry_after_costs),
-                        funding_cost=float(intent.funding_cost),
-                        carry_drawdown=float(carry_cfg.get("carry_pnl_drawdown", 0.0)),
-                        current_carry_gross_exposure_pct=carry_current_gross,
-                        current_carry_net_exposure_pct=carry_current_net,
-                        current_pair_exposure_pct=float(carry_cfg.get("pair_exposure_pct", 0.0)),
-                        leverage=leverage,
-                        live_mode=live_mode,
-                        pnl_available=bool(carry_cfg.get("pnl_available", not live_mode)),
+                    blocked, decision_obj, incident = safe_decide(
+                        decide_fn=risk_engine.decide_carry,
+                        decide_kwargs={
+                            "nav": nav,
+                            "carry_confidence": float(intent.confidence),
+                            "expected_net_carry_after_costs": float(intent.expected_net_carry_after_costs),
+                            "funding_cost": float(intent.funding_cost),
+                            "carry_drawdown": float(carry_cfg.get("carry_pnl_drawdown", 0.0)),
+                            "current_carry_gross_exposure_pct": carry_current_gross,
+                            "current_carry_net_exposure_pct": carry_current_net,
+                            "current_pair_exposure_pct": float(carry_cfg.get("pair_exposure_pct", 0.0)),
+                            "leverage": leverage,
+                            "live_mode": live_mode,
+                            "pnl_available": bool(carry_cfg.get("pnl_available", not live_mode)),
+                        },
+                        evidence_dir=cfg.evidence_dir,
+                        strategy="carry",
+                        symbol=str(intent.instrument),
+                        cycle=cycle_idx,
                     )
+                    if blocked:
+                        reason = "risk=ERROR => BLOCK"
+                        blocks.append(
+                            {
+                                "cycle": cycle_idx,
+                                "strategy": "carry",
+                                "instrument": intent.instrument,
+                                "reason": reason,
+                            }
+                        )
+                        notifier.emit(
+                            "risk_block",
+                            {
+                                "strategy": "carry",
+                                "instrument": intent.instrument,
+                                "reason": reason,
+                                "incident": incident_to_dict(incident) if incident is not None else None,
+                            },
+                        )
+                        continue
+                    assert decision_obj is not None
+                    decision: RiskDecision = decision_obj
                     if not decision.allow:
                         blocks.append(
                             {
@@ -325,6 +396,31 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
         if cfg.loop and cycle_idx < cycle_count:
             time.sleep(max(0, int(cfg.cycle_seconds)))
 
+    # --- Portfolio preflight overlay ---
+    preflight_positions: Dict[str, float] = {}
+    for order in ml_orders:
+        sym = str(order.get("symbol", ""))
+        preflight_positions[sym] = preflight_positions.get(sym, 0.0) + float(order.get("qty", 0.0))
+    preflight_result = run_preflight(
+        positions=preflight_positions,
+        nav=nav,
+        returns_by_symbol={},
+    )
+    gov_audit.emit(
+        EVENT_PORTFOLIO_PREFLIGHT,
+        {
+            "ok": preflight_result.ok,
+            "reason": preflight_result.reason,
+            "checks": preflight_result.checks,
+        },
+    )
+    _write_json(cfg.evidence_dir / "portfolio_preflight.json", {
+        "ok": preflight_result.ok,
+        "reason": preflight_result.reason,
+        "blocked_symbols": preflight_result.blocked_symbols,
+        "checks": preflight_result.checks,
+    })
+
     summary = {
         "run_id": cfg.evidence_dir.name,
         "timestamp_utc": _utc_now_iso(),
@@ -334,6 +430,7 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
         "blocks": len(blocks),
         "carry_enabled": bool(cfg.enable_carry),
         "selection_dir": str(cfg.evidence_dir / "selection"),
+        "portfolio_preflight_ok": preflight_result.ok,
     }
     _write_json(cfg.evidence_dir / "execution_summary.json", summary)
     _write_json(cfg.evidence_dir / "ml_orders.json", ml_orders)

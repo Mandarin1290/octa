@@ -1,0 +1,54 @@
+mode:
+  default: shadow
+  allowed: [shadow, paper, live]
+
+cadence:
+  tick_seconds: 30
+  eligibility_check_seconds: 300
+  execution_check_seconds: 30
+  training_check_seconds: 600
+
+training_windows:
+  tz: Europe/Berlin
+  allowed_weekdays: [0, 1, 2, 3, 4]
+  start_hour: 6
+  end_hour: 22
+
+backoff:
+  seconds: [10, 30, 60, 120, 300]
+  max_errors_before_degrade: 3
+
+safety:
+  default_execution_enabled: false
+  fail_closed_on_unknown_sensor: true
+  require_blessed_1d_1h: true
+  default_mode_shadow: true
+
+services:
+  dashboard:
+    enabled: true
+  alerts:
+    enabled: true
+  broker:
+    enabled: false
+    required_for_execution: false
+    host: 127.0.0.1
+    port: 7497
+  training:
+    enabled: true
+    command: ""
+  execution:
+    enabled: true
+
+capabilities:
+  brain: [READ_STATE, WRITE_STATE, WRITE_EVIDENCE, WRITE_BLESSED_MODEL]
+  dashboard_service: [DASHBOARD_START, WRITE_EVIDENCE]
+  alerts_service: [ALERT_SEND, WRITE_EVIDENCE]
+  broker_service: [BROKER_CONNECT, READ_STATE, WRITE_EVIDENCE]
+  training_service: [READ_STATE, WRITE_CANDIDATE_MODEL, WRITE_EVIDENCE]
+  execution_service: [READ_STATE, ISSUE_ORDER_INTENT, SEND_ORDER, WRITE_EVIDENCE]
+  risk_service: [READ_STATE, APPROVE_ORDER, WRITE_EVIDENCE]
+
+live_arming:
+  token_path: octa/var/state/live_armed.json
+  ttl_seconds: 900

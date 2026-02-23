@@ -1,0 +1,21 @@
+[Unit]
+Description=OCTA IBKR X11 popup autologin watcher
+After=octa-session-env.service octa-ibkr.service
+Wants=octa-session-env.service octa-ibkr.service
+PartOf=octa-ibkr.service
+BindsTo=octa-ibkr.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+EnvironmentFile=%h/.config/octa/env
+EnvironmentFile=-%h/.config/octa/ibkr_secrets.env
+Environment=DISPLAY=${OCTA_XVFB_DISPLAY}
+Environment=OCTA_AUTOLOGIN_MODE=once
+WorkingDirectory=${OCTA_REPO}
+# Mode is selected only via OCTA_AUTOLOGIN_MODE; do not pass --once in ExecStart.
+ExecStart=/usr/bin/env python3 /home/n-b/Octa/scripts/octa_ibkr_autologin_watch.py --mode ${OCTA_AUTOLOGIN_MODE}
+Restart=always
+RestartSec=2
+StandardOutput=journal
+StandardError=journal

@@ -1,0 +1,20 @@
+[Unit]
+Description=OCTA IBKR runtime bootstrap
+After=octa-x11.service
+Wants=octa-x11.service
+
+[Service]
+Type=simple
+EnvironmentFile=%h/.config/octa/env
+Environment=OCTA_XVFB_DISPLAY=:99
+Environment=DISPLAY=:99
+WorkingDirectory=${OCTA_REPO}
+ExecStart=/usr/bin/env bash scripts/octa_ibkr_bootstrap.sh
+Restart=always
+RestartSec=2
+StartLimitIntervalSec=0
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=octa.target

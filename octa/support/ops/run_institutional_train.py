@@ -26,6 +26,8 @@ from octa.core.research.validation.walk_forward import (
     validate_model,
 )
 from octa.core.research.validation.purged_cv import purged_kfold_splits
+from octa.support.cli.banner import print_banner
+from octa.version import __version__
 from octa_ops.autopilot.cascade_train import CascadePolicy, run_cascade_training
 from octa_ops.autopilot.universe import discover_universe
 from octa_training.core.config import load_config
@@ -418,6 +420,7 @@ def _truncate_meta(meta: Any, limit: int = 200) -> Dict[str, Any]:
 
 
 def main() -> None:
+    raise SystemExit("Deprecated entrypoint. Use scripts/octa_autopilot.py")
     p = argparse.ArgumentParser()
     p.add_argument("--config", default="octa_training/config/training.yaml")
     p.add_argument("--parquet-root", default="raw")
@@ -428,6 +431,8 @@ def main() -> None:
     p.add_argument("--resume", default="false")
     p.add_argument("--seed", type=int, default=42)
     args = p.parse_args()
+
+    print_banner(__version__)
 
     timeframes = [t.strip().upper() for t in str(args.timeframes).split(",") if t.strip()]
     _ = run_institutional_train(

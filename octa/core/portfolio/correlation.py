@@ -1,8 +1,19 @@
+
 from __future__ import annotations
+
+from typing import Mapping, Sequence
 
 from dataclasses import dataclass
 from statistics import mean, pstdev
-from typing import Mapping, Sequence
+
+
+def ewma_correlation_matrix(returns: Mapping[str, Sequence[float]]) -> dict[tuple[str, str], float]:
+    if not returns:
+        return {}
+    try:
+        return correlation_matrix(returns)
+    except Exception:
+        return {}
 
 
 def _corr(a: Sequence[float], b: Sequence[float]) -> float:

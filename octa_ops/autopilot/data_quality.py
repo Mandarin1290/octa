@@ -35,6 +35,11 @@ def _spacing_stats(idx: pd.DatetimeIndex) -> Dict[str, Any]:
     }
 
 
+def _is_continuous_market(asset_class: str) -> bool:
+    ac = str(asset_class or "").strip().lower()
+    return ac in {"fx", "forex", "crypto", "cryptocurrency"}
+
+
 def evaluate_data_quality(
     *,
     symbol: str,
@@ -89,10 +94,27 @@ def evaluate_data_quality(
     st = _spacing_stats(idx)
     details.update(st)
 
-    if exp_s is not None and len(idx) >= 3:
+    ac = str(asset_class or "").lower()
+    is_continuous = _is_continuous_market(ac)
+    # 1D bars on non-continuous markets legitimately include weekend/holiday gaps.
+    strict_spacing = bool(exp_s is not None and len(idx) >= 3 and (tf != "1D" or is_continuous))
+    if strict_spacing:
         deltas = idx.to_series().diff().dropna().dt.total_seconds().astype(float)
         tol = float(policy.spacing_tolerance_seconds)
-        match = (deltas.sub(float(exp_s)).abs() <= tol)
+        if is_continuous:
+            # Continuous markets (fx/crypto): evaluate all deltas.
+            comparable = deltas
+        elif tf == "1D":
+            comparable = deltas
+        else:
+            # Session markets (equities/futures/options): ignore known session breaks
+            # and evaluate only intraday-adjacent deltas.
+            max_intraday_gap_s = float(exp_s) * 4.0
+            comparable = deltas[deltas <= max_intraday_gap_s]
+            details["max_intraday_gap_s"] = max_intraday_gap_s
+            details["compared_deltas_n"] = int(len(comparable))
+            details["ignored_session_gap_n"] = int(len(deltas) - len(comparable))
+        match = comparable.sub(float(exp_s)).abs() <= tol
         match_frac = float(match.mean()) if len(match) else 0.0
         details["expected_s"] = exp_s
         details["match_frac"] = match_frac
@@ -100,8 +122,7 @@ def evaluate_data_quality(
             return GateDecision(symbol=symbol, timeframe=tf, stage="data_quality", status="FAIL", reason="spacing_not_timeframe_like", details=details)
 
         # missing bars (continuous markets only: fx/crypto)
-        ac = str(asset_class or "").lower()
-        if ac in {"fx", "crypto"}:
+        if is_continuous:
             span_s = float((idx[-1] - idx[0]).total_seconds())
             expected_n = int(span_s // float(exp_s)) + 1 if span_s > 0 else len(idx)
             missing_frac = 0.0

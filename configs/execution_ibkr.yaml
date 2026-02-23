@@ -1,0 +1,50 @@
+ibkr:
+  mode: tws
+  host: 127.0.0.1
+  port: 7497
+  process_match: tws
+  client_id: 901
+  timeout: 5.0
+tws:
+  launch:
+    command:
+      - /home/n-b/Jts/tws
+    cwd: /home/n-b/Octa
+    env:
+      DISPLAY: ":0"
+  window:
+    main_title_contains: "Trader Workstation"
+    login_title_contains: "Anmelden"
+  login:
+    username_env: OCTA_IBKR_USERNAME
+    password_env: OCTA_IBKR_PASSWORD
+    tab_to_username: 0
+    tab_to_password: 1
+    submit_key: Return
+  popups:
+    whitelist_titles:
+      - Disclaimer
+      - Important
+      - Agreement
+      - API Connection
+      - Connection
+    action_map:
+      Disclaimer: Return
+      Important: Return
+      Agreement: Return
+      API Connection: Return
+      Connection: Escape
+    timeout_sec: 45
+launch:
+  providers:
+    - provider: direct
+      command:
+        - /home/n-b/Jts/tws
+      cwd: /home/n-b/Octa
+      log_file: logs/ibkr_broker.log
+      env:
+        OCTA_IBKR_MODE: tws
+        OCTA_IBKR_HOST: 127.0.0.1
+        OCTA_IBKR_PORT: "7497"
+    - provider: systemd-user
+      unit: octa-ibkr.service
