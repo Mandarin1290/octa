@@ -2,6 +2,22 @@
 
 Automatisch generiert. Alle Änderungen werden hier dokumentiert.
 
+## 2026-02-23
+
+
+### [2026-02-23 07:05:57] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 1 Code-Dateien - 1 Test-Dateien - (+784/-3 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 1 Dateien
+  - `octa/support/ibkr_credentials.py`
+- **TESTS:** 1 Dateien
+  - `tests/test_ibkr_credentials.py`
+- **SCRIPTS:** 2 Dateien
+  - `scripts/tws_e2e.sh`
+  - `scripts/tws_x11_autologin_chain.py`
+
+
 ## 2026-02-22
 
 

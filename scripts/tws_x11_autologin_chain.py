@@ -15,6 +15,7 @@ from typing import Any
 
 import yaml
 from octa.execution.x11_preflight import run_full_preflight
+from octa.support.ibkr_credentials import load_credentials as _load_ibkr_credentials
 
 
 EXIT_OK = 0
@@ -1077,20 +1078,49 @@ def main() -> int:
         print(json.dumps({"status": "x11_preflight_ok", "x11_preflight_evidence": preflight.get("evidence_dir", ""), "evidence_dir": str(evidence_dir)}, sort_keys=True))
         return EXIT_OK
 
+    credential_source = "env"
     user = str(root_env.get(cfg.user_env_name) or "")
     pw = str(root_env.get(cfg.pass_env_name) or "")
+    if not user or not pw:
+        # Primary configured env vars missing; try aliases and ~/.config/octa/ibkr.env.
+        _u, _p, credential_source = _load_ibkr_credentials(root_env)
+        if _u and _p:
+            user, pw = _u, _p
+            # Inject under the configured primary var names so downstream
+            # subprocess calls (xdotool type, IBC, etc.) inherit them.
+            root_env[cfg.user_env_name] = user
+            root_env[cfg.pass_env_name] = pw
+            os.environ[cfg.user_env_name] = user
+            os.environ[cfg.pass_env_name] = pw
+        else:
+            credential_source = "missing"
     if (not args.drain_only) and (not user or not pw):
         health = {
             "ts_utc": _utc_iso(),
             "ok": False,
             "code": EXIT_MISSING_CREDENTIALS,
             "reason": "MISSING_CREDENTIALS",
-            "details": {"username_env": cfg.user_env_name, "password_env": cfg.pass_env_name, **display_diag},
+            "details": {
+                "username_env": cfg.user_env_name,
+                "password_env": cfg.pass_env_name,
+                "credential_source": credential_source,
+                "username_len": len(user),
+                "password_len": len(pw),
+                **display_diag,
+            },
         }
         _write_json(evidence_dir / "health.json", health)
         _write_text(evidence_dir / "commands.txt", "")
         _write_text(evidence_dir / "wmctrl_windows.txt", "")
-        _write_text(evidence_dir / "report.md", "# TWS X11 Autologin Report\n\n- status: FAIL\n- reason: MISSING_CREDENTIALS\n")
+        _write_text(
+            evidence_dir / "report.md",
+            "# TWS X11 Autologin Report\n\n"
+            "- status: FAIL\n"
+            "- reason: MISSING_CREDENTIALS\n"
+            f"- credential_source: {credential_source}\n"
+            f"- username_len: {len(user)}\n"
+            f"- password_len: {len(pw)}\n",
+        )
         _sha_manifest(evidence_dir)
         print(json.dumps({"evidence_dir": str(evidence_dir), "code": EXIT_MISSING_CREDENTIALS, "reason": "MISSING_CREDENTIALS"}, sort_keys=True))
         return EXIT_MISSING_CREDENTIALS
@@ -2174,7 +2204,12 @@ def main() -> int:
     _write_text(evidence_dir / "commands.txt", "\n".join(commands_log) + "\n")
     _write_text(
         evidence_dir / "report.md",
-        "# TWS X11 Autologin Report\n\n- status: PASS\n- reason: OK\n",
+        "# TWS X11 Autologin Report\n\n"
+        "- status: PASS\n"
+        "- reason: OK\n"
+        f"- credential_source: {credential_source}\n"
+        f"- username_len: {len(user)}\n"
+        f"- password_len: {len(pw)}\n",
     )
     if not ui_events.exists():
         _write_text(ui_events, "")

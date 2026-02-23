@@ -3,6 +3,24 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-02-23 07:05:57] FEATURE
+Neue Funktionalität hinzugefügt - 1 Code-Dateien - 1 Test-Dateien - (+784/-3 Zeilen)
+
+**Statistics:**
+- Files Changed: 4
+- Lines Added: +784
+- Lines Deleted: -3
+- Net Change: +781
+
+**File-Level Changes:**
+```
++  159 -    0  octa/support/ibkr_credentials.py
++  228 -    0  scripts/tws_e2e.sh
++   38 -    3  scripts/tws_x11_autologin_chain.py
++  359 -    0  tests/test_ibkr_credentials.py
+```
+
+
 ## [2026-02-22 15:45:07] FEATURE
 Neue Funktionalität hinzugefügt - 2 Code-Dateien - 1 Test-Dateien - (+537/-4 Zeilen)
 
