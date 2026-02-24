@@ -112,11 +112,13 @@ class IBKRContractAdapter(BrokerAdapter):
         return {"order_id": order_id, "status": o["status"]}
 
     def account_snapshot(self) -> Dict[str, Any]:
-        # sandbox snapshot: empty positions, conservative buying power
+        # sandbox snapshot: include deterministic NAV fields for execution reconcile
         snap = {
             "positions": [],
             "margin": {"initial": 0.0, "maintenance": 0.0},
             "buying_power": 0.0,
+            "net_liquidation": 100000.0,
+            "currency": "EUR",
         }
         self.audit("broker.account_snapshot", snap)
         return snap
