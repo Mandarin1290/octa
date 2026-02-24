@@ -31,7 +31,17 @@ class ArtifactMeta(BaseModel):
     meta_sha256: Optional[str] = None
 
 
-def quarantine_artifact(pkl_path: str, meta_path: str, sha_path: str, reason: str, quarantine_dir: Optional[str] = None) -> Dict[str, str]:
+def quarantine_artifact(
+    pkl_path: str,
+    meta_path: str,
+    sha_path: str,
+    reason: str,
+    quarantine_dir: Optional[str] = None,
+    *,
+    registry: Optional[Any] = None,
+    artifact_id: Optional[int] = None,
+    run_id: Optional[str] = None,
+) -> Dict[str, str]:
     p = Path(pkl_path)
     qdir = Path(quarantine_dir) if quarantine_dir else p.parent / "_quarantine" / p.stem
     ts = datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
@@ -49,6 +59,33 @@ def quarantine_artifact(pkl_path: str, meta_path: str, sha_path: str, reason: st
             fh.write(reason)
     except Exception:
         pass
+
+    # I1: update registry lifecycle status to QUARANTINED
+    if registry is not None and artifact_id is not None:
+        try:
+            registry.set_lifecycle_status(artifact_id, "QUARANTINED")
+        except Exception:
+            pass
+
+    # I1: emit governance audit event
+    if run_id is not None:
+        try:
+            from octa.core.governance.governance_audit import (
+                EVENT_GOVERNANCE_ENFORCED,
+                GovernanceAudit,
+            )
+            gov = GovernanceAudit(run_id=run_id)
+            gov.emit(
+                EVENT_GOVERNANCE_ENFORCED,
+                {
+                    "action": "artifact_quarantined",
+                    "reason": reason,
+                    "quarantine_dir": str(dest),
+                },
+            )
+        except Exception:
+            pass
+
     return {'quarantine_dir': str(dest), 'moved': moved}
 
 

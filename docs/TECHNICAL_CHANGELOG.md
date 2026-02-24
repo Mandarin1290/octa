@@ -3,6 +3,31 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-02-24 13:33:09] FEATURE
+Neue Funktionalität hinzugefügt - 5 Code-Dateien - 5 Test-Dateien - (+1305/-36 Zeilen)
+
+**Statistics:**
+- Files Changed: 11
+- Lines Added: +1305
+- Lines Deleted: -36
+- Net Change: +1269
+
+**File-Level Changes:**
+```
++    5 -    0  configs/policy.yaml
++   38 -    1  octa/core/data/storage/artifact_io.py
++  184 -    0  octa/core/governance/key_rotation.py
++   13 -    1  octa/models/approved_loader.py
++   52 -   32  octa/models/ops/promote.py
++   44 -    2  octa_ops/autopilot/registry.py
++  313 -    0  tests/test_key_rotation_schedule.py
++  139 -    0  tests/test_promote_model_atomicity.py
++  180 -    0  tests/test_quarantine_emits_governance_event.py
++  186 -    0  tests/test_registry_schema_migration.py
++  151 -    0  tests/test_sha256_mismatch_rejects_load.py
+```
+
+
 ## [2026-02-24 12:56:04] CHANGE
 Code-Änderungen - (+157/-153 Zeilen)
 

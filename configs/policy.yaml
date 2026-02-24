@@ -52,3 +52,8 @@ capabilities:
 live_arming:
   token_path: octa/var/state/live_armed.json
   ttl_seconds: 900
+
+key_rotation:
+  interval_days: 90
+  alert_days_before: 7
+  auto_resign_on_rotation: true

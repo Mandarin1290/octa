@@ -41,6 +41,8 @@ def promote_model(
     approved_root: Path = _DEFAULT_APPROVED_ROOT,
     run_id: Optional[str] = None,
     thresholds: Optional[Dict[str, Any]] = None,
+    registry: Optional[Any] = None,
+    artifact_id: Optional[int] = None,
 ) -> Dict[str, Any]:
     """Promote a candidate model to approved/.
 
@@ -61,45 +63,63 @@ def promote_model(
     dest_dir.mkdir(parents=True, exist_ok=True)
     dest_model = dest_dir / candidate_path.name
 
-    # Copy model
-    shutil.copy2(str(candidate_path), str(dest_model))
+    # Atomicity marker: set PENDING_PROMOTION before file operations
+    if registry is not None and artifact_id is not None:
+        registry.set_lifecycle_status(artifact_id, "PENDING_PROMOTION")
 
-    # Compute SHA-256
-    digest = compute_sha256(dest_model)
+    try:
+        # Copy model
+        shutil.copy2(str(candidate_path), str(dest_model))
 
-    # Sign
-    sha_path, sig_path = sign_artifact(dest_model, signing_key_path)
+        # Compute SHA-256
+        digest = compute_sha256(dest_model)
 
-    # Write manifest
-    ts = datetime.now(timezone.utc).isoformat()
-    manifest = {
-        "symbol": symbol,
-        "timeframe": timeframe,
-        "model_file": candidate_path.name,
-        "sha256": digest,
-        "promoted_at_utc": ts,
-        "source_path": str(candidate_path),
-        "thresholds": dict(thresholds or {}),
-    }
-    manifest_path = dest_dir / "manifest.json"
-    manifest_path.write_text(
-        json.dumps(manifest, indent=2, sort_keys=True, default=str),
-        encoding="utf-8",
-    )
+        # Sign
+        sha_path, sig_path = sign_artifact(dest_model, signing_key_path)
 
-    # Emit governance event
-    effective_run_id = run_id or f"promote_{symbol}_{timeframe}_{ts.replace(':', '').replace('-', '')}"
-    gov = GovernanceAudit(run_id=effective_run_id)
-    gov.emit(
-        EVENT_MODEL_PROMOTED,
-        {
+        # Write manifest
+        ts = datetime.now(timezone.utc).isoformat()
+        manifest = {
             "symbol": symbol,
             "timeframe": timeframe,
+            "model_file": candidate_path.name,
             "sha256": digest,
-            "source": str(candidate_path),
-            "dest": str(dest_model),
-        },
-    )
+            "promoted_at_utc": ts,
+            "source_path": str(candidate_path),
+            "thresholds": dict(thresholds or {}),
+        }
+        manifest_path = dest_dir / "manifest.json"
+        manifest_path.write_text(
+            json.dumps(manifest, indent=2, sort_keys=True, default=str),
+            encoding="utf-8",
+        )
+
+        # Emit governance event
+        effective_run_id = run_id or f"promote_{symbol}_{timeframe}_{ts.replace(':', '').replace('-', '')}"
+        gov = GovernanceAudit(run_id=effective_run_id)
+        gov.emit(
+            EVENT_MODEL_PROMOTED,
+            {
+                "symbol": symbol,
+                "timeframe": timeframe,
+                "sha256": digest,
+                "source": str(candidate_path),
+                "dest": str(dest_model),
+            },
+        )
+
+    except Exception:
+        # Atomicity: mark failure so recovery tools can detect inconsistency
+        if registry is not None and artifact_id is not None:
+            try:
+                registry.set_lifecycle_status(artifact_id, "PROMOTION_FAILED")
+            except Exception:
+                pass  # best-effort; do not shadow the original exception
+        raise
+
+    # Committed: update lifecycle status to PAPER
+    if registry is not None and artifact_id is not None:
+        registry.set_lifecycle_status(artifact_id, "PAPER")
 
     report = {
         "status": "promoted",

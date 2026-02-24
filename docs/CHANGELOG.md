@@ -29,6 +29,24 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `scripts/tws_e2e.sh`
 
 
+### [2026-02-24 13:33:09] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 5 Code-Dateien - 5 Test-Dateien - (+1305/-36 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 5 Dateien
+  - `octa/core/data/storage/artifact_io.py`
+  - `octa/core/governance/key_rotation.py`
+  - `octa/models/approved_loader.py`
+  - ... und 2 weitere
+- **TESTS:** 5 Dateien
+  - `tests/test_key_rotation_schedule.py`
+  - `tests/test_promote_model_atomicity.py`
+  - `tests/test_quarantine_emits_governance_event.py`
+  - ... und 2 weitere
+- **CONFIG:** 1 Dateien
+  - `configs/policy.yaml`
+
+
 ## 2026-02-23
 
 

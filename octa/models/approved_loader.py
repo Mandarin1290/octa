@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from octa.core.governance.artifact_signing import verify_artifact
+from octa.core.governance.artifact_signing import compute_sha256, verify_artifact
 
 _DEFAULT_APPROVED_ROOT = Path("octa") / "var" / "models" / "approved"
 
@@ -111,6 +111,18 @@ def load_approved_model(
             manifest=manifest,
             reason="signature_verification_failed",
         )
+
+    # I2: cross-verify manifest sha256 against actual file (belt-and-suspenders)
+    manifest_sha256 = manifest.get("sha256", "")
+    if manifest_sha256:
+        actual_sha256 = compute_sha256(model_path)
+        if actual_sha256 != manifest_sha256:
+            return ModelLoadResult(
+                ok=False,
+                model_path=model_path,
+                manifest=manifest,
+                reason="sha256_manifest_mismatch",
+            )
 
     return ModelLoadResult(
         ok=True,

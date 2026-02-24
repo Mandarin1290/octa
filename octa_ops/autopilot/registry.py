@@ -37,7 +37,9 @@ class ArtifactRegistry:
                 created_at TEXT,
                 config_sha TEXT,
                 status TEXT,
-                note TEXT
+                note TEXT,
+                training_data_hash TEXT,
+                dependency_fingerprint TEXT
             )
             """
         )
@@ -70,7 +72,13 @@ class ArtifactRegistry:
                 schema_version INTEGER,
                 created_at TEXT,
                 status TEXT,
-                meta_json TEXT
+                meta_json TEXT,
+                training_data_hash TEXT,
+                feature_code_hash TEXT,
+                hyperparam_hash TEXT,
+                dependency_fingerprint TEXT,
+                reproducibility_manifest_hash TEXT,
+                lifecycle_status TEXT DEFAULT 'RESEARCH'
             )
             """
         )
@@ -126,6 +134,32 @@ class ArtifactRegistry:
             cols = {str(r[1]) for r in cur.fetchall()}
             if "size_bytes" not in cols:
                 cur.execute("ALTER TABLE artifacts ADD COLUMN size_bytes INTEGER")
+            # I1 institutional upgrade: reproducibility + lifecycle columns
+            _new_artifact_cols = {
+                "training_data_hash": "TEXT",
+                "feature_code_hash": "TEXT",
+                "hyperparam_hash": "TEXT",
+                "dependency_fingerprint": "TEXT",
+                "reproducibility_manifest_hash": "TEXT",
+                "lifecycle_status": "TEXT DEFAULT 'RESEARCH'",
+            }
+            for _col, _col_type in _new_artifact_cols.items():
+                if _col not in cols:
+                    cur.execute(f"ALTER TABLE artifacts ADD COLUMN {_col} {_col_type}")
+        except Exception:
+            pass
+
+        try:
+            cur.execute("PRAGMA table_info(runs)")
+            run_cols = {str(r[1]) for r in cur.fetchall()}
+            # I1 institutional upgrade: reproducibility columns on runs
+            _new_run_cols = {
+                "training_data_hash": "TEXT",
+                "dependency_fingerprint": "TEXT",
+            }
+            for _col, _col_type in _new_run_cols.items():
+                if _col not in run_cols:
+                    cur.execute(f"ALTER TABLE runs ADD COLUMN {_col} {_col_type}")
         except Exception:
             pass
 
@@ -277,3 +311,11 @@ class ArtifactRegistry:
     def set_order_status(self, order_key: str, status: str) -> None:
         cur = self._conn.cursor()
         cur.execute("UPDATE orders SET status=? WHERE order_key=?", (str(status), str(order_key)))
+
+    def set_lifecycle_status(self, artifact_id: int, lifecycle_status: str) -> None:
+        """Update the lifecycle_status of an artifact (I1: RESEARCH→SHADOW→PAPER→LIVE→RETIRED|QUARANTINED)."""
+        cur = self._conn.cursor()
+        cur.execute(
+            "UPDATE artifacts SET lifecycle_status=? WHERE id=?",
+            (str(lifecycle_status), int(artifact_id)),
+        )
