@@ -21,6 +21,14 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - ... und 2 weitere
 
 
+### [2026-02-24 12:56:04] CHANGE
+**Beschreibung:** Code-Änderungen - (+157/-153 Zeilen)
+
+**Geänderte Dateien:**
+- **SCRIPTS:** 1 Dateien
+  - `scripts/tws_e2e.sh`
+
+
 ## 2026-02-23
 
 
