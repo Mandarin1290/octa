@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -31,6 +32,59 @@ def _write_json(path: Path, obj: Any) -> None:
     path.write_text(json.dumps(obj, indent=2, sort_keys=True, default=str), encoding="utf-8")
 
 
+def _canonical_json_bytes(obj: Dict[str, Any]) -> bytes:
+    return json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=True, default=str).encode("utf-8")
+
+
+def _persist_nav_snapshot(*, state_dir: Path, evidence_dir: Path, payload: Dict[str, Any]) -> Dict[str, Any]:
+    snapshot = dict(payload)
+    snapshot["hash"] = hashlib.sha256(_canonical_json_bytes(snapshot)).hexdigest()
+    _write_json(state_dir / "nav_snapshot.json", snapshot)
+    _write_json(evidence_dir / "nav_snapshot.json", snapshot)
+    return snapshot
+
+
+def _extract_nav(snapshot: Dict[str, Any]) -> tuple[float | None, str]:
+    nav_keys = (
+        "net_liquidation",
+        "netLiquidation",
+        "nav",
+        "equity",
+        "account_equity",
+        "total_equity",
+        "totalEquity",
+    )
+    for key in nav_keys:
+        if key in snapshot:
+            try:
+                return float(snapshot.get(key)), key
+            except Exception:
+                return None, key
+    return None, ""
+
+
+def _detect_drift_breaches(drift_registry_dir: Path) -> List[Dict[str, Any]]:
+    if not drift_registry_dir.exists():
+        return []
+    breaches: List[Dict[str, Any]] = []
+    for path in sorted(drift_registry_dir.glob("*.json")):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if bool(payload.get("disabled", False)):
+            breaches.append(
+                {
+                    "model_key": path.stem,
+                    "path": str(path),
+                    "reason": str(payload.get("reason", "drift_breach")),
+                    "streak": payload.get("streak"),
+                    "updated_at": payload.get("updated_at"),
+                }
+            )
+    return breaches
+
+
 @dataclass(frozen=True)
 class ExecutionConfig:
     mode: str = "dry-run"
@@ -49,6 +103,8 @@ class ExecutionConfig:
     carry_rates_path: Path = Path("octa") / "var" / "config" / "carry_rates.json"
     enable_carry_live: bool = False
     i_understand_carry_risk: bool = False
+    state_dir: Path = Path("octa") / "var" / "state"
+    drift_registry_dir: Path = Path("octa") / "var" / "registry" / "models" / "drift"
 
 
 def _ml_multiplier(level: int) -> float:
@@ -103,6 +159,105 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
         )
     )
 
+    mode_norm = str(cfg.mode).strip().lower()
+    mode_label = "shadow" if mode_norm in {"dry-run", "shadow"} else mode_norm
+    fallback_nav = 100000.0
+    nav = fallback_nav
+    nav_source = "fallback"
+    nav_currency = "UNKNOWN"
+    nav_snapshot_raw: Dict[str, Any] = {}
+    nav_key = ""
+    nav_error = ""
+
+    try:
+        nav_snapshot_raw = dict(broker.account_snapshot() or {})
+        nav_currency = str(nav_snapshot_raw.get("currency", nav_snapshot_raw.get("base_currency", "UNKNOWN")))
+        nav_candidate, nav_key = _extract_nav(nav_snapshot_raw)
+    except Exception as exc:
+        nav_candidate = None
+        nav_error = f"{type(exc).__name__}: {exc}"
+
+    if mode_norm in {"paper", "live"}:
+        if nav_candidate is None or nav_candidate <= 0:
+            incident = {
+                "timestamp_utc": _utc_now_iso(),
+                "mode": mode_label,
+                "reason": "NAV_RECONCILE_FAILED",
+                "nav_candidate": nav_candidate,
+                "nav_key": nav_key,
+                "error": nav_error,
+                "snapshot_keys": sorted(nav_snapshot_raw.keys()),
+            }
+            _write_json(cfg.evidence_dir / "nav_reconcile_failed.json", incident)
+            _persist_nav_snapshot(
+                state_dir=cfg.state_dir,
+                evidence_dir=cfg.evidence_dir,
+                payload={
+                    "as_of": _utc_now_iso(),
+                    "mode": mode_label,
+                    "nav": float(fallback_nav),
+                    "currency": nav_currency,
+                    "source": "fallback",
+                    "broker_details": {
+                        "reason": "nav_reconcile_failed",
+                        "snapshot_keys": sorted(nav_snapshot_raw.keys()),
+                    },
+                },
+            )
+            raise RuntimeError("NAV_RECONCILE_FAILED")
+        nav = float(nav_candidate)
+        nav_source = "broker"
+    else:
+        if nav_candidate is not None and nav_candidate > 0:
+            nav = float(nav_candidate)
+            nav_source = "broker"
+        else:
+            notifier.emit(
+                "nav_reconcile_warning",
+                {
+                    "mode": mode_label,
+                    "reason": "broker_nav_unavailable_fallback",
+                    "nav_fallback": float(fallback_nav),
+                    "snapshot_keys": sorted(nav_snapshot_raw.keys()),
+                },
+            )
+
+    _persist_nav_snapshot(
+        state_dir=cfg.state_dir,
+        evidence_dir=cfg.evidence_dir,
+        payload={
+            "as_of": _utc_now_iso(),
+            "mode": mode_label,
+            "nav": float(nav),
+            "currency": nav_currency,
+            "source": nav_source,
+            "broker_details": {
+                "nav_key": nav_key,
+                "snapshot_keys": sorted(nav_snapshot_raw.keys()),
+            },
+        },
+    )
+
+    drift_breaches = _detect_drift_breaches(cfg.drift_registry_dir)
+    if drift_breaches:
+        incident = {
+            "timestamp_utc": _utc_now_iso(),
+            "mode": mode_label,
+            "reason": "DRIFT_BREACH_BLOCK",
+            "breaches": drift_breaches,
+        }
+        _write_json(cfg.evidence_dir / "drift_breach_block.json", incident)
+        if mode_norm in {"paper", "live"}:
+            raise RuntimeError("DRIFT_BREACH_BLOCK")
+        notifier.emit(
+            "drift_breach_warning",
+            {
+                "mode": mode_label,
+                "reason": "drift_breach_shadow_continue",
+                "breach_count": len(drift_breaches),
+            },
+        )
+
     cycle_count = max(1, int(cfg.max_cycles) if cfg.loop else 1)
     notifier.emit(
         "execution_start",
@@ -120,11 +275,72 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
     state: Dict[str, Any] = {"last_rebalance_ts": None}
     last_scaling: Dict[str, int] = {}
 
-    nav = 100000.0
     ml_current_gross = 0.0
     carry_current_gross = 0.0
     carry_current_net = 0.0
     leverage = 1.0
+    preflight_positions: Dict[str, float] = {}
+    last_preflight_result = None
+
+    def _enforce_portfolio_preflight(*, cycle: int, strategy: str, symbol: str, qty: float) -> bool:
+        nonlocal preflight_positions, last_preflight_result
+        projected_positions = dict(preflight_positions)
+        projected_positions[symbol] = projected_positions.get(symbol, 0.0) + float(qty)
+        preflight_result = run_preflight(
+            positions=projected_positions,
+            nav=nav,
+            returns_by_symbol={},
+        )
+        last_preflight_result = preflight_result
+        gov_audit.emit(
+            EVENT_PORTFOLIO_PREFLIGHT,
+            {
+                "ok": preflight_result.ok,
+                "reason": preflight_result.reason,
+                "checks": preflight_result.checks,
+            },
+        )
+        _write_json(
+            cfg.evidence_dir / "portfolio_preflight.json",
+            {
+                "ok": preflight_result.ok,
+                "reason": preflight_result.reason,
+                "blocked_symbols": preflight_result.blocked_symbols,
+                "checks": preflight_result.checks,
+            },
+        )
+        if not preflight_result.ok:
+            incident = {
+                "timestamp_utc": _utc_now_iso(),
+                "cycle": cycle,
+                "strategy": strategy,
+                "symbol": symbol,
+                "qty": float(qty),
+                "reason": preflight_result.reason,
+                "checks": preflight_result.checks,
+                "blocked_symbols": preflight_result.blocked_symbols,
+            }
+            _write_json(cfg.evidence_dir / "preflight_block.json", incident)
+            blocks.append(
+                {
+                    "cycle": cycle,
+                    "strategy": strategy,
+                    "symbol": symbol,
+                    "reason": f"portfolio_preflight={preflight_result.reason}",
+                }
+            )
+            notifier.emit(
+                "risk_block",
+                {
+                    "strategy": strategy,
+                    "instrument": symbol,
+                    "reason": f"portfolio_preflight={preflight_result.reason}",
+                    "incident": incident,
+                },
+            )
+            return False
+        preflight_positions = projected_positions
+        return True
 
     for cycle_idx in range(1, cycle_count + 1):
         cycle_dir = run_log_dir / f"cycle_{cycle_idx:03d}"
@@ -208,6 +424,8 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
                 "side": side,
                 "order_type": "MKT",
             }
+            if not _enforce_portfolio_preflight(cycle=cycle_idx, strategy="ml", symbol=symbol, qty=qty):
+                continue
             result = broker.place_order(strategy="ml", order=order)
             ml_orders.append(
                 {
@@ -342,6 +560,13 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
                         "side": side,
                         "order_type": "MKT",
                     }
+                    if not _enforce_portfolio_preflight(
+                        cycle=cycle_idx,
+                        strategy="carry",
+                        symbol=str(intent.instrument),
+                        qty=qty,
+                    ):
+                        continue
                     result = broker.place_order(strategy="carry", order=order)
                     carry_orders.append(
                         {
@@ -397,11 +622,7 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
             time.sleep(max(0, int(cfg.cycle_seconds)))
 
     # --- Portfolio preflight overlay ---
-    preflight_positions: Dict[str, float] = {}
-    for order in ml_orders:
-        sym = str(order.get("symbol", ""))
-        preflight_positions[sym] = preflight_positions.get(sym, 0.0) + float(order.get("qty", 0.0))
-    preflight_result = run_preflight(
+    preflight_result = last_preflight_result or run_preflight(
         positions=preflight_positions,
         nav=nav,
         returns_by_symbol={},
