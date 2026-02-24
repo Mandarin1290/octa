@@ -13,7 +13,8 @@ class _Cfg:
         return _Cfg(self.paths.pkl_dir, self.paths.state_dir)
 
 
-def test_downstream_runs_when_upstream_performance_fails_but_structural_pass(monkeypatch, tmp_path):
+def test_performance_fail_blocks_downstream(monkeypatch, tmp_path):
+    """I1: Performance gate fail (GATE_FAIL) must block cascade — 1H must be SKIP."""
     calls: list[str] = []
 
     monkeypatch.setattr(ct, "load_config", lambda _p: _Cfg(str(tmp_path / "pkl"), str(tmp_path / "state")))
@@ -23,17 +24,10 @@ def test_downstream_runs_when_upstream_performance_fails_but_structural_pass(mon
     def _fake_train(**kwargs):
         tf = str(kwargs["cfg"].paths.pkl_dir).split("/")[-1]
         calls.append(tf)
-        if tf == "1D":
-            return SimpleNamespace(
-                passed=False,
-                gate_result=SimpleNamespace(model_dump=lambda: {"reasons": ["sharpe_below_min"]}),
-                metrics=SimpleNamespace(model_dump=lambda: {}),
-                pack_result={},
-                error="",
-            )
+        # 1D performance gate fails (sharpe too low) — not a structural/data failure
         return SimpleNamespace(
-            passed=True,
-            gate_result=SimpleNamespace(model_dump=lambda: {"reasons": []}),
+            passed=False,
+            gate_result=SimpleNamespace(model_dump=lambda: {"reasons": ["sharpe_below_min"]}),
             metrics=SimpleNamespace(model_dump=lambda: {}),
             pack_result={},
             error="",
@@ -52,12 +46,14 @@ def test_downstream_runs_when_upstream_performance_fails_but_structural_pass(mon
         reports_dir=str(tmp_path),
     )
 
-    assert calls == ["1D", "1H"]
+    # I1: only 1D is trained; 1H is SKIP because 1D's performance_pass=False
+    assert calls == ["1D"]
     d1 = next(d for d in decisions if d.timeframe == "1D")
     d2 = next(d for d in decisions if d.timeframe == "1H")
-    assert d1.details["structural_pass"] is True
+    assert d1.status == "GATE_FAIL"
     assert d1.details["performance_pass"] is False
-    assert d2.status == "PASS"
+    assert d2.status == "SKIP"
+    assert "cascade_previous_stage_not_passed" in str(d2.reason)
 
 
 def test_downstream_skips_when_upstream_structural_fails(monkeypatch, tmp_path):
@@ -94,4 +90,4 @@ def test_downstream_skips_when_upstream_structural_fails(monkeypatch, tmp_path):
     d2 = next(d for d in decisions if d.timeframe == "1H")
     assert d1.details["structural_pass"] is False
     assert d2.status == "SKIP"
-    assert d2.reason == "cascade_previous_not_structural_pass"
+    assert d2.reason == "cascade_previous_stage_not_passed"

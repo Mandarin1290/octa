@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -20,19 +20,42 @@ def assert_no_overlap(train_idx: np.ndarray, val_idx: np.ndarray) -> bool:
     return True
 
 
-def walk_forward_splits(index: pd.Index, n_folds: int, train_window: int, test_window: int, step: int = 1, purge_size: int = 0, embargo_size: int = 0, min_train_size: int = 1, min_test_size: int = 1, expanding: bool = True, min_folds_required: int = 1) -> List[SplitFold]:
+def walk_forward_splits(
+    index: pd.Index,
+    n_folds: int,
+    train_window: int,
+    test_window: int,
+    step: int = 1,
+    purge_size: int = 0,
+    embargo_size: int = 0,
+    min_train_size: int = 1,
+    min_test_size: int = 1,
+    expanding: bool = True,
+    min_folds_required: int = 1,
+    roll_embargo_indices: Optional[np.ndarray] = None,
+    roll_embargo_bars: int = 5,
+) -> List[SplitFold]:
     """
     Generate deterministic walk-forward splits by bar counts.
 
     index: pandas Index (DatetimeIndex or otherwise)
     train_window/test_window/step/purge/embargo are in bars (integers)
     expanding: if True, train start fixed at 0 and train end expands; otherwise rolling window of train_window length
+    roll_embargo_indices: optional array of bar positions where futures roll events occurred.
+        When provided (I6), train bars within roll_embargo_bars of a roll event are purged.
+        Any fold whose val set contains a roll-event bar is dropped entirely.
+    roll_embargo_bars: half-window around roll events to purge from training (default 5 bars).
     Returns list of SplitFold; may skip folds not meeting min sizes.
     If effective folds < min_folds_required -> raise Exception.
     """
     n = len(index)
     if n == 0:
         return []
+
+    # Normalise roll embargo indices for fast lookups
+    roll_set: Optional[np.ndarray] = None
+    if roll_embargo_indices is not None and len(roll_embargo_indices) > 0:
+        roll_set = np.asarray(roll_embargo_indices, dtype=np.intp)
 
     folds: List[SplitFold] = []
     # compute test start positions: start at initial_train_end + 1
@@ -60,6 +83,11 @@ def walk_forward_splits(index: pd.Index, n_folds: int, train_window: int, test_w
         train_idx = np.arange(train_start, train_end + 1)
         val_idx = np.arange(test_start, test_end + 1)
 
+        # I6: Roll embargo — drop fold if val set contains a roll-event bar
+        if roll_set is not None:
+            if np.intersect1d(val_idx, roll_set).size > 0:
+                continue  # fold contaminated by roll in val window — skip entirely
+
         # Purge: remove from train any indices within purge_size before test_start
         if purge_size > 0:
             purge_from = max(train_start, test_start - purge_size)
@@ -73,6 +101,14 @@ def walk_forward_splits(index: pd.Index, n_folds: int, train_window: int, test_w
             mask = ~((train_idx >= embargo_from) & (train_idx <= embargo_to))
             train_idx = train_idx[mask]
 
+        # I6: Roll embargo — purge train bars within roll_embargo_bars of any roll event
+        if roll_set is not None and roll_embargo_bars > 0:
+            keep_mask = np.ones(train_idx.size, dtype=bool)
+            for re_pos in roll_set:
+                near_roll = (train_idx >= int(re_pos) - roll_embargo_bars) & (train_idx <= int(re_pos) + roll_embargo_bars)
+                keep_mask &= ~near_roll
+            train_idx = train_idx[keep_mask]
+
         # Validate sizes
         if train_idx.size < min_train_size or val_idx.size < min_test_size:
             # skip this fold
@@ -81,7 +117,7 @@ def walk_forward_splits(index: pd.Index, n_folds: int, train_window: int, test_w
         # Ensure determinism and no overlap
         assert_no_overlap(train_idx, val_idx)
 
-        fold_meta = {
+        fold_meta: Dict[str, Any] = {
             "train_range": (int(train_idx[0]) if train_idx.size else None, int(train_idx[-1]) if train_idx.size else None),
             "val_range": (int(val_idx[0]), int(val_idx[-1])),
             "train_size": int(train_idx.size),
@@ -91,6 +127,9 @@ def walk_forward_splits(index: pd.Index, n_folds: int, train_window: int, test_w
             "train_start_pos": int(train_start),
             "train_end_pos": int(train_end),
         }
+        if roll_set is not None:
+            fold_meta["roll_embargo_applied"] = True
+            fold_meta["roll_embargo_bars"] = int(roll_embargo_bars)
         folds.append(SplitFold(train_idx=train_idx, val_idx=val_idx, fold_meta=fold_meta))
         if n_folds > 0 and len(folds) >= n_folds:
             break

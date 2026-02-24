@@ -520,9 +520,11 @@ class TestCascadeDependencyCheck:
         )
         assert decisions[0].status == "PASS"
 
-    def test_option_underlying_none_backward_compat(
+    def test_option_underlying_none_is_fail_closed(
         self, tmp_path: Path, monkeypatch: Any
     ) -> None:
+        """I7: underlying_performance_pass=None (default) must be SKIP (fail-closed).
+        Options cannot train without an explicit True from the caller."""
         _setup_cascade_mocks(monkeypatch, tmp_path)
         decisions, _ = run_cascade_training(
             run_id="e_none",
@@ -533,9 +535,10 @@ class TestCascadeDependencyCheck:
             cascade=CascadePolicy(order=["30M"]),
             safe_mode=True,
             reports_dir=str(tmp_path),
-            # underlying_performance_pass not passed → defaults to None
+            # underlying_performance_pass not passed → defaults to None → SKIP (fail-closed)
         )
-        assert decisions[0].status == "PASS"
+        assert decisions[0].status == "SKIP"
+        assert decisions[0].reason == "underlying_cascade_pass_not_provided"
 
     def test_non_option_ignores_underlying_param(
         self, tmp_path: Path, monkeypatch: Any

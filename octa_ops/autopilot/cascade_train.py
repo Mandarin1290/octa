@@ -157,13 +157,14 @@ def _walkforward_eligibility(*, parquet_path: str, cfg: Any, asset_class: str = 
             "data_health": data_health_stats,
         }
     if available_bars is None:
+        # I3: row-count unknown → FAIL-CLOSED (cannot validate data availability)
         return {
-            "eligible": True,
-            "reason": None,
+            "eligible": False,
+            "reason": "ROWCOUNT_UNKNOWN",
             "available_bars": None,
             "required_bars": int(resolved["required_bars_fallback"]),
             "resolver": resolved,
-            "proof": "parquet_row_count_unavailable",
+            "proof": "parquet_row_count_unavailable_fail_closed",
         }
     required = int(resolved["required_bars_fallback"])
     eligible = int(available_bars) >= required
@@ -244,25 +245,54 @@ def run_cascade_training(
 
     underlying_performance_pass:
         For asset_class="option" symbols, the caller must set this to
-        True/False to indicate whether the base asset's 1D stage passed.
-        When False, all cascade stages are immediately skipped with
-        reason="underlying_cascade_not_passed" (spec §3.1 hard requirement).
-        When None (default), the check is skipped (backward compatible).
+        True to indicate whether the base asset's 1D stage passed.
+        When False or None, all cascade stages are immediately skipped
+        (I7: options must be SKIP unless underlying_cascade_passed is True).
+        None (default) is now FAIL-CLOSED: options cannot train without an
+        explicit underlying_performance_pass=True from the caller.
     """
-    # --- Options base-asset cascade dependency check (spec §3.1) ---
-    if str(asset_class).lower() in {"option", "options"} and underlying_performance_pass is False:
+    ac_lower = str(asset_class).lower()
+
+    # --- I4: Unknown asset class is FAIL-CLOSED ---
+    if ac_lower in {"unknown", ""}:
         normalized_order = [normalize_timeframe(t) for t in cascade.order]
+        fail_decisions = [
+            GateDecision(
+                symbol=symbol,
+                timeframe=tf,
+                stage="train",
+                status="GATE_FAIL",
+                reason="UNKNOWN_ASSET_CLASS",
+                details={
+                    "structural_pass": False,
+                    "performance_pass": False,
+                    "asset_class": str(asset_class),
+                },
+            )
+            for tf in normalized_order
+        ]
+        return fail_decisions, {}
+
+    # --- I7: Options base-asset cascade dependency check (spec §3.1) ---
+    # underlying_performance_pass must be explicitly True; False or None → SKIP
+    if ac_lower in {"option", "options"} and underlying_performance_pass is not True:
+        normalized_order = [normalize_timeframe(t) for t in cascade.order]
+        skip_reason = (
+            "underlying_cascade_not_passed"
+            if underlying_performance_pass is False
+            else "underlying_cascade_pass_not_provided"
+        )
         skip_decisions = [
             GateDecision(
                 symbol=symbol,
                 timeframe=tf,
                 stage="train",
                 status="SKIP",
-                reason="underlying_cascade_not_passed",
+                reason=skip_reason,
                 details={
                     "structural_pass": False,
                     "performance_pass": False,
-                    "underlying_performance_pass": False,
+                    "underlying_performance_pass": underlying_performance_pass,
                 },
             )
             for tf in normalized_order
@@ -299,7 +329,9 @@ def run_cascade_training(
     decisions: List[GateDecision] = []
     metrics_by_tf: Dict[str, Any] = {}
 
-    prev_structural_pass = True
+    # I1: prev_stage_pass tracks whether the previous stage's performance gate passed.
+    # Only a genuine PASS (performance_pass=True) authorises promotion to the next TF.
+    prev_stage_pass = True
     normalized_order = [normalize_timeframe(t) for t in cascade.order]
     for idx, tf in enumerate(normalized_order):
         stage_timer = time.monotonic()
@@ -337,7 +369,8 @@ def run_cascade_training(
 
         pq = _find_parquet_for_tf(parquet_paths, tf)
         upstream_tf = normalized_order[idx - 1] if idx > 0 else None
-        if not prev_structural_pass:
+        # I1: only a genuine performance PASS on the previous stage authorises promotion
+        if not prev_stage_pass:
             upstream_decision = None
             for dd in reversed(decisions):
                 if dd.symbol == symbol and dd.stage == "train":
@@ -346,7 +379,7 @@ def run_cascade_training(
             upstream_metrics = metrics_by_tf.get(upstream_tf) if upstream_tf else None
             upstream_structural_pass = None
             upstream_performance_pass = None
-            if isinstance(upstream_decision.details, dict):
+            if upstream_decision is not None and isinstance(upstream_decision.details, dict):
                 upstream_structural_pass = upstream_decision.details.get("structural_pass")
                 upstream_performance_pass = upstream_decision.details.get("performance_pass")
             details = {
@@ -366,7 +399,7 @@ def run_cascade_training(
                     timeframe=tf,
                     stage="train",
                     status="SKIP",
-                    reason="cascade_previous_not_structural_pass",
+                    reason="cascade_previous_stage_not_passed",
                     details=details,
                 )
             )
@@ -382,7 +415,7 @@ def run_cascade_training(
                     details={"structural_pass": False, "performance_pass": False},
                 )
             )
-            prev_structural_pass = False
+            prev_stage_pass = False
             continue
         wf_elig = _walkforward_eligibility(parquet_path=str(pq), cfg=cfg_layer, asset_class=asset_class)
         durations[f"{tf}.walkforward_eligibility"] = float(time.monotonic() - stage_timer)
@@ -427,7 +460,7 @@ def run_cascade_training(
                     details={**wf_elig, "structural_pass": False, "performance_pass": False},
                 )
             )
-            prev_structural_pass = False
+            prev_stage_pass = False
             continue
 
         try:
@@ -608,7 +641,8 @@ def run_cascade_training(
             )
             metrics_by_tf[tf]["structural_pass"] = bool(structural_pass)
             metrics_by_tf[tf]["performance_pass"] = bool(performance_pass)
-            prev_structural_pass = bool(structural_pass)
+            # I1: only a real performance PASS advances the cascade
+            prev_stage_pass = bool(performance_pass)
         except Exception as e:
             _trace_write_json(
                 trace_dir,
@@ -630,7 +664,7 @@ def run_cascade_training(
                     details={"error": str(e), "structural_pass": False, "performance_pass": False},
                 )
             )
-            prev_structural_pass = False
+            prev_stage_pass = False
         finally:
             if cfg_layer is cfg and orig_pkl_dir is not None:
                 try:

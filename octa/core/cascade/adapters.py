@@ -108,11 +108,14 @@ class SafeNoopGate(GateInterface):
 
     def evaluate(self, symbols: Sequence[str]) -> GateOutcome:
         logger.info("cascade_gate_noop", extra={"gate": self.name, "count": len(symbols)})
+        # I2: is_noop=True marks this as a non-signal-bearing PASS; promotion logic
+        # must not count this as a genuine gate evaluation result.
         return GateOutcome(
             decision=GateDecision.PASS,
             eligible_symbols=list(symbols),
             rejected_symbols=[],
             artifacts={"status": "NOT_IMPLEMENTED"},
+            is_noop=True,
         )
 
     def filter_universe(self, symbols: Sequence[str]) -> Sequence[str]:

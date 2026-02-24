@@ -24,6 +24,8 @@ def test_autopilot_cascade_stages_pkl_per_timeframe(tmp_path, monkeypatch):
 
     monkeypatch.setattr(ct, "load_config", lambda _p: Cfg())
     monkeypatch.setattr(ct, "StateRegistry", lambda _p: object())
+    # I3: mock walkforward eligibility so non-existent parquet stubs don't trigger ROWCOUNT_UNKNOWN
+    monkeypatch.setattr(ct, "_walkforward_eligibility", lambda **_kw: {"eligible": True})
 
     seen = []
 
@@ -85,6 +87,8 @@ def test_autopilot_cascade_gate_fail_not_train_error(tmp_path, monkeypatch):
 
     monkeypatch.setattr(ct, "load_config", lambda _p: Cfg())
     monkeypatch.setattr(ct, "StateRegistry", lambda _p: object())
+    # I3: mock walkforward eligibility so non-existent parquet stubs don't trigger ROWCOUNT_UNKNOWN
+    monkeypatch.setattr(ct, "_walkforward_eligibility", lambda **_kw: {"eligible": True})
 
     def _fake_train_evaluate_package(**kwargs):
         return types.SimpleNamespace(

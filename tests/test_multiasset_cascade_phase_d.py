@@ -224,18 +224,17 @@ class TestCascadeIntegration:
         assert decisions[0].status == "TRAIN_ERROR"
         assert decisions[0].details["structural_pass"] is False
         assert decisions[1].status == "SKIP"
-        assert decisions[1].reason == "cascade_previous_not_structural_pass"
+        assert decisions[1].reason == "cascade_previous_stage_not_passed"
 
-    def test_performance_fail_does_not_block_downstream(self, tmp_path: Path, monkeypatch: Any) -> None:
-        """1D gate fail (non-structural, e.g. sharpe low) → 1H still runs."""
+    def test_performance_fail_blocks_downstream(self, tmp_path: Path, monkeypatch: Any) -> None:
+        """I1: 1D gate fail (performance, e.g. sharpe low) → 1H must be SKIP.
+        Only genuine PASS advances the cascade."""
         call_count = {"n": 0}
 
         def _fake_train(**_kw: Any) -> types.SimpleNamespace:
             call_count["n"] += 1
-            # 1D fails performance (non-structural), 1H passes
-            if call_count["n"] == 1:
-                return _make_train_result(passed=False, gate_reasons=["sharpe_too_low"])
-            return _make_train_result(passed=True)
+            # 1D fails performance gate
+            return _make_train_result(passed=False, gate_reasons=["sharpe_too_low"])
 
         cfg = _FakeCfg(tmp_path)
         monkeypatch.setattr(ct, "load_config", lambda _p, **_kw: cfg)
@@ -257,11 +256,11 @@ class TestCascadeIntegration:
         )
         assert len(decisions) == 2
         assert decisions[0].status == "GATE_FAIL"
-        assert decisions[0].details["structural_pass"] is True  # performance fail only
         assert decisions[0].details["performance_pass"] is False
-        # 1H was NOT skipped
-        assert decisions[1].status == "PASS"
-        assert call_count["n"] == 2  # both stages called
+        # I1: 1H must be SKIP because 1D performance_pass=False
+        assert decisions[1].status == "SKIP"
+        assert "cascade_previous_stage_not_passed" in str(decisions[1].reason)
+        assert call_count["n"] == 1  # only 1D trained
 
     def test_pkl_dir_scoped_per_asset_class_and_tf(self, tmp_path: Path, monkeypatch: Any) -> None:
         """Model pkl_dir follows <root>/<asset_class>/<tf>/ pattern."""
@@ -309,7 +308,7 @@ class TestCascadeIntegration:
         )
         # 1D has parquet but it's in eligibility mock (True), will try to train
         # 1H has no parquet → SKIP
-        assert decisions[-1].reason in {"missing_parquet", "cascade_previous_not_structural_pass"}
+        assert decisions[-1].reason in {"missing_parquet", "cascade_previous_stage_not_passed"}
 
 
 # ---------------------------------------------------------------------------

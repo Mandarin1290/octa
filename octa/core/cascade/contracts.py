@@ -16,6 +16,9 @@ class GateOutcome:
     eligible_symbols: list[str] = field(default_factory=list)
     rejected_symbols: list[str] = field(default_factory=list)
     artifacts: Mapping[str, Any] = field(default_factory=dict)
+    # I2: is_noop=True marks outcomes from SafeNoopGate; consumers must not treat these
+    # as signal-bearing PASSes for promotion purposes.
+    is_noop: bool = False
 
 
 @runtime_checkable
