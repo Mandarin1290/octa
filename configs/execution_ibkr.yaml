@@ -48,3 +48,24 @@ launch:
         OCTA_IBKR_PORT: "7497"
     - provider: systemd-user
       unit: octa-ibkr.service
+pre_execution:
+  enabled: true
+  tws_e2e_script: "scripts/tws_e2e.sh"
+  tws_e2e_env_passthrough: true
+  tws_e2e_timeout_sec: 600
+  port_check:
+    host: "127.0.0.1"
+    port: 7497
+    timeout_sec: 2
+    retries: 60
+    backoff_sec: 1
+  handshake:
+    enabled: true
+    mode: "read_only"
+    connect_timeout_sec: 5
+    wait_for: ["nextValidId", "currentTime"]
+    overall_timeout_sec: 15
+  telegram:
+    enabled: true
+    on_ready_message: "TWS bereit ✅"
+    on_fail_message: "TWS Pre-Execution FAIL ❌: {reason}"

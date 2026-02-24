@@ -29,6 +29,9 @@ def main() -> int:
     p.add_argument("--carry-rates", default="octa/var/config/carry_rates.json")
     p.add_argument("--enable-carry-live", action="store_true", default=False)
     p.add_argument("--i-understand-carry-risk", action="store_true", default=False)
+    p.add_argument("--broker-cfg", default=None, help="IBKR broker config YAML for pre-execution gate")
+    p.add_argument("--pre-execution", action="store_true", default=None, help="Force-enable pre-execution gate")
+    p.add_argument("--no-pre-execution", action="store_false", dest="pre_execution", help="Force-disable pre-execution gate")
     args = p.parse_args()
 
     run_id = str(args.run_id).strip() if args.run_id else _default_run_id()
@@ -50,6 +53,8 @@ def main() -> int:
         carry_rates_path=Path(args.carry_rates),
         enable_carry_live=bool(args.enable_carry_live),
         i_understand_carry_risk=bool(args.i_understand_carry_risk),
+        broker_cfg_path=Path(args.broker_cfg) if args.broker_cfg else None,
+        pre_execution_enabled=args.pre_execution,
     )
     summary = run_execution(cfg)
     print(json.dumps(summary, sort_keys=True))

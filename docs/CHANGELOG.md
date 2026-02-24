@@ -79,6 +79,21 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `scripts/octa_autopilot.py`
 
 
+### [2026-02-24 20:41:38] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 6 Code-Dateien - 1 Test-Dateien - (+905/-8 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 6 Dateien
+  - `octa/core/governance/drift_monitor.py`
+  - `octa/execution/cli/run_execution.py`
+  - `octa/execution/cli/run_pre_execution.py`
+  - ... und 3 weitere
+- **TESTS:** 1 Dateien
+  - `tests/test_pre_execution.py`
+- **CONFIG:** 1 Dateien
+  - `configs/execution_ibkr.yaml`
+
+
 ## 2026-02-23
 
 

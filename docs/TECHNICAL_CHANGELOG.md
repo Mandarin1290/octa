@@ -3,6 +3,28 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-02-24 20:41:38] FEATURE
+Neue Funktionalität hinzugefügt - 6 Code-Dateien - 1 Test-Dateien - (+905/-8 Zeilen)
+
+**Statistics:**
+- Files Changed: 8
+- Lines Added: +905
+- Lines Deleted: -8
+- Net Change: +897
+
+**File-Level Changes:**
+```
++   21 -    0  configs/execution_ibkr.yaml
++   29 -    5  octa/core/governance/drift_monitor.py
++    5 -    0  octa/execution/cli/run_execution.py
++   55 -    0  octa/execution/cli/run_pre_execution.py
++  396 -    0  octa/execution/pre_execution.py
++   36 -    1  octa/execution/runner.py
++   49 -    2  octa/os/os_brain.py
++  314 -    0  tests/test_pre_execution.py
+```
+
+
 ## [2026-02-24 19:56:17] FEATURE
 Neue Funktionalität hinzugefügt - 6 Code-Dateien - 4 Test-Dateien - (+2834/-14 Zeilen)
 

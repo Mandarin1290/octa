@@ -19,6 +19,7 @@ from .broker_router import BrokerRouter, BrokerRouterConfig
 from .carry import generate_carry_intents, load_json_file, resolve_carry_rates
 from .evidence_selection import build_ml_selection
 from .notifier import ExecutionNotifier
+from .pre_execution import PreExecutionError, load_pre_execution_settings, run_pre_execution_gate
 from .risk_fail_closed import incident_to_dict, safe_decide
 from .risk_engine import RiskDecision, RiskEngine, RiskEngineConfig
 
@@ -105,6 +106,8 @@ class ExecutionConfig:
     i_understand_carry_risk: bool = False
     state_dir: Path = Path("octa") / "var" / "state"
     drift_registry_dir: Path = Path("octa") / "var" / "registry" / "models" / "drift"
+    broker_cfg_path: Optional[Path] = None
+    pre_execution_enabled: Optional[bool] = None
 
 
 def _ml_multiplier(level: int) -> float:
@@ -126,6 +129,39 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
     run_log_dir = cfg.evidence_dir
     notifier = ExecutionNotifier(cfg.evidence_dir)
     risk_engine = RiskEngine(RiskEngineConfig())
+    mode_norm = str(cfg.mode).strip().lower()
+    pre_exec_cfg_path = cfg.broker_cfg_path if cfg.broker_cfg_path is not None else None
+    if pre_exec_cfg_path is not None:
+        try:
+            pre_settings = load_pre_execution_settings(Path(pre_exec_cfg_path), mode=cfg.mode)
+            if cfg.pre_execution_enabled is not None:
+                pre_settings = type(pre_settings)(
+                    enabled=bool(cfg.pre_execution_enabled),
+                    tws_e2e_script=pre_settings.tws_e2e_script,
+                    tws_e2e_env_passthrough=pre_settings.tws_e2e_env_passthrough,
+                    tws_e2e_timeout_sec=pre_settings.tws_e2e_timeout_sec,
+                    port_check=pre_settings.port_check,
+                    handshake=pre_settings.handshake,
+                    telegram=pre_settings.telegram,
+                    ibkr_client_id=pre_settings.ibkr_client_id,
+                )
+            pre_exec_res = run_pre_execution_gate(
+                settings=pre_settings,
+                evidence_dir=cfg.evidence_dir,
+                notifier=notifier,
+            )
+            _write_json(cfg.evidence_dir / "pre_execution_status.json", pre_exec_res)
+        except PreExecutionError as exc:
+            _write_json(
+                cfg.evidence_dir / "pre_execution_status.json",
+                {
+                    "enabled": True,
+                    "ready": False,
+                    "reason": exc.reason,
+                    "detail": exc.detail,
+                },
+            )
+            raise RuntimeError(exc.reason) from exc
 
     gov_audit = GovernanceAudit(run_id=cfg.evidence_dir.name)
     gov_audit.emit(
@@ -159,7 +195,6 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
         )
     )
 
-    mode_norm = str(cfg.mode).strip().lower()
     mode_label = "shadow" if mode_norm in {"dry-run", "shadow"} else mode_norm
     fallback_nav = 100000.0
     nav = fallback_nav

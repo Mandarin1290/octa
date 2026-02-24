@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional
 
+from octa.core.governance.immutability_guard import evaluate_write_permission
 from octa_ledger.store import LedgerStore
 
 
@@ -26,6 +27,7 @@ def evaluate_drift(
     timeframe: str,
     bucket: str,
     cfg: Mapping[str, Any],
+    ctx: Optional[Mapping[str, Any]] = None,
 ) -> DriftDecision:
     ledger = LedgerStore(ledger_dir)
     navs = _collect_navs(ledger)
@@ -51,11 +53,33 @@ def evaluate_drift(
     if streak >= breach_days:
         disabled = True
         reason = "drift_breach"
-        champion_path = _champion_path(gate, timeframe, bucket)
-        _write_drift_audit(model_key, timeframe, bucket, kpi, streak, cfg, champion_path)
+        audit_perm = evaluate_write_permission(
+            ctx,
+            operation="drift_state_write",
+            target="octa/var/audit/drift_monitor",
+            details={"model_key": str(model_key), "timeframe": str(timeframe), "bucket": str(bucket), "phase": "audit"},
+        )
+        if audit_perm.blocked:
+            reason = "drift_write_blocked"
+        else:
+            champion_path = _champion_path(gate, timeframe, bucket)
+            _write_drift_audit(model_key, timeframe, bucket, kpi, streak, cfg, champion_path)
 
-    _save_state(model_key, {"streak": streak, "disabled": disabled, "kpi": kpi, "updated_at": _now_iso()})
-    return DriftDecision(disabled, reason, streak, kpi, {"threshold": kpi_threshold, "window_days": window_days})
+    state_perm = evaluate_write_permission(
+        ctx,
+        operation="drift_state_write",
+        target="octa/var/registry/models/drift",
+        details={"model_key": str(model_key), "timeframe": str(timeframe), "bucket": str(bucket), "phase": "state"},
+    )
+    if not state_perm.blocked:
+        _save_state(model_key, {"streak": streak, "disabled": disabled, "kpi": kpi, "updated_at": _now_iso()})
+    return DriftDecision(
+        disabled,
+        reason,
+        streak,
+        kpi,
+        {"threshold": kpi_threshold, "window_days": window_days, "state_write_blocked": bool(state_perm.blocked)},
+    )
 
 
 def _collect_navs(ledger: LedgerStore) -> List[tuple[datetime, float]]:

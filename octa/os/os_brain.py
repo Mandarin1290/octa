@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import signal
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -7,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from octa.execution.risk_engine import RiskEngine
+from octa.core.governance.immutability_guard import IMMUTABLE_PROD_BLOCK, evaluate_write_permission
 
 from .capabilities import Capability, CapabilityEnforcer, CapabilityViolation
 from .evidence import EvidenceWriter
@@ -288,8 +290,53 @@ class OSBrain:
 
             self.state = chosen.next_state
             if chosen.next_state == BrainState.TRAINING_TICK:
-                self._require("training_service", Capability.WRITE_CANDIDATE_MODEL)
-                action_result = self.training_service.trigger_tick()
+                safety_cfg = self.policy.get("safety", {}) if isinstance(self.policy.get("safety"), dict) else {}
+                services_cfg = self.policy.get("services", {}) if isinstance(self.policy.get("services"), dict) else {}
+                execution_cfg = services_cfg.get("execution", {}) if isinstance(services_cfg.get("execution"), dict) else {}
+                guard_ctx = {
+                    "mode": self.mode,
+                    "service": "os_brain",
+                    "execution_active": bool(execution_cfg.get("enabled", True)),
+                    "run_id": str(self.run_id),
+                    "entrypoint": "octa_os_start",
+                    "policy_flags": {
+                        "default_execution_enabled": bool(safety_cfg.get("default_execution_enabled", False)),
+                        "require_blessed_1d_1h": bool(safety_cfg.get("require_blessed_1d_1h", False)),
+                    },
+                }
+                perm = evaluate_write_permission(
+                    guard_ctx,
+                    operation="training_tick",
+                    target="os_brain.training_service.trigger_tick",
+                    details={"tick_index": int(self.tick_index)},
+                )
+                if perm.blocked:
+                    incident_path = self.evidence.run_dir / "training_tick_block.json"
+                    incident_path.write_text(
+                        json.dumps(
+                            {
+                                "ts_utc": utc_now_iso(),
+                                "reason": IMMUTABLE_PROD_BLOCK,
+                                "mode": self.mode,
+                                "service": "os_brain",
+                                "run_id": self.run_id,
+                                "tick_index": self.tick_index,
+                                "incident_ref": perm.incident_path,
+                                "operation": "training_tick",
+                            },
+                            ensure_ascii=False,
+                            indent=2,
+                            sort_keys=True,
+                            default=str,
+                        ),
+                        encoding="utf-8",
+                    )
+                    if self.mode == "live":
+                        raise RuntimeError(IMMUTABLE_PROD_BLOCK)
+                    action_result = {"triggered": False, "reason": "training_tick_blocked_immutable_prod", "incident_path": str(incident_path)}
+                else:
+                    self._require("training_service", Capability.WRITE_CANDIDATE_MODEL)
+                    action_result = self.training_service.trigger_tick()
                 self.state = BrainState.WAIT_FOR_ELIGIBLE
             elif chosen.next_state == BrainState.EXECUTION_TICK:
                 action_result = self._execute_2pc(sensors)
