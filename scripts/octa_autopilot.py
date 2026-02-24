@@ -17,6 +17,12 @@ from typing import Any, Dict
 import pandas as pd
 import yaml
 
+from octa.core.governance.immutability_guard import assert_write_allowed, is_production_context
+from octa.core.governance.model_registry import (
+    append_entry as append_model_registry_entry,
+    build_registry_entry,
+    compute_deps_fingerprint,
+)
 from octa.core.gates.training_selection_gate import (
     MetricRule,
     TrainingSelectionGateConfig,
@@ -58,6 +64,23 @@ def _load_yaml(path: str) -> dict:
     return yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
 
 
+def _policy_execution_flags(policy_path: str) -> Dict[str, Any]:
+    p = Path(policy_path)
+    if not p.exists():
+        return {}
+    try:
+        raw = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+    except Exception:
+        return {}
+    if not isinstance(raw, dict):
+        return {}
+    safety = raw.get("safety") if isinstance(raw.get("safety"), dict) else {}
+    return {
+        "default_execution_enabled": bool(safety.get("default_execution_enabled", False)),
+        "require_blessed_1d_1h": bool(safety.get("require_blessed_1d_1h", False)),
+    }
+
+
 def _write_json(path: Path, payload: Dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True, default=str), encoding="utf-8")
@@ -66,6 +89,13 @@ def _write_json(path: Path, payload: Dict[str, Any]) -> None:
 def _write_text(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
+
+
+def _relpath_or_abs(path: str, *, start: str = ".") -> str:
+    try:
+        return str(Path(path).resolve().relative_to(Path(start).resolve()))
+    except Exception:
+        return str(path)
 
 
 def _append_jsonl(path: Path, payload: Dict[str, Any]) -> None:
@@ -1049,6 +1079,68 @@ def _resolve_runtime_timeframes(raw_cfg: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _run_lifecycle_promotion_step(
+    run_ctx: Dict[str, Any],
+    run_dir: Path,
+    cfg: Dict[str, Any],
+    policy_path: str,
+) -> None:
+    """Run the I6 lifecycle promotion evaluation (research context only).
+
+    Reads registry.jsonl and promotion_candidates (if present), evaluates
+    lifecycle transitions deterministically, and appends promotion_event
+    entries.  Any exception is caught and written to an error JSON; the
+    autopilot is never interrupted.
+    """
+    if str(run_ctx.get("stage", "")).strip().lower() != "research":
+        return
+    try:
+        from octa.core.governance.lifecycle_controller import (
+            LifecycleController,
+            LifecycleControllerConfig,
+        )
+
+        policy_raw: Dict[str, Any] = {}
+        try:
+            policy_raw = _load_yaml(policy_path)
+        except Exception:
+            pass
+        live_arming = policy_raw.get("live_arming") if isinstance(policy_raw.get("live_arming"), dict) else {}
+        safety = policy_raw.get("safety") if isinstance(policy_raw.get("safety"), dict) else {}
+        paper_cfg = cfg.get("paper") if isinstance(cfg.get("paper"), dict) else {}
+
+        candidates_path = None
+        paper_eval_out = str((paper_cfg or {}).get("eval_out_dir", "")).strip()
+        if paper_eval_out:
+            _cand = Path(paper_eval_out) / "promotion_candidates.json"
+            if _cand.exists():
+                candidates_path = _cand
+
+        lc_cfg = LifecycleControllerConfig(
+            registry_path=Path("octa") / "var" / "registry" / "models" / "registry.jsonl",
+            candidates_path=candidates_path,
+            token_path=Path(str(live_arming.get("token_path", "octa/var/state/live_armed.json"))),
+            ttl_seconds=int(live_arming.get("ttl_seconds", 900)),
+            require_blessed_1d_1h=bool(safety.get("require_blessed_1d_1h", True)),
+        )
+        lc = LifecycleController(lc_cfg)
+        decisions = lc.run(run_ctx, evidence_dir=run_dir / "lifecycle_promotion")
+
+        summary: Dict[str, Any] = {
+            "total": len(decisions),
+            "allowed": sum(1 for d in decisions if d.allowed),
+            "by_to_status": {},
+        }
+        for d in decisions:
+            summary["by_to_status"][d.to_status] = summary["by_to_status"].get(d.to_status, 0) + 1
+        _write_json(run_dir / "lifecycle_promotion_summary.json", summary)
+    except Exception as _lc_err:
+        _write_json(
+            run_dir / "lifecycle_promotion_error.json",
+            {"error": str(_lc_err), "type": type(_lc_err).__name__},
+        )
+
+
 def main() -> None:
     pre = argparse.ArgumentParser(add_help=False)
     pre.add_argument("--version", action="store_true", default=False)
@@ -1090,6 +1182,26 @@ def main() -> None:
         or now_utc_iso().replace(":", "").replace("-", "")[:15] + "Z"
     )
 
+    paper_cfg = cfg.get("paper") if isinstance(cfg.get("paper"), dict) else {}
+    requested_mode = str(cfg.get("mode", "") or "").strip().lower()
+    inferred_mode = (
+        requested_mode
+        if requested_mode in {"shadow", "paper", "live"}
+        else ("live" if bool(paper_cfg.get("live_enable", False)) else "paper")
+    )
+    execution_active = bool(args.run_paper) or bool(paper_cfg.get("enabled", False))
+    policy_path = str(cfg.get("policy_path", "configs/policy.yaml"))
+    policy_flags = _policy_execution_flags(policy_path) if execution_active else {}
+    run_ctx: Dict[str, Any] = {
+        "mode": inferred_mode,
+        "stage": "research",
+        "service": "autopilot",
+        "execution_active": bool(execution_active),
+        "run_id": str(run_id),
+        "entrypoint": "execution_service" if execution_active else "autopilot",
+        "policy_flags": policy_flags,
+    }
+
     budgets = cfg.get("budgets", {}) if isinstance(cfg.get("budgets"), dict) else {}
     budget = ResourceBudgetController(
         max_runtime_s=int(budgets.get("max_runtime_s", 3600)),
@@ -1100,11 +1212,12 @@ def main() -> None:
     )
     budget.apply_thread_caps()
 
-    reg = ArtifactRegistry(root=str(cfg.get("registry_root", "artifacts")))
+    reg = ArtifactRegistry(root=str(cfg.get("registry_root", "artifacts")), ctx=run_ctx)
     reg.record_run_start(run_id, cfg)
 
     run_dir = Path("artifacts") / "runs" / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
+    model_registry_deps_fingerprint: str | None = None
     tf_resolved = _resolve_runtime_timeframes(cfg)
     _write_resolved_config_snapshot(
         run_dir,
@@ -1288,6 +1401,13 @@ def main() -> None:
     }
 
     # Cascaded training
+    if is_production_context(run_ctx):
+        assert_write_allowed(
+            run_ctx,
+            operation="training_tick",
+            target="autopilot_cascade_training",
+            details={"run_id": str(run_id), "execution_active": bool(execution_active)},
+        )
     train_cfg_path = str(cfg.get("training_config", "configs/dev.yaml"))
 
     train_decisions = []
@@ -2155,6 +2275,71 @@ def main() -> None:
                     run_id, symbol, tf_norm, "tradeable", pkl_path, sha_txt, 1, meta_json=meta_json
                 )
                 reg.promote(symbol, tf_norm, art_id, level="paper")
+                if str(run_ctx.get("stage", "")).strip().lower() == "research":
+                    if model_registry_deps_fingerprint is None:
+                        model_registry_deps_fingerprint = compute_deps_fingerprint()
+                    pkl_size = 0
+                    try:
+                        pkl_size = int(Path(pkl_path).stat().st_size)
+                    except Exception:
+                        pkl_size = 0
+                    inputs_hash = stable_hash(
+                        {
+                            "symbol": str(symbol),
+                            "timeframe": str(tf_norm),
+                            "artifact_sha256": str(sha_txt),
+                            "config_hash": stable_hash(cfg),
+                            "gate_status": str(effective.status),
+                            "gate_reason": str(effective.reason),
+                        }
+                    )
+                    outputs_hash = stable_hash(
+                        {
+                            "artifact_id": int(art_id),
+                            "promotion_level": "paper",
+                            "pkl": str(pkl_path),
+                            "pkl_sha": str(sha_txt),
+                        }
+                    )
+                    model_entry = build_registry_entry(
+                        symbol=str(symbol),
+                        timeframe=str(tf_norm),
+                        artifact_path=_relpath_or_abs(str(pkl_path), start="."),
+                        artifact_sha256=str(sha_txt),
+                        artifact_size_bytes=int(pkl_size),
+                        feature_code_hash=stable_hash(
+                            {
+                                "module": "octa_training.core.packaging",
+                                "model_name": str(((mb.get("pack") or {}).get("model_name")) if isinstance(mb.get("pack"), dict) else ""),
+                                "features_used": list((mb.get("features_used") or []) if isinstance(mb, dict) else []),
+                            }
+                        ),
+                        config_hash=stable_hash(cfg),
+                        stage="research",
+                        run_id=str(run_id),
+                        evidence_dir=_relpath_or_abs(str(run_dir), start="."),
+                        inputs_hash=str(inputs_hash),
+                        outputs_hash=str(outputs_hash),
+                        gates={
+                            "structural": "PASS" if str(effective.status) == "PASS" else "FAIL",
+                            "risk": "HOLD",
+                            "performance": "PASS" if str(effective.status) == "PASS" else "FAIL",
+                            "drift": "HOLD",
+                        },
+                        promotion_status="PAPER",
+                        promotion_reason="autopilot_promotion",
+                        deps_fingerprint=str(model_registry_deps_fingerprint),
+                        asset_class=str(getattr(u, "asset_class", "")),
+                        training_data_hash=None,
+                        hyperparam_hash=stable_hash(((mb.get("metrics") or {}) if isinstance(mb, dict) else {})),
+                        seed=int(cfg.get("seed", 42)) if isinstance(cfg, dict) else 42,
+                    )
+                    append_model_registry_entry(
+                        run_ctx,
+                        model_entry,
+                        registry_path=Path("octa") / "var" / "registry" / "models" / "registry.jsonl",
+                        evidence_dir=run_dir / "model_registry",
+                    )
 
             if progression_final_pass:
                 next_symbols.append(symbol)
@@ -2220,9 +2405,11 @@ def main() -> None:
 
     reg.record_run_end(run_id, "OK")
 
+    # I6: Lifecycle promotion evaluation (research context, best-effort).
+    _run_lifecycle_promotion_step(run_ctx, run_dir, cfg, policy_path)
+
     # Optional: run paper trading loop immediately after promotion.
     if bool(args.run_paper) or bool((cfg.get("paper") or {}).get("enabled", False)):
-        paper_cfg = cfg.get("paper") if isinstance(cfg.get("paper"), dict) else {}
         _ = run_paper(
             run_id=run_id,
             config_path=train_cfg_path,
