@@ -60,7 +60,7 @@ class ALLRADEngine:
         if vol_policy["reduce_exposure"]:
             max_exposure *= vol_policy["exposure_scale"]
 
-        execution_override = None
+        execution_override: dict[str, Any] | None = None
         if liquidity_policy["force_market"]:
             execution_override = {"order_type": "MARKET"}
         if vol_policy["reduce_exposure"]:
@@ -107,7 +107,7 @@ def _state_from_inputs(
 def _regime_from_context(context: "CascadeContext") -> str:
     artifacts = context.artifacts.get("global_regime", {})
     if isinstance(artifacts, dict):
-        regime_payload = next(iter(artifacts.values()), {})
+        regime_payload: Any = next(iter(artifacts.values()), {})
         if isinstance(regime_payload, dict):
             return str(regime_payload.get("regime_label", "RISK_ON"))
     return "RISK_ON"

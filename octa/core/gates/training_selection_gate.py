@@ -149,7 +149,7 @@ def evaluate_training_selection(
         cid = str(row.get("candidate_id", ""))
         raw_metrics = dict(row.get("metrics") or {})
         metrics = {aliases.get(str(k), str(k)): v for k, v in raw_metrics.items()}
-        vals: Dict[str, float] = {}
+        metric_vals: Dict[str, float] = {}
         valid = True
         for key in required_metrics:
             fv = _finite_number(metrics.get(key))
@@ -157,11 +157,11 @@ def evaluate_training_selection(
                 missing_counts[key] = int(missing_counts.get(key, 0)) + 1
                 valid = False
             else:
-                vals[key] = fv
+                metric_vals[key] = fv
         if valid:
-            metric_values_by_candidate[cid] = vals
+            metric_values_by_candidate[cid] = metric_vals
             for key in required_metrics:
-                valid_metric_values[key].append(vals[key])
+                valid_metric_values[key].append(metric_vals[key])
         else:
             invalid_metric_candidates += 1
 
@@ -265,27 +265,27 @@ def evaluate_training_selection(
 
     quantiles: Dict[str, Dict[str, float | None]] = {}
     for key in required_metrics:
-        vals = sorted(valid_metric_values.get(key, []))
-        if not vals:
+        metric_list = sorted(valid_metric_values.get(key, []))
+        if not metric_list:
             quantiles[key] = {"q0": None, "q25": None, "q50": None, "q75": None, "q100": None}
             continue
-        n = len(vals)
+        n = len(metric_list)
         def q(p: float) -> float:
             if n == 1:
-                return float(vals[0])
+                return float(metric_list[0])
             idx = (n - 1) * p
             lo = int(math.floor(idx))
             hi = int(math.ceil(idx))
             if lo == hi:
-                return float(vals[lo])
+                return float(metric_list[lo])
             w = idx - lo
-            return float(vals[lo] * (1.0 - w) + vals[hi] * w)
+            return float(metric_list[lo] * (1.0 - w) + metric_list[hi] * w)
         quantiles[key] = {
-            "q0": float(vals[0]),
+            "q0": float(metric_list[0]),
             "q25": q(0.25),
             "q50": q(0.50),
             "q75": q(0.75),
-            "q100": float(vals[-1]),
+            "q100": float(metric_list[-1]),
         }
 
     return {

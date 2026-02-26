@@ -260,7 +260,7 @@ def _read_parquet(path: Path, limit: int | None = None) -> Mapping[str, Iterable
             return None
 
 
-def _bars_from_frame(frame: Mapping[str, Iterable]) -> list[OHLCVBar]:
+def _bars_from_frame(frame: Mapping[str, Any]) -> list[OHLCVBar]:
     if "df" in frame:
         df = frame["df"]
         return _bars_from_dataframe(df)
@@ -307,7 +307,7 @@ def _bars_from_dataframe(df: Any) -> list[OHLCVBar]:
     return bars
 
 
-def _bars_from_columns(columns: Mapping[str, Iterable]) -> list[OHLCVBar]:
+def _bars_from_columns(columns: Mapping[str, Sequence[Any]]) -> list[OHLCVBar]:
     columns_map = {name.lower(): name for name in columns}
     ts_col = _find_ts_column(columns_map.keys())
     if ts_col is None:

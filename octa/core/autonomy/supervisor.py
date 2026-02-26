@@ -4,7 +4,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Sequence
+from typing import Callable, Sequence
 
 from octa.core.data.providers.ohlcv import OHLCVProvider
 from octa.core.governance.audit_chain import AuditChain
@@ -34,7 +34,7 @@ class SupervisorConfig:
     mode: str = "NORMAL"
     max_cycles: int = 1
     max_consecutive_failures: int = 2
-    backoff_schedule_s: list[int] = (1, 2, 5, 10)
+    backoff_schedule_s: tuple[int, int, int, int] = (1, 2, 5, 10)
     max_quarantined_symbols: int = 5
     execution_mode: str = "OMS"
     sleep_fn: Callable[[int], None] = time.sleep
@@ -68,7 +68,7 @@ class AutonomySupervisor:
         self._config = config or SupervisorConfig()
         self._state = SupervisorState(execution_mode=self._config.execution_mode)
         self._runbook_cfg = RunbookConfig(
-            backoff_schedule_s=list(self._config.backoff_schedule_s),
+            backoff_schedule_s=self._config.backoff_schedule_s,
             max_quarantined_symbols=self._config.max_quarantined_symbols,
         )
 

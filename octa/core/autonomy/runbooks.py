@@ -34,7 +34,7 @@ class RunbookPlan:
 
 @dataclass(frozen=True)
 class RunbookConfig:
-    backoff_schedule_s: list[int] = (1, 2, 5, 10)
+    backoff_schedule_s: tuple[int, int, int, int] = (1, 2, 5, 10)
     max_quarantined_symbols: int = 5
     oms_failure_threshold: int = 1
 
