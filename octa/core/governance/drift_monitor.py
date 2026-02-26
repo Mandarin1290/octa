@@ -64,6 +64,7 @@ def evaluate_drift(
         else:
             champion_path = _champion_path(gate, timeframe, bucket)
             _write_drift_audit(model_key, timeframe, bucket, kpi, streak, cfg, champion_path)
+            _trigger_rollback(model_key, timeframe, champion_path)  # I6
 
     state_perm = evaluate_write_permission(
         ctx,
@@ -208,6 +209,24 @@ def _write_drift_audit(
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _trigger_rollback(model_key: str, timeframe: str, champion_json: str) -> None:
+    """Best-effort rollback trigger called on confirmed drift breach.
+
+    Errors are swallowed so that drift state recording always completes
+    even if the rollback executor encounters a filesystem issue.
+    """
+    try:
+        from octa.models.ops.rollback import execute_rollback  # lazy import avoids circularity
+        symbol = model_key.split("_")[0] if "_" in model_key else model_key
+        execute_rollback(
+            symbol=symbol,
+            timeframe=timeframe,
+            champion_json_path=Path(champion_json),
+        )
+    except Exception:
+        pass  # rollback is best-effort; drift detection already recorded
 
 
 def _champion_path(gate: str, timeframe: str, bucket: str) -> str:

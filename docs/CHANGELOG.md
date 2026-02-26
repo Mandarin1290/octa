@@ -16,6 +16,17 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `tests/test_i5_capital_guard.py`
 
 
+### [2026-02-26 19:14:32] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 2 Code-Dateien - 1 Test-Dateien - (+723/-0 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 2 Dateien
+  - `octa/core/governance/drift_monitor.py`
+  - `octa/models/ops/rollback.py`
+- **TESTS:** 1 Dateien
+  - `tests/test_i6_rollback.py`
+
+
 ## 2026-02-24
 
 
