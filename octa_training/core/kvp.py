@@ -67,7 +67,8 @@ def update_kvp_summary(
         data = {}
 
     ac = upd.asset_class
-    entry = data.get(ac) if isinstance(data.get(ac), dict) else {}
+    entry_raw = data.get(ac)
+    entry: dict[str, Any] = dict(entry_raw) if isinstance(entry_raw, dict) else {}
 
     n = int(entry.get("n", 0) or 0) + 1
     pass_n = int(entry.get("pass_n", 0) or 0) + (1 if upd.passed else 0)

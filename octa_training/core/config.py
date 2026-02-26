@@ -6,6 +6,8 @@ from typing import Any, Dict, List, Optional
 
 import yaml
 
+from octa.core.utils.typing_safe import as_float
+
 try:
     from pydantic.v1 import BaseModel, Field, validator
 except Exception:  # pragma: no cover
@@ -407,10 +409,12 @@ def load_config(path: Optional[str] = None) -> TrainingConfig:
         def _apply_overlay(hf: dict, overlay: dict) -> None:
             if not isinstance(hf, dict) or not isinstance(overlay, dict):
                 return
-            ov = overlay.get("overlay") if isinstance(overlay.get("overlay"), dict) else {}
-            relax = ov.get("relax") if isinstance(ov.get("relax"), dict) else {}
+            ov_raw = overlay.get("overlay")
+            ov: dict[str, Any] = dict(ov_raw) if isinstance(ov_raw, dict) else {}
+            relax_raw = ov.get("relax")
+            relax: dict[str, Any] = dict(relax_raw) if isinstance(relax_raw, dict) else {}
             gate_v = str(ov.get("gate_version") or "")
-            sharpe_factor = float(relax.get("sharpe_min_factor", 1.0) or 1.0)
+            sharpe_factor = as_float(relax.get("sharpe_min_factor", 1.0), default=1.0)
             if sharpe_factor <= 0:
                 sharpe_factor = 1.0
 

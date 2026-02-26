@@ -41,13 +41,13 @@ def quarantine_artifact(
     registry: Optional[Any] = None,
     artifact_id: Optional[int] = None,
     run_id: Optional[str] = None,
-) -> Dict[str, str]:
+) -> Dict[str, Any]:
     p = Path(pkl_path)
     qdir = Path(quarantine_dir) if quarantine_dir else p.parent / "_quarantine" / p.stem
     ts = datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
     dest = qdir / ts
     dest.mkdir(parents=True, exist_ok=True)
-    moved = {}
+    moved: Dict[str, str] = {}
     for src in [pkl_path, meta_path, sha_path]:
         if src and Path(src).exists():
             dst = dest / Path(src).name
@@ -157,7 +157,7 @@ def smoke_test_artifact(pkl_path: str, raw_dir: str, last_n: int = 50) -> Dict[s
     if not symbol:
         raise ValueError('Artifact missing symbol in asset')
     # find parquet
-    discovered = discover_parquets(os.path.join(raw_dir), state=None)
+    discovered = discover_parquets(Path(raw_dir), state=None)
     match = [d for d in discovered if d.symbol == symbol]
 
     # Fallback: many raw feeds store timeframe-suffixed parquets (e.g. STOCKS:
@@ -191,7 +191,7 @@ def smoke_test_artifact(pkl_path: str, raw_dir: str, last_n: int = 50) -> Dict[s
 
         asset_class = (obj.get('asset', {}) or {}).get('asset_class') or 'unknown'
         feature_cfg = (obj.get('feature_spec', {}) or {}).get('feature_config') or {}
-        feature_settings = {}
+        feature_settings: Dict[str, Any] = {}
         if isinstance(feature_cfg, dict):
             feature_settings = feature_cfg.get('feature_settings') or {}
         if not isinstance(feature_settings, dict):

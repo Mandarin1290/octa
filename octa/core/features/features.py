@@ -5,7 +5,7 @@ import math
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -810,33 +810,37 @@ def build_features(raw: pd.DataFrame, settings, asset_class: str, build_targets:
             missing = 0
             total = 0
             if isinstance(src_meta, dict):
-                cov = altdat_meta.get("coverage") if isinstance(altdat_meta.get("coverage"), dict) else {}
+                cov_raw = altdat_meta.get("coverage")
+                cov: dict[str, Any] = dict(cov_raw) if isinstance(cov_raw, dict) else {}
                 for source in sorted(src_meta.keys()):
-                    raw = src_meta.get(source) or {}
-                    status = str(raw.get("status", "")).upper()
+                    raw_candidate = src_meta.get(source)
+                    source_payload: dict[str, Any] = (
+                        dict(raw_candidate) if isinstance(raw_candidate, dict) else {}
+                    )
+                    status = str(source_payload.get("status", "")).upper()
                     if not status:
-                        ok_flag = raw.get("ok")
+                        ok_flag = source_payload.get("ok")
                         if ok_flag is True:
                             status = "OK"
-                        elif "error" in raw:
+                        elif "error" in source_payload:
                             status = "ERROR"
                         else:
                             status = "MISSING"
-                    n_rows = raw.get("rows")
+                    n_rows = source_payload.get("rows")
                     if n_rows is None:
-                        n_rows = raw.get("n_rows")
+                        n_rows = source_payload.get("n_rows")
                     try:
                         n_rows = int(n_rows or 0)
                     except Exception:
                         n_rows = 0
                     coverage = cov.get(source)
-                    if coverage is None and isinstance(cov, dict):
+                    if coverage is None:
                         coverage = cov.get(source.lower())
                     try:
                         coverage = float(coverage) if coverage is not None else 0.0
                     except Exception:
                         coverage = 0.0
-                    err = raw.get("error")
+                    err = source_payload.get("error")
                     src_summary.append(
                         {
                             "source": str(source),
