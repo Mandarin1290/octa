@@ -29,6 +29,8 @@ services:
     enabled: true
   alerts:
     enabled: true
+    dedup_window_seconds: 300
+    critical_always_send: true
   broker:
     enabled: false
     required_for_execution: false

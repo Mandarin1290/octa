@@ -330,6 +330,8 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
                 EVENT_GOVERNANCE_ENFORCED,
                 {"reason": "tws_not_ready", "mode": mode_label},
             )
+            # I8: CRITICAL alert — bypasses dedup window
+            notifier.emit_alert("GOVERNANCE_ENFORCED", {"reason": "tws_not_ready", "mode": mode_label})
             raise RuntimeError("TWS_PROBE_FAILED")
 
     cycle_count = max(1, int(cfg.max_cycles) if cfg.loop else 1)
