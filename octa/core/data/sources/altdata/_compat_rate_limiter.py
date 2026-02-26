@@ -62,13 +62,13 @@ def _patch_limiter_for_kwargs(**kwargs: Any) -> Dict[str, Any]:
     info: Dict[str, Any] = {"patched": False}
     try:
         mod = importlib.import_module("pyrate_limiter")
-        Limiter = getattr(mod, "Limiter")
-        info["limiter_impl"] = f"{Limiter.__module__}.{Limiter.__qualname__}"
-        sig = inspect.signature(Limiter.__init__)
+        limiter_cls: type[Any] = getattr(mod, "Limiter")
+        info["limiter_impl"] = f"{limiter_cls.__module__}.{limiter_cls.__qualname__}"
+        sig = inspect.signature(limiter_cls.__init__)
         if all(k in sig.parameters for k in kwargs.keys()):
             return info
 
-        class CompatLimiter(Limiter):  # type: ignore[misc]
+        class CompatLimiter(limiter_cls):
             def __init__(self, *c_args: Any, **c_kwargs: Any) -> None:
                 filtered = _filter_kwargs(c_kwargs, sig)
                 super().__init__(*c_args, **filtered)
