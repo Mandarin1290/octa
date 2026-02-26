@@ -12,6 +12,7 @@ from octa.core.cascade.controller import CascadeController
 from octa.core.cascade.registry import build_default_gate_stack
 from octa.core.data.providers.in_memory import InMemoryOHLCVProvider
 from octa.core.data.providers.ohlcv import OHLCVBar, OHLCVProvider, Timeframe
+from octa.core.types.timeframe import coerce_timeframe
 from octa.core.portfolio.engine import PortfolioEngine, PortfolioEngineConfig
 from octa.core.portfolio.state import PortfolioState
 from octa.core.analytics.performance import compute_performance
@@ -52,7 +53,7 @@ def run_paper_cascade(
                 artifacts = _resolve_artifacts(context, gate.name, symbol)
                 metrics, quality_flags = _split_artifacts(artifacts)
                 record = {
-                    "ts": _resolve_timestamp(provider, symbol, gate.timeframe, end),
+                    "ts": _resolve_timestamp(provider, symbol, coerce_timeframe(gate.timeframe), end),
                     "symbol": symbol,
                     "gate": gate.name,
                     "timeframe": gate.timeframe,
@@ -234,7 +235,7 @@ def _resolve_portfolio_ts(
         return end
     latest: datetime | None = None
     for symbol in symbols:
-        bars = provider.get_ohlcv(symbol, "1D")
+        bars = provider.get_ohlcv(symbol, coerce_timeframe("1D"))
         if not bars:
             continue
         candidate = bars[-1].ts
@@ -275,7 +276,7 @@ def _seeded_series(symbol: str, base: float, increment: float) -> tuple[float, f
 def _populate_provider(
     provider: InMemoryOHLCVProvider, symbols: Iterable[str], bars: int, start: datetime
 ) -> None:
-    steps = {
+    steps: dict[Timeframe, timedelta] = {
         "1D": timedelta(days=1),
         "30M": timedelta(minutes=30),
         "1H": timedelta(hours=1),

@@ -7,6 +7,7 @@ from typing import Any, Mapping, Protocol, Sequence, TypedDict
 from octa.core.cascade.context import CascadeContext
 from octa.core.cascade.contracts import GateDecision, GateOutcome
 from octa.core.data.providers.ohlcv import OHLCVBar, OHLCVProvider
+from octa.core.types.timeframe import Timeframe
 
 
 @dataclass(frozen=True)
@@ -20,7 +21,7 @@ class OHLCVSeries:
 
 
 class MicroDataProvider(Protocol):
-    def get_ohlcv(self, symbol: str, timeframe: str) -> OHLCVSeries | None:
+    def get_ohlcv(self, symbol: str, timeframe: Timeframe) -> OHLCVSeries | None:
         ...
 
 
@@ -48,7 +49,7 @@ class MicroGateConfig:
 
 class MicroGate:
     name = "micro"
-    timeframe = "1M"
+    timeframe: Timeframe = "1M"
 
     def __init__(
         self,
@@ -171,7 +172,7 @@ def _micro_metrics(series: OHLCVSeries, config: MicroGateConfig) -> dict[str, fl
     lows = series.low[-config.window :]
     volumes = series.volume[-config.window :]
 
-    spread_proxy = median([(h - l) for h, l in zip(highs, lows)]) / median(window)
+    spread_proxy = median([(h - lo) for h, lo in zip(highs, lows)]) / median(window)
     returns = [
         (window[idx] / window[idx - 1]) - 1.0 for idx in range(1, len(window))
     ]

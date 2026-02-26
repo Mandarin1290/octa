@@ -6,6 +6,7 @@ from typing import Any, Mapping, Protocol, Sequence
 
 from octa.core.cascade.contracts import GateDecision, GateOutcome
 from octa.core.data.providers.ohlcv import OHLCVBar, OHLCVProvider
+from octa.core.types.timeframe import Timeframe
 
 
 @dataclass(frozen=True)
@@ -19,7 +20,7 @@ class OHLCVSeries:
 
 
 class StructureDataProvider(Protocol):
-    def get_ohlcv(self, symbol: str, timeframe: str) -> OHLCVSeries | None:
+    def get_ohlcv(self, symbol: str, timeframe: Timeframe) -> OHLCVSeries | None:
         ...
 
 
@@ -52,7 +53,7 @@ class StructureGateConfig:
 
 class StructureGate:
     name = "structure"
-    timeframe = "30M"
+    timeframe: Timeframe = "30M"
 
     def __init__(
         self,
@@ -196,7 +197,7 @@ def _structure_metrics(series: OHLCVSeries, config: StructureGateConfig) -> dict
     if any(price <= 0 for price in series.close):
         return None
 
-    ema_fast = _ema(series.close, config.ema_fast)
+    _ema_fast = _ema(series.close, config.ema_fast)
     ema_slow = _ema(series.close, config.ema_slow)
     if len(ema_slow) < config.ema_slope_lookback + 1:
         return None
@@ -251,14 +252,13 @@ def _detect_zones(
 ) -> list[StructureZone]:
     zones: list[StructureZone] = []
     close = series.close
-    ema_fast = _ema(close, config.ema_fast)
+    _ema_fast = _ema(close, config.ema_fast)
     ema_slow = _ema(close, config.ema_slow)
     atr_value = metrics["atr"]
     vol_regime = metrics["vol_regime"]
 
     donchian_window = close[-config.donchian_window :]
     upper = max(donchian_window)
-    lower = min(donchian_window)
 
     trend_ok = close[-1] >= ema_slow[-1] and metrics["trend_score"] > 0
     stable_vol = vol_regime <= config.vol_stable_max
@@ -275,7 +275,7 @@ def _detect_zones(
             )
         )
 
-    pullback_distance = abs(close[-1] - ema_fast[-1])
+    pullback_distance = abs(close[-1] - _ema_fast[-1])
     if trend_ok and stable_vol and pullback_distance <= config.pullback_atr_multiple * atr_value:
         confidence = min(1.0, 0.5 + (config.vol_stable_max - vol_regime))
         zones.append(

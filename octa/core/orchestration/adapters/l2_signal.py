@@ -5,14 +5,14 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Mapping, Sequence
 
 from octa.core.gates.signal_engine.gate import SignalGate
-from octa.core.data.providers.ohlcv import OHLCVBar, OHLCVProvider
+from octa.core.data.providers.ohlcv import OHLCVBar, OHLCVProvider, Timeframe
 from octa.core.features.altdata.registry import FeatureRegistry
 
 
 @dataclass
 class L2SignalResult:
     symbol: str
-    timeframe: str
+    timeframe: Timeframe
     decision: str
     reason: str
     payload: Dict[str, Any]
@@ -117,7 +117,7 @@ def _load_altdata(
     registry: FeatureRegistry | None,
     *,
     symbol: str,
-    timeframe: str,
+    timeframe: Timeframe,
     gate_layer: str,
     asof_ts: str | None,
 ) -> tuple[Dict[str, float], Dict[str, float]]:

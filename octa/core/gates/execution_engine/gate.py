@@ -7,6 +7,7 @@ from typing import Any, Mapping, Protocol, Sequence, TypedDict
 from octa.core.cascade.contracts import GateDecision, GateOutcome
 from octa.core.cascade.context import CascadeContext
 from octa.core.data.providers.ohlcv import OHLCVBar, OHLCVProvider
+from octa.core.types.timeframe import Timeframe
 
 
 @dataclass(frozen=True)
@@ -20,7 +21,7 @@ class OHLCVSeries:
 
 
 class ExecutionDataProvider(Protocol):
-    def get_ohlcv(self, symbol: str, timeframe: str) -> OHLCVSeries | None:
+    def get_ohlcv(self, symbol: str, timeframe: Timeframe) -> OHLCVSeries | None:
         ...
 
 
@@ -49,7 +50,7 @@ class ExecutionGateConfig:
 
 class ExecutionGate:
     name = "execution"
-    timeframe = "5M"
+    timeframe: Timeframe = "5M"
 
     def __init__(
         self,

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Literal, Protocol, Sequence
+from typing import Protocol, Sequence
 
-Timeframe = Literal["1D", "30M", "1H", "5M", "1M"]
+from octa.core.types.timeframe import Timeframe
 
 
 @dataclass(frozen=True)

@@ -6,14 +6,14 @@ from pathlib import Path
 
 from octa.core.autonomy.supervisor import AutonomySupervisor, SupervisorConfig
 from octa.core.data.providers.in_memory import InMemoryOHLCVProvider
-from octa.core.data.providers.ohlcv import OHLCVBar
+from octa.core.data.providers.ohlcv import OHLCVBar, Timeframe
 from octa.core.governance.audit_chain import AuditChain
 from octa.core.pipeline.paper_run import run_paper_cascade
 
 
 def _populate_provider(provider: InMemoryOHLCVProvider, symbols: list[str], bars: int) -> None:
     start = datetime(2024, 1, 1)
-    steps = {
+    steps: dict[Timeframe, timedelta] = {
         "1D": timedelta(days=1),
         "30M": timedelta(minutes=30),
         "1H": timedelta(hours=1),

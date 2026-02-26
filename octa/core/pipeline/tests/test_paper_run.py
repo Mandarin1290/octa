@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from octa.core.data.providers.in_memory import InMemoryOHLCVProvider
-from octa.core.data.providers.ohlcv import OHLCVBar
+from octa.core.data.providers.ohlcv import OHLCVBar, Timeframe
 from octa.core.pipeline.paper_run import run_paper_cascade
 
 
@@ -23,7 +23,7 @@ def test_paper_run_creates_audit(tmp_path: Path) -> None:
     provider = InMemoryOHLCVProvider()
     symbols = ["AAA", "BBB"]
     start = datetime(2024, 1, 1)
-    steps = {
+    steps: dict[Timeframe, timedelta] = {
         "1D": timedelta(days=1),
         "30M": timedelta(minutes=30),
         "1H": timedelta(hours=1),
@@ -63,7 +63,7 @@ def test_paper_run_decisions_only(tmp_path: Path) -> None:
     provider = InMemoryOHLCVProvider()
     symbols = ["AAA"]
     start = datetime(2024, 1, 1)
-    steps = {
+    steps: dict[Timeframe, timedelta] = {
         "1D": timedelta(days=1),
         "30M": timedelta(minutes=30),
         "1H": timedelta(hours=1),

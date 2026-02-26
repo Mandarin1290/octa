@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Dict, Mapping, Sequence
 
-from octa.core.data.providers.ohlcv import OHLCVBar, OHLCVProvider
+from octa.core.data.providers.ohlcv import OHLCVBar, OHLCVProvider, Timeframe
 from octa.core.features.altdata.registry import FeatureRegistry
 from octa.core.gates.structure_filter.gate import StructureGate
 
@@ -12,7 +12,7 @@ from octa.core.gates.structure_filter.gate import StructureGate
 @dataclass
 class L3StructureResult:
     symbol: str
-    timeframe: str
+    timeframe: Timeframe
     decision: str
     reason: str
     payload: Dict[str, Any]
@@ -60,7 +60,7 @@ class L3StructureAdapter:
                 "decision": decision,
                 "reason": overlay_reason,
             }
-        reason = overlay_reason if overlay_decision is not None else _reason_from_payload(payload)
+        reason = overlay_reason or _reason_from_payload(payload)
         return L3StructureResult(
             symbol=symbol,
             timeframe=self._gate.timeframe,
@@ -122,7 +122,7 @@ def _load_altdata(
     registry: FeatureRegistry | None,
     *,
     symbol: str,
-    timeframe: str,
+    timeframe: Timeframe,
     gate_layer: str,
     asof_ts: str | None,
 ) -> tuple[Dict[str, float], Dict[str, float]]:

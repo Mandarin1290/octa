@@ -7,6 +7,7 @@ from typing import Any, Mapping, Protocol, Sequence, TypedDict
 
 from octa.core.cascade.contracts import GateDecision, GateOutcome
 from octa.core.data.providers.ohlcv import OHLCVBar, OHLCVProvider
+from octa.core.types.timeframe import Timeframe
 
 
 @dataclass(frozen=True)
@@ -20,7 +21,7 @@ class OHLCVSeries:
 
 
 class SignalDataProvider(Protocol):
-    def get_ohlcv(self, symbol: str, timeframe: str) -> OHLCVSeries | None:
+    def get_ohlcv(self, symbol: str, timeframe: Timeframe) -> OHLCVSeries | None:
         ...
 
 
@@ -58,7 +59,7 @@ class SignalGateConfig:
 
 class SignalGate:
     name = "signal"
-    timeframe = "1H"
+    timeframe: Timeframe = "1H"
 
     def __init__(
         self,
@@ -214,7 +215,7 @@ def _signal_metrics(series: OHLCVSeries, config: SignalGateConfig) -> dict[str, 
     if any((not math.isfinite(price)) or price <= 0 for price in series.close):
         return None
 
-    ema_fast = _ema(series.close, config.ema_fast)
+    _ema_fast = _ema(series.close, config.ema_fast)
     ema_slow = _ema(series.close, config.ema_slow)
     if len(ema_slow) < config.ema_slope_lookback + 1:
         return None
