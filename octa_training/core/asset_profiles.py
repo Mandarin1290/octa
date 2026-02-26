@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 try:
     from pydantic.v1 import BaseModel, Field, validator
 except Exception:  # pragma: no cover
-    from pydantic import BaseModel, Field, validator
+    from pydantic.v1 import BaseModel, Field, validator
 
 
 # ---------------------------------------------------------------------------
@@ -172,7 +172,7 @@ def _stable_json_dumps(obj: Any) -> str:
 def profile_hash(profile_name: str, applied_thresholds: Dict[str, Any]) -> str:
     payload = {"profile": str(profile_name), "applied_thresholds": applied_thresholds}
     raw = _stable_json_dumps(payload).encode("utf-8")
-    return hashlib.sha1(raw).hexdigest()
+    return hashlib.sha256(raw).hexdigest()
 
 
 # Canonical profile name for stocks (centralized)

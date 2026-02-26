@@ -6,7 +6,7 @@ from typing import List, Optional
 try:
     from pydantic.v1 import BaseModel, Field, validator
 except Exception:  # pragma: no cover
-    from pydantic import BaseModel, Field, validator
+    from pydantic.v1 import BaseModel, Field, validator
 
 
 class MetricsSummaryLite(BaseModel):

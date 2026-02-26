@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 try:
     from pydantic.v1 import BaseModel, Field, validator
 except Exception:  # pragma: no cover
-    from pydantic import BaseModel, Field, validator
+    from pydantic.v1 import BaseModel, Field, validator
 
 from octa_training.core.metrics_contract import MetricsSummary
 
