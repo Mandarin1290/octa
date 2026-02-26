@@ -1,0 +1,204 @@
+{
+  "history": [
+    {
+      "hash": "b01d210f2da0fbf626518ce613e5fe3833f0a3af62949ab192aff945bcb5dab5",
+      "model": "deepseek-coder:6.7b",
+      "new_state": "VERIFIED",
+      "new_version": "ce298d984115",
+      "old_state": "CANDIDATE",
+      "old_version": "ce298d984115",
+      "reason": "initial_verification",
+      "timestamp_utc": "2026-02-26T17:25:33Z"
+    },
+    {
+      "hash": "c929267764ce3e14927e244910d7524e14ae622cfc844edf6c7ac23b87f18965",
+      "model": "falcon2:11b",
+      "new_state": "VERIFIED",
+      "new_version": "d8c09dbc67c3",
+      "old_state": "CANDIDATE",
+      "old_version": "d8c09dbc67c3",
+      "reason": "initial_verification",
+      "timestamp_utc": "2026-02-26T17:25:33Z"
+    },
+    {
+      "hash": "302689199d4c49c96d2ef313ca864fe4e65209750c01fbfcfe6bbbaff8ea030c",
+      "model": "gemma2:9b",
+      "new_state": "VERIFIED",
+      "new_version": "ff02c3702f32",
+      "old_state": "CANDIDATE",
+      "old_version": "ff02c3702f32",
+      "reason": "initial_verification",
+      "timestamp_utc": "2026-02-26T17:25:33Z"
+    },
+    {
+      "hash": "2fc71f43f454772de4886e38af6fb34c3e37d12cc950607e300b866b9b96f44e",
+      "model": "llama2:latest",
+      "new_state": "VERIFIED",
+      "new_version": "78e26419b446",
+      "old_state": "CANDIDATE",
+      "old_version": "78e26419b446",
+      "reason": "initial_verification",
+      "timestamp_utc": "2026-02-26T17:25:33Z"
+    },
+    {
+      "hash": "80db750fb8a7a273ace93f55af97e014a77c463c33bae135f5e826ad066eeffd",
+      "model": "mistral:7b-instruct",
+      "new_state": "VERIFIED",
+      "new_version": "6577803aa9a0",
+      "old_state": "CANDIDATE",
+      "old_version": "6577803aa9a0",
+      "reason": "initial_verification",
+      "timestamp_utc": "2026-02-26T17:25:33Z"
+    },
+    {
+      "hash": "a4e7bcfc18fe2dce35d9484ba4639649684dbfea8ab7cb6b870b5f093c11cf81",
+      "model": "nous-hermes:7b",
+      "new_state": "VERIFIED",
+      "new_version": "4bfb8ab0bd02",
+      "old_state": "CANDIDATE",
+      "old_version": "4bfb8ab0bd02",
+      "reason": "initial_verification",
+      "timestamp_utc": "2026-02-26T17:25:33Z"
+    },
+    {
+      "hash": "dbff6f425c7ff100f0b064cd9656465664ffcd7ffdf2fefb5f3c49b6fc1b125d",
+      "model": "openhermes:7b",
+      "new_state": "VERIFIED",
+      "new_version": "4fee9f56987b",
+      "old_state": "CANDIDATE",
+      "old_version": "4fee9f56987b",
+      "reason": "initial_verification",
+      "timestamp_utc": "2026-02-26T17:25:33Z"
+    },
+    {
+      "hash": "53c022bd935856923ba4e9f5f09959ee3ee3ae3b81cc2958ab242818c0573c2b",
+      "model": "qwen2.5:7b",
+      "new_state": "VERIFIED",
+      "new_version": "845dbda0ea48",
+      "old_state": "CANDIDATE",
+      "old_version": "845dbda0ea48",
+      "reason": "initial_verification",
+      "timestamp_utc": "2026-02-26T17:25:33Z"
+    },
+    {
+      "hash": "1fead39415c8355c0686f30094f98ad56277b5ccb4452e5d2cd4b7e4ce7e22de",
+      "model": "smollm2:1.7b",
+      "new_state": "VERIFIED",
+      "new_version": "cef4a1e09247",
+      "old_state": "CANDIDATE",
+      "old_version": "cef4a1e09247",
+      "reason": "initial_verification",
+      "timestamp_utc": "2026-02-26T17:25:33Z"
+    },
+    {
+      "hash": "9fe4b7bc2ffe6344064baf1c3ffe0d51e4a06f0e085449a1db25510b7127989e",
+      "model": "starcoder2:7b",
+      "new_state": "VERIFIED",
+      "new_version": "1550ab21b10d",
+      "old_state": "CANDIDATE",
+      "old_version": "1550ab21b10d",
+      "reason": "initial_verification",
+      "timestamp_utc": "2026-02-26T17:25:33Z"
+    },
+    {
+      "hash": "49410341244c7064c495a396fcda7793006f50d5c42341830438df3c2d937b84",
+      "model": "starling-lm:7b",
+      "new_state": "VERIFIED",
+      "new_version": "39153f619be6",
+      "old_state": "CANDIDATE",
+      "old_version": "39153f619be6",
+      "reason": "initial_verification",
+      "timestamp_utc": "2026-02-26T17:25:33Z"
+    },
+    {
+      "hash": "2fc71f43f454772de4886e38af6fb34c3e37d12cc950607e300b866b9b96f44e",
+      "model": "llama2:latest",
+      "new_state": "ACTIVE",
+      "new_version": "78e26419b446",
+      "old_state": "VERIFIED",
+      "old_version": "78e26419b446",
+      "reason": "auto_rotation",
+      "timestamp_utc": "2026-02-26T17:25:42Z"
+    },
+    {
+      "hash": "80db750fb8a7a273ace93f55af97e014a77c463c33bae135f5e826ad066eeffd",
+      "model": "mistral:7b-instruct",
+      "new_state": "ACTIVE",
+      "new_version": "6577803aa9a0",
+      "old_state": "VERIFIED",
+      "old_version": "6577803aa9a0",
+      "reason": "auto_rotation",
+      "timestamp_utc": "2026-02-26T17:25:42Z"
+    }
+  ],
+  "models": {
+    "deepseek-coder:6.7b": {
+      "id": "ce298d984115",
+      "name": "deepseek-coder:6.7b",
+      "state": "VERIFIED",
+      "verified_at": "2026-02-26T17:25:33Z"
+    },
+    "falcon2:11b": {
+      "id": "d8c09dbc67c3",
+      "name": "falcon2:11b",
+      "state": "VERIFIED",
+      "verified_at": "2026-02-26T17:25:33Z"
+    },
+    "gemma2:9b": {
+      "id": "ff02c3702f32",
+      "name": "gemma2:9b",
+      "state": "VERIFIED",
+      "verified_at": "2026-02-26T17:25:33Z"
+    },
+    "llama2:latest": {
+      "activated_at": "2026-02-26T17:25:42Z",
+      "id": "78e26419b446",
+      "name": "llama2:latest",
+      "state": "ACTIVE",
+      "verified_at": "2026-02-26T17:25:33Z"
+    },
+    "mistral:7b-instruct": {
+      "activated_at": "2026-02-26T17:25:42Z",
+      "id": "6577803aa9a0",
+      "name": "mistral:7b-instruct",
+      "state": "ACTIVE",
+      "verified_at": "2026-02-26T17:25:33Z"
+    },
+    "nous-hermes:7b": {
+      "id": "4bfb8ab0bd02",
+      "name": "nous-hermes:7b",
+      "state": "VERIFIED",
+      "verified_at": "2026-02-26T17:25:33Z"
+    },
+    "openhermes:7b": {
+      "id": "4fee9f56987b",
+      "name": "openhermes:7b",
+      "state": "VERIFIED",
+      "verified_at": "2026-02-26T17:25:33Z"
+    },
+    "qwen2.5:7b": {
+      "id": "845dbda0ea48",
+      "name": "qwen2.5:7b",
+      "state": "VERIFIED",
+      "verified_at": "2026-02-26T17:25:33Z"
+    },
+    "smollm2:1.7b": {
+      "id": "cef4a1e09247",
+      "name": "smollm2:1.7b",
+      "state": "VERIFIED",
+      "verified_at": "2026-02-26T17:25:33Z"
+    },
+    "starcoder2:7b": {
+      "id": "1550ab21b10d",
+      "name": "starcoder2:7b",
+      "state": "VERIFIED",
+      "verified_at": "2026-02-26T17:25:33Z"
+    },
+    "starling-lm:7b": {
+      "id": "39153f619be6",
+      "name": "starling-lm:7b",
+      "state": "VERIFIED",
+      "verified_at": "2026-02-26T17:25:33Z"
+    }
+  }
+}
