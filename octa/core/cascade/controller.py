@@ -120,23 +120,23 @@ class CascadeController:
                         continue
                     allrad_payload = _resolve_symbol_artifact(ctx.artifacts.get("allrad", {}), symbol)
                     allrad_decision = _risk_decision_from_payload(allrad_payload)
-                    decision = self._capital_engine.allocate(
+                    capital_decision = self._capital_engine.allocate(
                         execution_payload.get("execution_plan", {}),
                         allrad_decision,
                         capital_state,
                         {**market_state, "symbol": symbol},
                     )
                     ctx.artifacts.setdefault("capital", {})[symbol] = {
-                        "allow_trade": decision.allow_trade,
-                        "position_size": decision.position_size,
-                        "capital_used": decision.capital_used,
-                        "exposure_after": decision.exposure_after,
-                        "sizing_reason": decision.sizing_reason,
-                        "risk_flags": decision.risk_flags,
-                        "symbol": decision.symbol or symbol,
-                        "execution_plan": decision.execution_plan,
+                        "allow_trade": capital_decision.allow_trade,
+                        "position_size": capital_decision.position_size,
+                        "capital_used": capital_decision.capital_used,
+                        "exposure_after": capital_decision.exposure_after,
+                        "sizing_reason": capital_decision.sizing_reason,
+                        "risk_flags": capital_decision.risk_flags,
+                        "symbol": capital_decision.symbol or symbol,
+                        "execution_plan": capital_decision.execution_plan,
                     }
-                    if decision.allow_trade:
+                    if capital_decision.allow_trade:
                         capital_symbols.append(symbol)
                 current_symbols = capital_symbols
                 if not current_symbols:

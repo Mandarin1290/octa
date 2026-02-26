@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 def _try_build_gate(
-    path: str, adapter: Callable[[Any], GateInterface], ohlcv_provider: OHLCVProvider | None
+    path: str, adapter: Callable[..., GateInterface], ohlcv_provider: OHLCVProvider | None
 ) -> GateInterface | None:
     try:
         module_name, attr = path.rsplit(".", 1)
@@ -41,7 +41,7 @@ def _try_build_gate(
 
 def _try_build_gate_paths(
     paths: Iterable[str],
-    adapter: Callable[[Any], GateInterface],
+    adapter: Callable[..., GateInterface],
     ohlcv_provider: OHLCVProvider | None,
 ) -> GateInterface | None:
     for path in paths:
@@ -54,7 +54,7 @@ def _try_build_gate_paths(
 def build_default_gate_stack(ohlcv_provider: OHLCVProvider | None = None) -> list[GateInterface]:
     defaults: list[GateInterface] = []
 
-    gates: Sequence[tuple[Sequence[str], Callable[[Any], GateInterface], str, str]] = (
+    gates: Sequence[tuple[Sequence[str], Callable[..., GateInterface], str, str]] = (
         (
             (
                 "octa.core.gates.global_regime.gate.GlobalRegimeGate",
