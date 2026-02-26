@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional
 
+from octa.core.governance.governance_audit import EVENT_DRIFT_BREACH, GovernanceAudit
 from octa.core.governance.immutability_guard import evaluate_write_permission
 from octa_ledger.store import LedgerStore
 
@@ -28,6 +29,7 @@ def evaluate_drift(
     bucket: str,
     cfg: Mapping[str, Any],
     ctx: Optional[Mapping[str, Any]] = None,
+    gov_audit: Optional[GovernanceAudit] = None,
 ) -> DriftDecision:
     ledger = LedgerStore(ledger_dir)
     navs = _collect_navs(ledger)
@@ -65,6 +67,25 @@ def evaluate_drift(
             champion_path = _champion_path(gate, timeframe, bucket)
             _write_drift_audit(model_key, timeframe, bucket, kpi, streak, cfg, champion_path)
             _trigger_rollback(model_key, timeframe, champion_path)  # I6
+
+        # Governance hash-chain: always emit on breach regardless of immutability guard.
+        if gov_audit is not None:
+            try:
+                gov_audit.emit(
+                    EVENT_DRIFT_BREACH,
+                    {
+                        "model_key": model_key,
+                        "timeframe": timeframe,
+                        "bucket": bucket,
+                        "kpi": kpi,
+                        "streak": streak,
+                        "threshold": kpi_threshold,
+                        "reason": reason,
+                        "write_blocked": bool(audit_perm.blocked),
+                    },
+                )
+            except Exception:
+                pass  # never crash the drift monitor
 
     state_perm = evaluate_write_permission(
         ctx,

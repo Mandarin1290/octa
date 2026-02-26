@@ -8,6 +8,8 @@ from typing import Any, Dict, List
 
 import pandas as pd
 
+from octa.core.governance.governance_audit import GovernanceAudit
+from octa.core.governance.immutability_guard import IMMUTABLE_PROD_BLOCK
 from octa_ledger.events import AuditEvent
 from octa_ledger.store import LedgerStore
 from octa_training.core.artifact_io import load_tradeable_artifact
@@ -180,7 +182,16 @@ def run_paper(
     budget.apply_thread_caps()
 
     cfg = load_config(config_path)
-    reg = ArtifactRegistry(root=registry_root)
+    mode = "live" if bool(live_enable) else ("shadow" if str(level).strip().lower() == "shadow" else "paper")
+    run_ctx: Dict[str, Any] = {
+        "mode": mode,
+        "service": "autopilot",
+        "execution_active": True,
+        "run_id": str(run_id),
+        "entrypoint": "execution_service",
+    }
+    gov_audit = GovernanceAudit(run_id=run_id)
+    reg = ArtifactRegistry(root=registry_root, ctx=run_ctx)
     ledger = LedgerStore(ledger_dir)
 
     # Broker selection is configuration-driven. Default is sandbox.
@@ -189,8 +200,8 @@ def run_paper(
 
     promoted = reg.get_promoted_artifacts(level=level)
     out_log = Path(paper_log_path)
-    mode = "paper" if not live_enable else "live_shadow"
-    overlay_cfg = _load_overlay_config(mode=mode)
+    overlay_mode = "paper" if not live_enable else "live_shadow"
+    overlay_cfg = _load_overlay_config(mode=overlay_mode)
     drift_cfg = _load_drift_config()
     bucket = os.getenv("OCTA_MODEL_BUCKET", "default")
     current_dd = _current_drawdown(ledger)
@@ -313,7 +324,35 @@ def run_paper(
                 timeframe=timeframe,
                 bucket=bucket,
                 cfg=drift_cfg,
+                ctx=run_ctx,
+                gov_audit=gov_audit,
             )
+            if drift.reason == "drift_write_blocked":
+                incident_path = Path("octa") / "var" / "evidence" / str(run_id) / "drift_write_block.json"
+                incident_path.parent.mkdir(parents=True, exist_ok=True)
+                incident_path.write_text(
+                    json.dumps(
+                        {
+                            "ts": now_utc_iso(),
+                            "reason": IMMUTABLE_PROD_BLOCK,
+                            "mode": mode,
+                            "service": "autopilot",
+                            "run_id": str(run_id),
+                            "operation": "drift_state_write",
+                            "target": model_key,
+                            "diagnostics": dict(drift.diagnostics or {}),
+                        },
+                        ensure_ascii=False,
+                        indent=2,
+                        sort_keys=True,
+                        default=str,
+                    ),
+                    encoding="utf-8",
+                )
+                if mode in {"paper", "live"}:
+                    raise RuntimeError(IMMUTABLE_PROD_BLOCK)
+                skipped.append({"symbol": symbol, "timeframe": timeframe, "reason": "drift_write_blocked"})
+                continue
             if drift.disabled:
                 skipped.append({"symbol": symbol, "timeframe": timeframe, "reason": drift.reason, "kpi": drift.kpi})
                 continue
