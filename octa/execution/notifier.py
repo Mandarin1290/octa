@@ -76,7 +76,10 @@ class ExecutionNotifier:
         if not env.token or not env.chat_id:
             return False, "telegram_env_missing"
 
-        text = f"[{event_type}] {json.dumps(payload, sort_keys=True, default=str)[:3000]}"
+        if "message" in payload:
+            text = str(payload["message"])[:3000]
+        else:
+            text = f"[{event_type}] {json.dumps(payload, sort_keys=True, default=str)[:3000]}"
         url = f"https://api.telegram.org/bot{env.token}/sendMessage"
         body = urllib.parse.urlencode(
             {

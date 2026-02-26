@@ -40,8 +40,9 @@ def test_drift_breach_blocks_paper(tmp_path: Path, monkeypatch) -> None:
 
     drift_dir = tmp_path / "drift"
     drift_dir.mkdir(parents=True, exist_ok=True)
+    # disabled=False → active breach entry (runner detects breach); disabled=True would be admin-exempted
     (drift_dir / "global_1D_default.json").write_text(
-        json.dumps({"disabled": True, "reason": "drift_breach", "streak": 3}),
+        json.dumps({"disabled": False, "reason": "drift_breach", "streak": 3}),
         encoding="utf-8",
     )
     monkeypatch.setattr(
@@ -75,8 +76,9 @@ def test_drift_breach_warns_shadow_and_continues(tmp_path: Path, monkeypatch) ->
 
     drift_dir = tmp_path / "drift"
     drift_dir.mkdir(parents=True, exist_ok=True)
+    # disabled=False → active breach entry; runner warns and continues in shadow/dry-run
     (drift_dir / "global_1D_default.json").write_text(
-        json.dumps({"disabled": True, "reason": "drift_breach", "streak": 3}),
+        json.dumps({"disabled": False, "reason": "drift_breach", "streak": 3}),
         encoding="utf-8",
     )
 
@@ -103,8 +105,9 @@ def test_non_disabled_drift_state_does_not_block_paper(tmp_path: Path, monkeypat
 
     drift_dir = tmp_path / "drift"
     drift_dir.mkdir(parents=True, exist_ok=True)
+    # disabled=True → entry is administratively suppressed → runner skips it → no breach
     (drift_dir / "global_1D_default.json").write_text(
-        json.dumps({"disabled": False, "reason": "ok", "streak": 0}),
+        json.dumps({"disabled": True, "reason": "ok", "streak": 0}),
         encoding="utf-8",
     )
     monkeypatch.setattr(
@@ -125,3 +128,40 @@ def test_non_disabled_drift_state_does_not_block_paper(tmp_path: Path, monkeypat
         )
     )
     assert not (out_dir / "drift_breach_block.json").exists()
+
+
+def test_missing_disabled_field_breaches_fail_closed(tmp_path: Path, monkeypatch) -> None:
+    """Registry entry with no 'disabled' field must trigger BREACH (fail-closed)."""
+    monkeypatch.setenv("OCTA_TELEGRAM_ENABLED", "false")
+    base = tmp_path / "evidence_base"
+    _make_minimal_selection(base)
+
+    drift_dir = tmp_path / "drift"
+    drift_dir.mkdir(parents=True, exist_ok=True)
+    # No 'disabled' key → fail-closed → BREACH
+    (drift_dir / "global_1D_default.json").write_text(
+        json.dumps({"reason": "drift_breach", "streak": 5}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        "octa.execution.broker_router.BrokerRouter.account_snapshot",
+        lambda self: {"net_liquidation": 120000.0, "currency": "USD"},
+    )
+
+    out_dir = tmp_path / "execution_run"
+    with pytest.raises(RuntimeError, match="DRIFT_BREACH_BLOCK"):
+        run_execution(
+            ExecutionConfig(
+                mode="paper",
+                evidence_dir=out_dir,
+                state_dir=tmp_path / "state",
+                drift_registry_dir=drift_dir,
+                base_evidence_dir=base,
+                max_symbols=1,
+                loop=False,
+            )
+        )
+
+    incident = json.loads((out_dir / "drift_breach_block.json").read_text(encoding="utf-8"))
+    assert incident["reason"] == "DRIFT_BREACH_BLOCK"
+    assert len(incident["breaches"]) == 1

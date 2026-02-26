@@ -73,16 +73,18 @@ def _detect_drift_breaches(drift_registry_dir: Path) -> List[Dict[str, Any]]:
             payload = json.loads(path.read_text(encoding="utf-8"))
         except Exception:
             continue
-        if bool(payload.get("disabled", False)):
-            breaches.append(
-                {
-                    "model_key": path.stem,
-                    "path": str(path),
-                    "reason": str(payload.get("reason", "drift_breach")),
-                    "streak": payload.get("streak"),
-                    "updated_at": payload.get("updated_at"),
-                }
-            )
+        if payload.get("disabled") is True:
+            continue  # entry administratively suppressed; disabled=True means exempt
+        # disabled=False OR disabled missing → BREACH (fail-closed)
+        breaches.append(
+            {
+                "model_key": path.stem,
+                "path": str(path),
+                "reason": str(payload.get("reason", "drift_breach")),
+                "streak": payload.get("streak"),
+                "updated_at": payload.get("updated_at"),
+            }
+        )
     return breaches
 
 

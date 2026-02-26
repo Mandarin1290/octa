@@ -38,7 +38,7 @@ def evaluate_drift(
     kpi = _rolling_sharpe(navs, window_days)
     state = _load_state(model_key)
     streak = int(state.get("streak", 0))
-    disabled = bool(state.get("disabled", False))
+    disabled = False  # computed fresh each run from streak/KPI; not carried from registry
     reason = "ok"
 
     if not navs or kpi is None:
@@ -72,7 +72,10 @@ def evaluate_drift(
         details={"model_key": str(model_key), "timeframe": str(timeframe), "bucket": str(bucket), "phase": "state"},
     )
     if not state_perm.blocked:
-        _save_state(model_key, {"streak": streak, "disabled": disabled, "kpi": kpi, "updated_at": _now_iso()})
+        # Registry field `disabled` means "entry is administratively suppressed" (opposite of DriftDecision.disabled).
+        # DriftDecision.disabled=True (breach active) → registry disabled=False (entry is active, runner detects breach).
+        # DriftDecision.disabled=False (healthy) → registry disabled=True (entry suppressed, runner skips).
+        _save_state(model_key, {"streak": streak, "disabled": not disabled, "kpi": kpi, "updated_at": _now_iso()})
     return DriftDecision(
         disabled,
         reason,

@@ -39,18 +39,21 @@ def test_feast_apply_and_materialize():
     env["REDIS_HOST"] = "127.0.0.1"
     env["REDIS_PORT"] = "6379"
 
-    # Ensure feast_repo has a data.parquet with required join key `id` and `timestamp` columns
+    # Ensure feast_repo has a data.parquet with required join key `id` and `timestamp` columns.
+    # Generate deterministic sample data inline — no external file dependency.
     prep_cmd = (
         "python3 - <<'PY'\n"
         "import pandas as pd, pathlib\n"
-        "src='tests/data/sample_parquet.parquet'\n"
         "dst='feast_repo/data/data.parquet'\n"
-        "df=pd.read_parquet(src)\n"
-        "if 'id' not in df.columns: df=df.reset_index(drop=True); df['id']=df.index.astype(str)\n"
-        "if 'timestamp' not in df.columns:\n"
-        "    if 'date' in df.columns: df['timestamp']=pd.to_datetime(df['date'])\n"
-        "    else: df['timestamp']=pd.to_datetime(df.index)\n"
-        "df[['id','timestamp'] + [c for c in df.columns if c not in ('id','timestamp')][:2]].to_parquet(dst, index=False)\n"
+        "pathlib.Path(dst).parent.mkdir(parents=True, exist_ok=True)\n"
+        "n=20\n"
+        "df=pd.DataFrame({\n"
+        "    'id': [str(i) for i in range(n)],\n"
+        "    'timestamp': pd.date_range('2025-01-01', periods=n, freq='D', tz='UTC'),\n"
+        "    'feat1': [float(i) * 0.1 for i in range(n)],\n"
+        "    'feat2': [float(i) * 0.2 for i in range(n)],\n"
+        "})\n"
+        "df.to_parquet(dst, index=False)\n"
         "print('wrote', dst)\n"
         "PY"
     )

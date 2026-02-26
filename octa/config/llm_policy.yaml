@@ -1,0 +1,81 @@
+---
+# OCTA LLM Policy — institutional model governance
+# All rotation is offline-only; no external network calls permitted.
+
+models:
+  - name: llama2
+    tag: latest
+    pinned_version: "llama2:latest"
+    rotation: auto
+    require_hash: true
+    allow_pruning: false
+
+  - name: mistral
+    tag: 7b-instruct
+    pinned_version: "mistral:7b-instruct"
+    rotation: auto
+    require_hash: true
+    allow_pruning: false
+
+  - name: deepseek-coder
+    tag: 6.7b
+    pinned_version: "deepseek-coder:6.7b"
+    rotation: manual
+    require_hash: true
+    allow_pruning: false
+
+  - name: qwen2.5
+    tag: 7b
+    pinned_version: "qwen2.5:7b"
+    rotation: manual
+    require_hash: true
+    allow_pruning: false
+
+  - name: gemma2
+    tag: 9b
+    pinned_version: "gemma2:9b"
+    rotation: manual
+    require_hash: true
+    allow_pruning: false
+
+  - name: starcoder2
+    tag: 7b
+    pinned_version: "starcoder2:7b"
+    rotation: manual
+    require_hash: true
+    allow_pruning: false
+
+  - name: openhermes
+    tag: 7b
+    pinned_version: "openhermes:7b"
+    rotation: manual
+    require_hash: true
+    allow_pruning: false
+
+  - name: nous-hermes
+    tag: 7b
+    pinned_version: "nous-hermes:7b"
+    rotation: manual
+    require_hash: true
+    allow_pruning: false
+
+  - name: starling-lm
+    tag: 7b
+    pinned_version: "starling-lm:7b"
+    rotation: manual
+    require_hash: true
+    allow_pruning: false
+
+  - name: falcon2
+    tag: 11b
+    pinned_version: "falcon2:11b"
+    rotation: manual
+    require_hash: true
+    allow_pruning: false
+
+  - name: smollm2
+    tag: 1.7b
+    pinned_version: "smollm2:1.7b"
+    rotation: manual
+    require_hash: true
+    allow_pruning: false
