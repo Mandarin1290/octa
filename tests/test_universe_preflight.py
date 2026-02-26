@@ -142,6 +142,21 @@ def test_inventory_includes_asset_class(tmp_path: Path) -> None:
     assert by_symbol["ES"]["asset_class"] == "futures"
 
 
+def test_stock_parquet_alias_maps_to_equities(tmp_path: Path) -> None:
+    stock_root = tmp_path / "raw" / "Stock_parquet"
+    for tf in DEFAULT_REQUIRED_TFS:
+        _write_parquet(stock_root / f"AAPL_{tf}.parquet")
+
+    result = scan_inventory(tmp_path / "raw", DEFAULT_REQUIRED_TFS, strict=True)
+    paths = write_outputs(result, tmp_path / "out_stock_alias")
+    trainable = Path(paths["trainable_symbols"]).read_text(encoding="utf-8").splitlines()
+    assert "AAPL" in trainable
+
+    rows = [json.loads(line) for line in Path(paths["inventory"]).read_text(encoding="utf-8").splitlines() if line.strip()]
+    row = next(r for r in rows if r["symbol"] == "AAPL")
+    assert row["asset_class"] == "equities"
+
+
 def test_mixed_asset_class_excluded(tmp_path: Path) -> None:
     _write_symbol_tree(tmp_path, "equities", "MIX")
     _write_symbol_tree(tmp_path, "futures", "MIX")

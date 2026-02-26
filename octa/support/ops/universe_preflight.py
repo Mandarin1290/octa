@@ -145,11 +145,24 @@ def _pick_representative(paths: Sequence[str]) -> str:
 
 
 KNOWN_ASSET_CLASSES: Tuple[str, ...] = ("equities", "futures", "fx", "crypto", "etfs", "options", "rates", "indices")
+ASSET_CLASS_ALIASES: Dict[str, str] = {
+    "equity": "equities",
+    "stock": "equities",
+    "stocks": "equities",
+    "stock_parquet": "equities",
+    "future": "futures",
+    "forex": "fx",
+    "etf": "etfs",
+    "index": "indices",
+}
 
 
 def _derive_asset_class_from_path(path: Path) -> Optional[str]:
     parts = [str(p).strip().lower() for p in path.parts if str(p).strip()]
     for part in parts:
+        alias = ASSET_CLASS_ALIASES.get(part)
+        if alias:
+            return alias
         if part in KNOWN_ASSET_CLASSES:
             return part
     return None
