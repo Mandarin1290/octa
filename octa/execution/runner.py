@@ -24,6 +24,7 @@ from .notifier import ExecutionNotifier
 from .pre_execution import PreExecutionError, load_pre_execution_settings, run_pre_execution_gate
 from .risk_fail_closed import incident_to_dict, safe_decide
 from .risk_engine import RiskDecision, RiskEngine, RiskEngineConfig
+from .tws_probe import tws_probe
 
 
 def _utc_now_iso() -> str:
@@ -112,6 +113,7 @@ class ExecutionConfig:
     drift_registry_dir: Path = Path("octa") / "var" / "registry" / "models" / "drift"
     broker_cfg_path: Optional[Path] = None
     pre_execution_enabled: Optional[bool] = None
+    tws_probe_timeout_sec: int = 10
 
 
 def _ml_multiplier(level: int) -> float:
@@ -314,6 +316,21 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
                 "breach_count": len(drift_breaches),
             },
         )
+
+    # I7: TWS readiness probe — paper/live modes require a live broker connection
+    if mode_norm in {"paper", "live"}:
+        if not tws_probe(broker, timeout_seconds=cfg.tws_probe_timeout_sec):
+            incident = {
+                "timestamp_utc": _utc_now_iso(),
+                "mode": mode_label,
+                "reason": "TWS_PROBE_FAILED",
+            }
+            _write_json(cfg.evidence_dir / "tws_probe_failed.json", incident)
+            gov_audit.emit(
+                EVENT_GOVERNANCE_ENFORCED,
+                {"reason": "tws_not_ready", "mode": mode_label},
+            )
+            raise RuntimeError("TWS_PROBE_FAILED")
 
     cycle_count = max(1, int(cfg.max_cycles) if cfg.loop else 1)
     notifier.emit(
