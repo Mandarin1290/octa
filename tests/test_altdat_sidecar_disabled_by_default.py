@@ -10,7 +10,8 @@ class _S:
 
 
 def test_sidecar_disabled_by_default(tmp_path, monkeypatch):
-    # ensure no env override
+    # ensure no env override and no repo config file in cwd
+    monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("OKTA_ALTDATA_ENABLED", raising=False)
     monkeypatch.delenv("OKTA_ALTDATA_CONFIG", raising=False)
     monkeypatch.delenv("OKTA_ALTDATA_ROOT", raising=False)
