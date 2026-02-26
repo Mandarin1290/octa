@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Tuple
 
 import pandas as pd
 
+from octa.core.utils.typing_safe import as_float
 from octa_training.core.io_parquet import load_parquet
 
 from .types import GateDecision, normalize_timeframe, timeframe_seconds
@@ -109,12 +110,12 @@ def evaluate_data_quality(
         else:
             # Session markets (equities/futures/options): ignore known session breaks
             # and evaluate only intraday-adjacent deltas.
-            max_intraday_gap_s = float(exp_s) * 4.0
+            max_intraday_gap_s = as_float(exp_s) * 4.0
             comparable = deltas[deltas <= max_intraday_gap_s]
             details["max_intraday_gap_s"] = max_intraday_gap_s
             details["compared_deltas_n"] = int(len(comparable))
             details["ignored_session_gap_n"] = int(len(deltas) - len(comparable))
-        match = comparable.sub(float(exp_s)).abs() <= tol
+        match = comparable.sub(as_float(exp_s)).abs() <= tol
         match_frac = float(match.mean()) if len(match) else 0.0
         details["expected_s"] = exp_s
         details["match_frac"] = match_frac
@@ -124,7 +125,7 @@ def evaluate_data_quality(
         # missing bars (continuous markets only: fx/crypto)
         if is_continuous:
             span_s = float((idx[-1] - idx[0]).total_seconds())
-            expected_n = int(span_s // float(exp_s)) + 1 if span_s > 0 else len(idx)
+            expected_n = int(span_s // as_float(exp_s)) + 1 if span_s > 0 else len(idx)
             missing_frac = 0.0
             if expected_n > 0:
                 missing_frac = float(max(0, expected_n - len(idx)) / expected_n)

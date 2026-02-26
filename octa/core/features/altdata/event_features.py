@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import Any, Mapping
 
+from octa.core.utils.typing_safe import as_float
+
 
 def build(payloads: Mapping[str, Any], *, asof_ts: str | None = None) -> dict[str, float]:
     gdelt = payloads.get("gdelt", {})
@@ -61,9 +63,11 @@ def _compute_event_scores(rows: list[dict[str, Any]], asof_dt: datetime | None) 
         query_id = str(row.get("query_id", "")).strip().lower()
         window = str(row.get("window", "")).strip().lower()
         metric = str(row.get("metric", "")).strip().lower()
-        try:
-            value = float(row.get("value"))
-        except Exception:
+        raw_value = row.get("value")
+        if raw_value is None:
+            continue
+        value = as_float(raw_value, default=float("nan"))
+        if value != value:  # NaN
             continue
         if metric not in {"volume", "volume_intensity"} or not query_id:
             continue

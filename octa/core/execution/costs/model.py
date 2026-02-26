@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import asdict, dataclass, field
-from typing import Any, Dict, Iterable, List, Mapping, Optional
+from dataclasses import asdict, dataclass
+from typing import Any, Dict, Iterable, List, Mapping
 
+from octa.core.utils.typing_safe import as_float
 
 COST_MODEL_VERSION = "v1"
 
@@ -84,13 +85,13 @@ def estimate_costs(
     borrow_total = 0.0
     fx_total = 0.0
 
-    vol = _as_float(market_ctx.get("volatility"), default=0.0)
-    liquidity = _as_float(market_ctx.get("liquidity"), default=1.0)
-    size_frac_default = _as_float(market_ctx.get("order_size_frac"), default=0.01)
+    vol = as_float(market_ctx.get("volatility"), default=0.0)
+    liquidity = as_float(market_ctx.get("liquidity"), default=1.0)
+    size_frac_default = as_float(market_ctx.get("order_size_frac"), default=0.01)
     is_fx_conversion = bool(market_ctx.get("fx_conversion", False))
 
     for trade in trades:
-        size_frac = _as_float(trade.get("size_frac"), default=size_frac_default)
+        size_frac = as_float(trade.get("size_frac"), default=size_frac_default)
         fee = cost_cfg.fee_bps
         spread = cost_cfg.spread_bps * _spread_multiplier(trade, market_ctx)
         slip = cost_cfg.slippage_bps * (1.0 + vol) * (size_frac / max(liquidity, 1e-6))
@@ -98,9 +99,9 @@ def estimate_costs(
         total = max(cost_cfg.min_cost_bps, min(cost_cfg.max_cost_bps, total))
 
         # Borrow cost for short positions (daily rate from annual)
-        is_short = _as_float(trade.get("side"), default=1.0)
-        if is_short is not None and is_short < 0:
-            holding_days = _as_float(trade.get("holding_days"), default=1.0) or 1.0
+        is_short = as_float(trade.get("side"), default=1.0)
+        if is_short < 0:
+            holding_days = as_float(trade.get("holding_days"), default=1.0) or 1.0
             borrow = (cost_cfg.borrow_annual_bps / 252.0) * holding_days
             borrow_total += borrow
             total += borrow
@@ -147,19 +148,10 @@ def apply_costs(pnl_series: Iterable[float], costs: CostsBreakdown) -> List[floa
 
 
 def _spread_multiplier(trade: Mapping[str, Any], market_ctx: Mapping[str, Any]) -> float:
-    high = _as_float(market_ctx.get("high"), default=None)
-    low = _as_float(market_ctx.get("low"), default=None)
-    price = _as_float(trade.get("price"), default=None)
-    if high is None or low is None or price is None or price == 0:
+    high = as_float(market_ctx.get("high"), default=float("nan"))
+    low = as_float(market_ctx.get("low"), default=float("nan"))
+    price = as_float(trade.get("price"), default=float("nan"))
+    if high != high or low != low or price != price or price == 0:
         return 1.0
     spread_proxy = max(0.0, (high - low) / price)
     return min(3.0, max(0.5, 1.0 + spread_proxy))
-
-
-def _as_float(value: Any, *, default: Optional[float]) -> Optional[float]:
-    if value is None:
-        return default
-    try:
-        return float(value)
-    except Exception:
-        return default

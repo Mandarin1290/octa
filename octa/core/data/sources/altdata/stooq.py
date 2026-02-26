@@ -192,7 +192,7 @@ def _filter_rows(rows: list[dict[str, Any]], *, start: date, end: date) -> list[
         if dt.date() < start or dt.date() > end:
             continue
         filtered.append(row)
-    filtered.sort(key=lambda r: r.get("ts"))
+    filtered.sort(key=lambda r: str(r.get("ts") or ""))
     return filtered
 
 

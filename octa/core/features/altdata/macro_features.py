@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 from statistics import pstdev
 from typing import Any, Mapping
 
+from octa.core.utils.typing_safe import as_float
+
 
 def build(payloads: Mapping[str, Any], *, asof_ts: str | None = None) -> dict[str, float]:
     fred = payloads.get("fred", {})
@@ -19,10 +21,12 @@ def build(payloads: Mapping[str, Any], *, asof_ts: str | None = None) -> dict[st
         if not series:
             return None
         val = series[-1].get("value")
-        try:
-            return float(val)
-        except Exception:
+        if val is None:
             return None
+        parsed = as_float(val, default=float("nan"))
+        if parsed != parsed:  # NaN
+            return None
+        return parsed
 
     series = fred.get("series", {}) if isinstance(fred, dict) else {}
     fedfunds = _last(series.get("FEDFUNDS", [])) if isinstance(series, dict) else None
@@ -45,10 +49,7 @@ def build(payloads: Mapping[str, Any], *, asof_ts: str | None = None) -> dict[st
         features["inflation_cpi"] = cpi
 
     energy = eia.get("energy_shock", 0.0) if isinstance(eia, dict) else 0.0
-    try:
-        features["energy_shock"] = float(energy)
-    except Exception:
-        pass
+    features["energy_shock"] = as_float(energy, default=0.0)
 
     ecb_rate = _last(ecb.get("series", {}).get("ECB_RATE", [])) if isinstance(ecb, dict) else None
     if ecb_rate is not None:
@@ -56,17 +57,15 @@ def build(payloads: Mapping[str, Any], *, asof_ts: str | None = None) -> dict[st
 
     wb_growth = worldbank.get("gdp_growth") if isinstance(worldbank, dict) else None
     if wb_growth is not None:
-        try:
-            features["worldbank_gdp_growth"] = float(wb_growth)
-        except Exception:
-            pass
+        parsed = as_float(wb_growth, default=float("nan"))
+        if parsed == parsed:
+            features["worldbank_gdp_growth"] = parsed
 
     oecd_cli = oecd.get("cli") if isinstance(oecd, dict) else None
     if oecd_cli is not None:
-        try:
-            features["oecd_cli"] = float(oecd_cli)
-        except Exception:
-            pass
+        parsed = as_float(oecd_cli, default=float("nan"))
+        if parsed == parsed:
+            features["oecd_cli"] = parsed
 
     risk_score = 0.0
     if features.get("curve_10y_2y", 0.0) < 0:
@@ -139,9 +138,11 @@ def _series_for_proxy(rows: list[dict[str, Any]], proxy: str, cutoff: datetime |
             continue
         if cutoff is not None and ts > cutoff:
             continue
-        try:
-            close = float(row.get("close"))
-        except Exception:
+        raw_close = row.get("close")
+        if raw_close is None:
+            continue
+        close = as_float(raw_close, default=float("nan"))
+        if close != close:  # NaN
             continue
         series.append((ts, close))
     series.sort(key=lambda r: r[0])

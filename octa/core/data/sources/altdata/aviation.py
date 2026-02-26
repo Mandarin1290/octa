@@ -44,6 +44,8 @@ import numpy as np
 import pandas as pd
 import requests
 
+from octa.core.utils.typing_safe import as_float
+
 __all__ = ["get_aviation_features"]
 
 
@@ -369,10 +371,8 @@ def _collect_once(base_dir: Path, now_utc: Optional[pd.Timestamp] = None) -> Non
             continue
         base = _compute_region_features(frame, region)
         # If too few aircraft, write NaNs (no estimation)
-        if (
-            math.isfinite(base.get("flights_active", float("nan")))
-            and float(base.get("flights_active")) < cfg.min_aircraft_count
-        ):
+        flights_active = as_float(base.get("flights_active"), default=float("nan"))
+        if math.isfinite(flights_active) and flights_active < cfg.min_aircraft_count:
             row = _nan_feature_dict()
         else:
             row = {**_nan_feature_dict(), **base}

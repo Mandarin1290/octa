@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional
 
 from octa.core.governance.immutability_guard import assert_write_allowed
+from octa.core.utils.typing_safe import as_int
 from .types import now_utc_iso, stable_hash
 
 
@@ -256,7 +257,7 @@ class ArtifactRegistry:
                 meta_json,
             ),
         )
-        return int(cur.lastrowid)
+        return as_int(cur.lastrowid, default=0)
 
     def add_metrics(
         self,
@@ -286,7 +287,7 @@ class ArtifactRegistry:
                 now_utc_iso(),
             ),
         )
-        return int(cur.lastrowid)
+        return as_int(cur.lastrowid, default=0)
 
     def set_artifact_status(self, artifact_id: int, status: str, note_json: Optional[str] = None) -> None:
         self._assert_mutation_allowed(

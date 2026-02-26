@@ -20,12 +20,14 @@ def run_wfo(metrics: Mapping[str, float]) -> WFOResult:
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Optional
+from typing import Any, Callable, Dict, Iterable, List
 
 import json
 import math
 
 import pandas as pd
+
+from octa.core.utils.typing_safe import as_float
 
 
 @dataclass(frozen=True)
@@ -140,18 +142,21 @@ def validate_model(
 def _aggregate_metrics(metrics_by_split: List[Dict[str, Any]]) -> Dict[str, Any]:
     if not metrics_by_split:
         return {"count": 0}
-    keys = set()
+    keys: set[str] = set()
     for row in metrics_by_split:
         keys.update(row.keys())
     keys.discard("fold")
     summary: Dict[str, Any] = {"count": len(metrics_by_split)}
     for key in keys:
-        vals = []
+        vals: list[float] = []
         for row in metrics_by_split:
-            try:
-                vals.append(float(row.get(key)))
-            except Exception:
+            raw = row.get(key)
+            if raw is None:
                 continue
+            val = as_float(raw, default=float("nan"))
+            if not math.isfinite(val):
+                continue
+            vals.append(val)
         if not vals:
             continue
         mean = sum(vals) / len(vals)
