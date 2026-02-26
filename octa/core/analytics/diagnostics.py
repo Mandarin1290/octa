@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from statistics import mean
-from typing import Mapping, Sequence
+from typing import Sequence
 
 
 @dataclass(frozen=True)

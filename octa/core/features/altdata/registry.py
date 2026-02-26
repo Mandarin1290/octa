@@ -40,7 +40,7 @@ def ensure_store(paths: StorePaths) -> None:
 
 def _has_duckdb() -> bool:
     try:
-        import duckdb  # type: ignore
+        import duckdb  # type: ignore  # noqa: F401
 
         return True
     except Exception:

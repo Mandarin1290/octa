@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Iterable, Mapping
+from typing import Iterable
 
 from .ohlcv import OHLCVBar, OHLCVProvider, Timeframe
 

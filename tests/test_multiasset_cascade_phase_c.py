@@ -542,7 +542,7 @@ class TestNewBuilders:
 # 10. FeatureRegistry schema versioning
 # ---------------------------------------------------------------------------
 
-from octa.core.features.altdata.registry import FeatureRegistry, _SCHEMA_VERSION
+from octa.core.features.altdata.registry import _SCHEMA_VERSION
 
 
 class TestSchemaVersioning:

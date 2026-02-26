@@ -9,7 +9,7 @@ import tarfile
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Mapping, Sequence, Tuple
+from typing import Any, Dict, List, Mapping, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
@@ -1042,8 +1042,8 @@ def run() -> int:
         t2_syms = elig["tier_symbols"]["tier2"].get(ac, [])
         t3_syms = elig["tier_symbols"]["tier3"].get(ac, [])
 
-        t1 = _run_tier("tier1", t1_syms, ac, ac_syms, global_end, ac_cal / "tier1", 5, cost_fp)
-        t2 = _run_tier("tier2", t2_syms, ac, ac_syms, global_end, ac_cal / "tier2", 5, cost_fp)
+        _t1 = _run_tier("tier1", t1_syms, ac, ac_syms, global_end, ac_cal / "tier1", 5, cost_fp)
+        _t2 = _run_tier("tier2", t2_syms, ac, ac_syms, global_end, ac_cal / "tier2", 5, cost_fp)
         t3 = _run_tier("tier3", t3_syms, ac, ac_syms, global_end, ac_cal / "tier3", 5, cost_fp)
 
         hf_near = {
@@ -1102,7 +1102,7 @@ def run() -> int:
     repro_symbols: List[str] = []
     for ac in REQ_ASSET_CLASSES:
         repro_symbols.extend(elig["tier_symbols"]["tier1"].get(ac, []))
-    first_asset = next(iter(symbols_by_asset.values()), {})
+    _first_asset = next(iter(symbols_by_asset.values()), {})
     merged_symbol_map: Dict[str, SymbolData] = {}
     for d in symbols_by_asset.values():
         merged_symbol_map.update(d)
@@ -1156,7 +1156,7 @@ def run() -> int:
     # certification using FINAL HF_LEVEL only
     cert_dir = out / "certification"
     cert_dir.mkdir(parents=True, exist_ok=True)
-    criteria = _build_certification_criteria(cert_dir)
+    _criteria = _build_certification_criteria(cert_dir)
 
     cert_cfg = {
         "run_id": run_id,

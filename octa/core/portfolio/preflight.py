@@ -12,7 +12,7 @@ Any *unknown* or *error* state triggers a BLOCK — fail-closed.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, Mapping, Optional, Sequence
 
 from .correlation import _corr

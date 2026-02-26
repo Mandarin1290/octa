@@ -30,7 +30,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from .artifact_signing import generate_keypair, verify_artifact
+from .artifact_signing import generate_keypair
 
 _DEFAULT_KEYSTORE = Path("octa") / "var" / "keys"
 

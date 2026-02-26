@@ -19,9 +19,8 @@ import hashlib
 import json
 import subprocess
 from dataclasses import dataclass
-from datetime import date
 from pathlib import Path
-from typing import Any, Dict, Mapping, Optional, Sequence
+from typing import Any, Mapping, Optional, Sequence
 
 
 def _git_sha() -> str:

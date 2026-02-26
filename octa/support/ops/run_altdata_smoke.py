@@ -4,7 +4,7 @@ import os
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 
-from octa.core.data.sources.altdata.cache import read_snapshot, write_snapshot
+from octa.core.data.sources.altdata.cache import write_snapshot
 from octa.core.data.sources.altdata.orchestrator import build_altdata_stack
 from octa.core.features.altdata.registry import FeatureRegistry
 

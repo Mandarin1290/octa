@@ -12,7 +12,7 @@ append-only and hash-linked so that any tampering is detectable via
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Mapping, Optional
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Mapping
+from typing import Mapping
 
 
 @dataclass(frozen=True)

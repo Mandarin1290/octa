@@ -52,17 +52,17 @@ def _rolling_quantile_thresholds(
     pred = pd.to_numeric(pred, errors="coerce").astype(float)
     if window is None:
         u = pred.expanding(min_periods=50).quantile(upper_q).shift(1)
-        l = pred.expanding(min_periods=50).quantile(lower_q).shift(1)
-        return u, l
+        lo = pred.expanding(min_periods=50).quantile(lower_q).shift(1)
+        return u, lo
     win = int(window)
     if win <= 1:
         # degenerate: effectively expanding
         u = pred.expanding(min_periods=50).quantile(upper_q).shift(1)
-        l = pred.expanding(min_periods=50).quantile(lower_q).shift(1)
-        return u, l
+        lo = pred.expanding(min_periods=50).quantile(lower_q).shift(1)
+        return u, lo
     u = pred.rolling(win, min_periods=min(50, win)).quantile(upper_q).shift(1)
-    l = pred.rolling(win, min_periods=min(50, win)).quantile(lower_q).shift(1)
-    return u, l
+    lo = pred.rolling(win, min_periods=min(50, win)).quantile(lower_q).shift(1)
+    return u, lo
 
 
 def infer_frequency(index: pd.Index) -> float:
@@ -192,7 +192,7 @@ def compute_equity_and_metrics(prices: pd.Series, preds: pd.Series, settings: Ev
             )
         else:
             u = df['pred'].quantile(settings.upper_q)
-            l = df['pred'].quantile(settings.lower_q)
+            lo = df['pred'].quantile(settings.lower_q)
         raw = pd.Series(0.0, index=df.index)
         # Classification target y_cls_* is 1 for positive forward return.
         # Therefore higher predicted probability should map to LONG, lower to SHORT.
@@ -201,7 +201,7 @@ def compute_equity_and_metrics(prices: pd.Series, preds: pd.Series, settings: Ev
             raw[df['pred'] < l_s] = -1.0
         else:
             raw[df['pred'] > u] = 1.0
-            raw[df['pred'] < l] = -1.0
+            raw[df['pred'] < lo] = -1.0
     else:
         # regression: use quantile bands around median
         median = df['pred'].median()

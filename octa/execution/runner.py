@@ -15,7 +15,7 @@ from octa.core.governance.governance_audit import (
     GovernanceAudit,
 )
 from octa.execution.capital_state import CapitalState, NAV_DISCREPANCY_THRESHOLD
-from octa.core.portfolio.preflight import PreflightConfig, run_preflight
+from octa.core.portfolio.preflight import run_preflight
 
 from .broker_router import BrokerRouter, BrokerRouterConfig
 from .carry import generate_carry_intents, load_json_file, resolve_carry_rates

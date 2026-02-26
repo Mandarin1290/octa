@@ -65,7 +65,7 @@ def _read_jsonl(path: Path) -> list[dict]:
 
 def test_warning_alert_first_call_goes_through(tmp_path: Path) -> None:
     n = _make_notifier(tmp_path)
-    result = n.emit_alert("drift_breach_warning", {"model": "AAPL_1D"})
+    n.emit_alert("drift_breach_warning", {"model": "AAPL_1D"})
     rows = _read_jsonl(n.notifications_path)
     assert len(rows) == 1
     assert rows[0]["error"] != "alert_dedup_suppressed"
@@ -188,7 +188,7 @@ def test_emit_alert_does_not_affect_emit_dedup(tmp_path: Path) -> None:
     n = _make_notifier(tmp_path, dedup_window=300)
     n.emit_alert("risk_block", {"symbol": "AAPL"})  # marks _last_alert_ts
     # emit() uses _last_event_ts keyed by full payload — independent
-    result = n.emit("risk_block", {"symbol": "AAPL"})
+    n.emit("risk_block", {"symbol": "AAPL"})
     rows = _read_jsonl(n.notifications_path)
     # emit() row should NOT be alert_dedup_suppressed (different state)
     emit_rows = [r for r in rows if r["error"] != "alert_dedup_suppressed"]

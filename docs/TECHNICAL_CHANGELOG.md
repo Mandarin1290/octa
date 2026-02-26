@@ -3,6 +3,41 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-02-26 21:29:31] TEST
+Code-Änderungen - 39 Code-Dateien - 3 Test-Dateien - (+85/-68 Zeilen)
+
+**Statistics:**
+- Files Changed: 44
+- Lines Added: +85
+- Lines Deleted: -68
+- Net Change: +17
+
+**File-Level Changes:**
+```
++    1 -    1  octa/accounting/capital_ledger.py
++    1 -    1  octa/core/analytics/attribution.py
++    1 -    1  octa/core/analytics/diagnostics.py
++    1 -    1  octa/core/autonomy/health.py
++    0 -    1  octa/core/autonomy/tests/test_supervisor_runbooks.py
++    0 -    1  octa/core/capital/sizing.py
++    1 -    1  octa/core/data/providers/in_memory.py
++    2 -    2  octa/core/data/quality/sanitizer.py
++    1 -    1  octa/core/data/sources/altdata/base.py
++    6 -    6  octa/core/eligibility/filter.py
++    1 -    1  octa/core/execution/oms.py
++    1 -    1  octa/core/features/altdata/registry.py
++    1 -    1  octa/core/governance/champion_challenger.py
++    1 -    1  octa/core/governance/governance_audit.py
++    1 -    1  octa/core/governance/key_rotation.py
++    1 -    1  octa/core/governance/keystore.py
++    1 -    1  octa/core/governance/model_release.py
++    1 -    1  octa/core/orchestration/adapters/yahoo_hooks.py
++    2 -    2  octa/core/orchestration/runner.py
++    1 -    2  octa/core/orchestration/training_fingerprint.py
+... and 24 more files
+```
+
+
 ## [2026-02-26 19:38:49] TEST
 Code-Änderungen - 2 Code-Dateien - 1 Test-Dateien - (+322/-8 Zeilen)
 

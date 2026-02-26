@@ -2,3 +2,5 @@ duckdb
 dagster
 typer
 pyarrow
+types-PyYAML==6.0.12.20250915
+types-requests==2.32.4.20250809

@@ -4,7 +4,7 @@ import json
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence
 
 import pandas as pd
 
@@ -209,7 +209,7 @@ def run_cascade(
         def _eval_l1(sym: str):
             try:
                 return l1_adapter.evaluate(symbol=sym, parquet_path=parquet_by_symbol.get(sym))
-            except Exception as exc:
+            except Exception:
                 return L1GlobalAdapter().evaluate(symbol=sym, parquet_path=None)
 
         for result in _map_symbols(pending_l1, _eval_l1):

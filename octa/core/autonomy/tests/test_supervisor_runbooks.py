@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
 
 from octa.core.autonomy.health import HealthLevel, HealthReport, SubsystemHealth
 from octa.core.autonomy.runbooks import RunbookConfig, RunbookActionType, select_runbook

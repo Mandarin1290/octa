@@ -9,7 +9,7 @@ import json
 import math
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Sequence
 
 
 @dataclass(frozen=True)
@@ -48,7 +48,7 @@ def compute_eligibility(
 
     # Clean data
     valid_closes = [c for c in closes if c is not None and math.isfinite(c) and c > 0]
-    valid_volumes = [v for v in volumes if v is not None and math.isfinite(v) and v > 0]
+    _valid_volumes = [v for v in volumes if v is not None and math.isfinite(v) and v > 0]
 
     valid_days = len(valid_closes)
     if valid_days < 10:
@@ -74,10 +74,10 @@ def compute_eligibility(
 
     # Spread proxy: median((high-low)/close)
     spread_proxies = []
-    for h, l, c in zip(highs, lows, closes):
-        if (h is not None and l is not None and c is not None
-                and math.isfinite(h) and math.isfinite(l) and math.isfinite(c) and c > 0):
-            sp = (h - l) / c
+    for h, lo, c in zip(highs, lows, closes):
+        if (h is not None and lo is not None and c is not None
+                and math.isfinite(h) and math.isfinite(lo) and math.isfinite(c) and c > 0):
+            sp = (h - lo) / c
             if math.isfinite(sp) and sp >= 0:
                 spread_proxies.append(sp)
     if spread_proxies:

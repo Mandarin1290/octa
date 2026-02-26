@@ -4,12 +4,11 @@ import argparse
 import csv
 import hashlib
 import json
-import os
 import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Sequence, Tuple
+from typing import Any, Dict, List, Sequence, Tuple
 
 from octa.core.data.sources.altdata.orchestrator import build_altdata_stack
 from octa_ops.autopilot.universe import resolve_parquet_for_symbol_tf

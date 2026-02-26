@@ -20,8 +20,6 @@ from octa.core.data.sources.altdata.sidecar import try_run as _altdat_try_run
 from octa.core.research.robustness.monte_carlo import run_monte_carlo
 from octa.core.research.scoring.scorer import score_run
 from octa.core.research.validation.walk_forward import (
-    Split,
-    ValidationReport,
     make_walk_forward_splits,
     validate_model,
 )
@@ -231,7 +229,7 @@ def run_institutional_train(
             wf_cfg["timeframe"] = tf
             wf_splits = make_walk_forward_splits(features_res.X.index, wf_cfg)
             purged_cfg = validation_cfg.get("purged_cv", {})
-            purged_splits = purged_kfold_splits(
+            _purged_splits = purged_kfold_splits(
                 features_res.X.index,
                 n_splits=int(purged_cfg.get("n_splits", 5)),
                 embargo=int(purged_cfg.get("embargo_bars", 5)),

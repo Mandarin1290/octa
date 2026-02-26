@@ -4,7 +4,7 @@ import json
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Sequence
 
 from octa.core.capital.engine import CapitalDecision
 from octa.core.portfolio.engine import PortfolioDecision

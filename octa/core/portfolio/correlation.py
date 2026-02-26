@@ -3,8 +3,7 @@ from __future__ import annotations
 
 from typing import Mapping, Sequence
 
-from dataclasses import dataclass
-from statistics import mean, pstdev
+from statistics import mean
 
 
 def ewma_correlation_matrix(returns: Mapping[str, Sequence[float]]) -> dict[tuple[str, str], float]:
