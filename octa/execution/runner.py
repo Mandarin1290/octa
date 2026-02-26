@@ -10,9 +10,11 @@ from typing import Any, Dict, List, Optional
 
 from octa.core.governance.governance_audit import (
     EVENT_EXECUTION_PREFLIGHT,
+    EVENT_GOVERNANCE_ENFORCED,
     EVENT_PORTFOLIO_PREFLIGHT,
     GovernanceAudit,
 )
+from octa.execution.capital_state import CapitalState, NAV_DISCREPANCY_THRESHOLD
 from octa.core.portfolio.preflight import PreflightConfig, run_preflight
 
 from .broker_router import BrokerRouter, BrokerRouterConfig
@@ -274,6 +276,24 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
             },
         },
     )
+
+    # I5: capital guard — cross-run NAV discrepancy check
+    capital_state = CapitalState.load_or_init(cfg.state_dir)
+    disc = capital_state.discrepancy(nav)
+    if disc > NAV_DISCREPANCY_THRESHOLD:
+        gov_audit.emit(
+            EVENT_GOVERNANCE_ENFORCED,
+            {
+                "reason": "nav_discrepancy",
+                "persisted_nav": capital_state.nav,
+                "broker_nav": nav,
+                "discrepancy_pct": round(disc * 100, 4),
+                "threshold_pct": round(NAV_DISCREPANCY_THRESHOLD * 100, 4),
+                "mode": mode_label,
+            },
+        )
+    # Conservative: use the larger of broker nav and persisted nav
+    nav = max(nav, capital_state.nav)
 
     drift_breaches = _detect_drift_breaches(cfg.drift_registry_dir)
     if drift_breaches:
@@ -705,4 +725,12 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
             "blocks": len(blocks),
         },
     )
+
+    # I5: persist updated capital state for next run
+    CapitalState(
+        nav=nav,
+        timestamp_utc=_utc_now_iso(),
+        source=nav_source,
+    ).save(cfg.state_dir)
+
     return summary
