@@ -29,7 +29,7 @@ class FredSource:
         if not series:
             return None
         start = asof - timedelta(days=365)
-        payload = {"series": {}}
+        payload: dict[str, Any] = {"series": {}}
         for series_id in series:
             res = fetch_fred_series(series_id=series_id, start_ts=start, end_ts=asof, api_key=api_key)
             if res.ok and res.df is not None:

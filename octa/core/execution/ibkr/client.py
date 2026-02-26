@@ -3,10 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, List
 
+_IBClass: Any = None
 try:
-    from ib_insync import IB  # type: ignore
+    from ib_insync import IB as _IBClass  # type: ignore[assignment]
 except Exception:  # pragma: no cover - optional dependency
-    IB = None
+    pass
 
 
 @dataclass
@@ -20,7 +21,7 @@ class IBKRClientConfig:
 class IBKRClient:
     def __init__(self, config: IBKRClientConfig | None = None) -> None:
         self._config = config or IBKRClientConfig()
-        self._ib = IB() if IB is not None else None
+        self._ib = _IBClass() if _IBClass is not None else None
 
     def connect(self) -> None:
         if self._ib is None:

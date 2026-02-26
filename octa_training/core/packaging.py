@@ -181,16 +181,16 @@ def _train_full_model(X: pd.DataFrame, y: pd.Series, model_name: str, task: str,
         params = getattr(settings, "lgbm_params", {}).copy()
         params.setdefault("random_state", seed)
         params.setdefault("objective", "regression" if task == "reg" else "binary")
-        dtrain = lgb.Dataset(X, label=y)
-        booster = lgb.train(params, dtrain, num_boost_round=getattr(settings, "num_boost_round", 1000))
+        dtrain_lgb = lgb.Dataset(X, label=y)
+        booster = lgb.train(params, dtrain_lgb, num_boost_round=getattr(settings, "num_boost_round", 1000))
         return booster, list(X.columns), None
     elif model_name == "xgboost":
         import xgboost as xgb
         params = getattr(settings, "xgb_params", {}).copy()
         params.setdefault("seed", seed)
         params.setdefault("objective", "reg:squarederror" if task == "reg" else "binary:logistic")
-        dtrain = xgb.DMatrix(X, label=y)
-        bst = xgb.train(params, dtrain, num_boost_round=int(getattr(settings, "num_boost_round", 1000)))
+        dtrain_xgb = xgb.DMatrix(X, label=y)
+        bst = xgb.train(params, dtrain_xgb, num_boost_round=int(getattr(settings, "num_boost_round", 1000)))
         return bst, list(X.columns), None
     elif model_name == "catboost":
         from catboost import CatBoostClassifier, CatBoostRegressor
@@ -223,13 +223,13 @@ def _train_full_model(X: pd.DataFrame, y: pd.Series, model_name: str, task: str,
         seq_len = 20
         if len(X) < seq_len:
             seq_len = len(X)
-        X_seq = []
-        y_seq = []
+        X_seq_list = []
+        y_seq_list = []
         for i in range(seq_len, len(X)):
-            X_seq.append(X.iloc[i-seq_len:i].values)
-            y_seq.append(y.iloc[i])
-        X_seq = np.array(X_seq)
-        y_seq = np.array(y_seq)
+            X_seq_list.append(X.iloc[i-seq_len:i].values)
+            y_seq_list.append(y.iloc[i])
+        X_seq = np.array(X_seq_list)
+        y_seq = np.array(y_seq_list)
 
         if len(X_seq) == 0:
             # fallback
@@ -339,6 +339,8 @@ def save_tradeable_artifact(
 
     # retrain full model
     model_name = best_result.model_name
+    if task not in {"cls", "reg"}:
+        return {"saved": False, "reason": "invalid_task"}
     model_obj, feat_names, scaler = _train_full_model(X, y, model_name, task, cfg, seed=getattr(cfg, 'seed', 42))
 
     # build safe inference wrapper

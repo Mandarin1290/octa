@@ -68,7 +68,7 @@ def run_monte_carlo(
 def _block_bootstrap(returns: List[float], block_size: int, rng: random.Random) -> List[float]:
     if block_size <= 1:
         return [returns[rng.randrange(len(returns))] for _ in range(len(returns))]
-    blocks = []
+    blocks: List[float] = []
     n = len(returns)
     while len(blocks) < n:
         start = rng.randrange(0, max(1, n - block_size + 1))

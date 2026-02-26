@@ -37,16 +37,19 @@ def _load_broker_adapter(*, mode: str, instruments: List[str], rate_limit_per_mi
                 IBKRIBInsyncConfig,
             )
 
-            cfg = IBKRIBInsyncConfig.from_env()
-            return IBKRIBInsyncAdapter(cfg)
+            ib_cfg = IBKRIBInsyncConfig.from_env()
+            return IBKRIBInsyncAdapter(ib_cfg)
         except Exception as e:
             raise RuntimeError(f"broker_adapter_init_failed:{e}") from e
 
     # default sandbox adapter
     from octa_vertex.broker.ibkr_contract import IBKRConfig, IBKRContractAdapter
 
-    cfg = IBKRConfig(rate_limit_per_minute=int(rate_limit_per_minute), supported_instruments=list(sorted(set(instruments))))
-    return IBKRContractAdapter(cfg)
+    sandbox_cfg = IBKRConfig(
+        rate_limit_per_minute=int(rate_limit_per_minute),
+        supported_instruments=list(sorted(set(instruments))),
+    )
+    return IBKRContractAdapter(sandbox_cfg)
 
 
 @dataclass

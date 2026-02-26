@@ -244,11 +244,11 @@ def outcome_from_pipeline_dict(timeframe: str, layer_dict: Mapping[str, Any] | N
         else:
             status = "PASS" if passed else "FAIL"
 
-    metrics = {}
+    metrics: Mapping[str, Any] = {}
     if layer_dict is not None:
         metrics = layer_dict.get("metrics") or {}
 
-    meta = {}
+    meta: Mapping[str, Any] = {}
     if isinstance(metrics, Mapping):
         meta = metrics.get("metadata") or {}
 

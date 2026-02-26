@@ -49,7 +49,11 @@ def run_altdata(
     symbol: str,
     tz: str = "UTC",
     config_path: Optional[str] = None,
+    asset_class: Optional[str] = None,
+    raw_root: Optional[str] = None,
 ) -> AltDataBuildResult:
+    _ = asset_class
+    _ = raw_root
     cfg = load_altdat_config(config_path)
     enabled_cfg = cfg.get("enabled", False) if isinstance(cfg, dict) else False
     enabled = bool(enabled_cfg)
@@ -180,7 +184,7 @@ def build_altdata_stack(
     # Symbol-level features for Structure/Signal/Execution/Micro
     for symbol in symbols:
         payloads_symbol = payloads_market.copy()
-        symbol_sources = {
+        symbol_sources: Dict[str, Any] = {
             "edgar": EdgarSource({**(sources_cfg.get("edgar") or {}), "symbol": symbol}),
             "reddit": RedditSource({**(sources_cfg.get("reddit") or {}), "symbol": symbol}),
             "google_trends": GoogleTrendsSource({**(sources_cfg.get("google_trends") or {}), "symbol": symbol}),

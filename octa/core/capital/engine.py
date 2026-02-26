@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 
 from octa.core.risk.allrad.engine import RiskDecision
 
-from .exposure import ExposureDecision, ExposureLimits, check_exposure
+from .exposure import ExposureLimits, check_exposure
 from .sizing import FixedFractionalSizing, MaxLossSizing, SizingResult, VolatilityAdjustedSizing
 from .state import CapitalState
 
@@ -106,16 +106,18 @@ def _reject(reason: str, exposure_after: float) -> CapitalDecision:
     )
 
 
-def _sizing_strategy(config: CapitalEngineConfig):
+def _sizing_strategy(
+    config: CapitalEngineConfig,
+) -> Callable[[float, float | None, float, Mapping[str, Any]], SizingResult]:
     if config.sizing_mode == "volatility_adjusted":
-        engine = VolatilityAdjustedSizing(base_risk_pct=config.volatility_risk_pct)
-        return lambda entry, stop, equity, market: engine.size(
+        vol_engine = VolatilityAdjustedSizing(base_risk_pct=config.volatility_risk_pct)
+        return lambda entry, stop, equity, market: vol_engine.size(
             entry, stop, equity, float(market.get("volatility", 0.0))
         )
 
     if config.sizing_mode == "max_loss":
-        engine = MaxLossSizing(max_risk_pct=config.max_loss_pct)
-        return lambda entry, stop, equity, _: engine.size(entry, stop, equity)
+        max_loss_engine = MaxLossSizing(max_risk_pct=config.max_loss_pct)
+        return lambda entry, stop, equity, _: max_loss_engine.size(entry, stop, equity)
 
-    engine = FixedFractionalSizing(risk_pct=config.max_risk_pct)
-    return lambda entry, stop, equity, _: engine.size(entry, stop, equity)
+    fixed_engine = FixedFractionalSizing(risk_pct=config.max_risk_pct)
+    return lambda entry, stop, equity, _: fixed_engine.size(entry, stop, equity)

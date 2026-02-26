@@ -5,7 +5,7 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import pandas as pd
 
@@ -355,9 +355,9 @@ def load_parquet(path: Path, *, nan_threshold: float = 0.2, allow_negative_price
     return df
 
 
-def inspect_parquet(path: Path, cfg: Optional[dict] = None) -> dict:
+def inspect_parquet(path: Path, cfg: Optional[dict[str, Any]] = None) -> dict[str, Any]:
     cfg = cfg or {}
-    info = {"path": str(path)}
+    info: dict[str, Any] = {"path": str(path)}
     try:
         df = load_parquet(path, nan_threshold=cfg.get("nan_threshold", 0.2), allow_negative_prices=cfg.get("allow_negative_prices", False), resample_enabled=cfg.get("resample_enabled", False), resample_bar_size=cfg.get("resample_bar_size", "1D"))
         info["rows"] = len(df)

@@ -5,6 +5,7 @@ import json
 import os
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 import pandas as pd
@@ -14,7 +15,7 @@ from octa.core.data.sources.altdata.edgar_connector import (
     filings_to_events,
 )
 from octa.core.data.sources.altdata.fred_connector import FredFetchResult, fetch_fred_series, fred_to_wide
-from octa.core.data.sources.altdata.cache import read_snapshot, read_meta, source_day_dir, cache_key
+from octa.core.data.sources.altdata.cache import read_snapshot, source_day_dir, cache_key
 from octa.core.data.sources.altdata.time_sync import (
     asof_join,
     derive_timewindow_from_bars,
@@ -275,20 +276,24 @@ def build_altdata_features(
                         feat_parts.append(j)
                         meta["coverage"]["edgar"] = float(j.notna().any(axis=1).mean())
         else:
-            r = fetch_edgar_filings(ticker=symbol, forms=forms, start_ts=tw.start_ts, end_ts=tw.end_ts)
-            edgar_meta = {"ok": bool(r.ok), "error": (str(r.error)[:200] if r.error else None), "forms": forms}
-            if isinstance(r.meta, dict):
-                edgar_meta.update(r.meta)
-            meta["sources"]["edgar"] = edgar_meta
-            _duckdb_upsert_source("edgar", bool(r.ok), r.error)
+            edgar_res = fetch_edgar_filings(ticker=symbol, forms=forms, start_ts=tw.start_ts, end_ts=tw.end_ts)
+            edgar_meta_live: Dict[str, Any] = {
+                "ok": bool(edgar_res.ok),
+                "error": (str(edgar_res.error)[:200] if edgar_res.error else None),
+                "forms": forms,
+            }
+            if isinstance(edgar_res.meta, dict):
+                edgar_meta_live.update(edgar_res.meta)
+            meta["sources"]["edgar"] = edgar_meta_live
+            _duckdb_upsert_source("edgar", bool(edgar_res.ok), edgar_res.error)
             # Persist raw filings if any
             try:
-                if r.ok and r.df is not None and not r.df.empty:
-                    _duckdb_try_insert("edgar_filings", r.df)
+                if edgar_res.ok and edgar_res.df is not None and not edgar_res.df.empty:
+                    _duckdb_try_insert("edgar_filings", edgar_res.df)
             except Exception:
                 pass
-            if r.ok and r.df is not None and not r.df.empty:
-                events = filings_to_events(r.df)
+            if edgar_res.ok and edgar_res.df is not None and not edgar_res.df.empty:
+                events = filings_to_events(edgar_res.df)
                 ff = build_filing_features(events, ticker=symbol)
                 if not ff.empty:
                     ff = ff.reset_index().rename(columns={"index": "ts"})

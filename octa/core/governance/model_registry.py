@@ -84,14 +84,27 @@ def validate_entry(entry: Mapping[str, Any]) -> bool:
     for key in required_top:
         if key not in entry:
             return False
-    artifact = entry.get("artifact")
-    training = entry.get("training")
-    environment = entry.get("environment")
-    gates = entry.get("gates")
-    promotion = entry.get("promotion")
-    evidence = entry.get("evidence")
-    if not all(isinstance(x, Mapping) for x in [artifact, training, environment, gates, promotion, evidence]):
+    artifact_raw = entry.get("artifact")
+    training_raw = entry.get("training")
+    environment_raw = entry.get("environment")
+    gates_raw = entry.get("gates")
+    promotion_raw = entry.get("promotion")
+    evidence_raw = entry.get("evidence")
+    if (
+        not isinstance(artifact_raw, Mapping)
+        or not isinstance(training_raw, Mapping)
+        or not isinstance(environment_raw, Mapping)
+        or not isinstance(gates_raw, Mapping)
+        or not isinstance(promotion_raw, Mapping)
+        or not isinstance(evidence_raw, Mapping)
+    ):
         return False
+    artifact: Mapping[str, Any] = artifact_raw
+    training: Mapping[str, Any] = training_raw
+    environment: Mapping[str, Any] = environment_raw
+    gates: Mapping[str, Any] = gates_raw
+    promotion: Mapping[str, Any] = promotion_raw
+    evidence: Mapping[str, Any] = evidence_raw
     for key in ["path", "sha256", "size_bytes"]:
         if key not in artifact:
             return False

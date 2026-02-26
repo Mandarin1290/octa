@@ -25,7 +25,11 @@ def build(payloads: Mapping[str, Any], *, asof_ts: str | None = None) -> dict[st
     z_scores: list[float] = []
     for market_id, items in grouped.items():
         items.sort(key=lambda r: r.get("report_date") or "")
-        history = [_net_position(r) for r in items if _net_position(r) is not None]
+        history: list[float] = []
+        for item in items:
+            net = _net_position(item)
+            if net is not None:
+                history.append(net)
         latest = history[-1] if history else None
         if latest is None:
             continue
@@ -54,7 +58,7 @@ def _net_position(row: Mapping[str, Any]) -> float | None:
     nc_long = _as_float(row.get("noncommercial_long"))
     nc_short = _as_float(row.get("noncommercial_short"))
     oi = _as_float(row.get("open_interest"))
-    if nc_long is None or nc_short is None or oi in (None, 0.0):
+    if nc_long is None or nc_short is None or oi is None or oi == 0.0:
         return None
     return (nc_long - nc_short) / oi
 

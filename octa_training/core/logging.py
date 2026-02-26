@@ -17,8 +17,9 @@ class JsonLineFormatter(logging.Formatter):
             "logger": record.name,
         }
         # include extra fields if present
-        if hasattr(record, "extra") and isinstance(record.extra, dict):
-            payload.update(record.extra)
+        extra_payload = getattr(record, "extra", None)
+        if isinstance(extra_payload, dict):
+            payload.update(extra_payload)
         # include exception info
         if record.exc_info:
             payload["exc"] = self.formatException(record.exc_info)
@@ -56,8 +57,11 @@ def setup_logging(log_dir: Path, run_id: str | None = None) -> logging.Logger:
         def filter(self, record: logging.LogRecord) -> bool:
             record.run_id = run_id
             # attach extra map for JSON formatter
-            record.extra = getattr(record, "extra", {})
-            record.extra.setdefault("run_id", run_id)
+            extra_payload = getattr(record, "extra", {})
+            if not isinstance(extra_payload, dict):
+                extra_payload = {}
+            extra_payload.setdefault("run_id", run_id)
+            setattr(record, "extra", extra_payload)
             return True
 
     run_filter = RunIdFilter()

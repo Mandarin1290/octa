@@ -439,8 +439,11 @@ def load_config(path: Optional[str] = None) -> TrainingConfig:
                 for k in list(conf.keys()):
                     if k not in relax_keys:
                         continue
+                    raw_value = conf.get(k)
+                    if raw_value is None:
+                        continue
                     try:
-                        v = float(conf.get(k))
+                        v = float(raw_value)
                     except Exception:
                         continue
                     conf[k] = v * sharpe_factor

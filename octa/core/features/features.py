@@ -520,7 +520,7 @@ def build_features(raw: pd.DataFrame, settings, asset_class: str, build_targets:
             X["macd"] = 0
             X["macd_signal"] = 0
             X["macd_hist"] = 0
-        bb = ta.bbands(close_prev, length=20, std=2)
+        bb = ta.bbands(close_prev, length=20)
         if bb is not None:
             X["bb_upper"] = bb["BBU_20_2.0_2.0"]
             X["bb_middle"] = bb["BBM_20_2.0_2.0"]

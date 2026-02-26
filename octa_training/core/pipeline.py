@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, cast
 
 import numpy as np
 import pandas as pd
@@ -653,7 +653,7 @@ def train_evaluate_package(
         class _FeatSettings:
             pass
 
-        eff_settings = _FeatSettings()
+        eff_settings: Any = _FeatSettings()
         # Provide paths/timeframe context for feature sidecars (FRED cache, market context).
         try:
             eff_settings.raw_dir = cfg.paths.raw_dir
@@ -950,7 +950,7 @@ def train_evaluate_package(
                 resolved_profile_name = 'legacy'
                 applied_thresholds = {}
 
-            diag = []
+            diag: List[Dict[str, Any]] | None = []
             try:
                 ah = profile_hash(str(resolved_profile_name), dict(applied_thresholds or {}))
                 diag = [
@@ -1228,17 +1228,20 @@ def train_evaluate_package(
             fold_lites = []
             for fm in best.fold_metrics:
                 m = fm.metric
+                n_trades_v = m.get('n_trades')
+                is_ret_count_v = m.get('is_ret_count')
+                oos_ret_count_v = m.get('oos_ret_count')
                 lite = MetricsSummaryLite(
                     sharpe=m.get('sharpe'),
                     sharpe_is=m.get('sharpe_is'),
                     max_drawdown=m.get('max_drawdown'),
-                    n_trades=m.get('n_trades'),
-                    is_start=m.get('is_start'),
-                    is_end=m.get('is_end'),
-                    oos_start=m.get('oos_start'),
-                    oos_end=m.get('oos_end'),
-                    is_ret_count=m.get('is_ret_count'),
-                    oos_ret_count=m.get('oos_ret_count'),
+                    n_trades=int(n_trades_v) if n_trades_v is not None else None,
+                    is_start=str(m.get('is_start')) if m.get('is_start') is not None else None,
+                    is_end=str(m.get('is_end')) if m.get('is_end') is not None else None,
+                    oos_start=str(m.get('oos_start')) if m.get('oos_start') is not None else None,
+                    oos_end=str(m.get('oos_end')) if m.get('oos_end') is not None else None,
+                    is_ret_count=int(is_ret_count_v) if is_ret_count_v is not None else None,
+                    oos_ret_count=int(oos_ret_count_v) if oos_ret_count_v is not None else None,
                     is_ret_mean=m.get('is_ret_mean'),
                     oos_ret_mean=m.get('oos_ret_mean'),
                     is_ret_std=m.get('is_ret_std'),
@@ -1532,8 +1535,9 @@ def train_evaluate_package(
             n_bars = int(len(df))
             if getattr(result, 'diagnostics', None) is None:
                 result.diagnostics = []
+            diagnostics = cast(List[Dict[str, Any]], result.diagnostics)
             passed_bars = bool((min_bars <= 0) or (n_bars >= min_bars))
-            result.diagnostics.append(
+            diagnostics.append(
                 {
                     'name': 'min_bars',
                     'value': float(n_bars),
@@ -1555,8 +1559,9 @@ def train_evaluate_package(
         try:
             if getattr(result, 'diagnostics', None) is None:
                 result.diagnostics = []
+            diagnostics = cast(List[Dict[str, Any]], result.diagnostics)
             ah = profile_hash(str(resolved_profile_name), dict(applied_thresholds or {}))
-            result.diagnostics.extend(
+            diagnostics.extend(
                 [
                     {
                         'name': 'asset_profile',
@@ -1637,7 +1642,8 @@ def train_evaluate_package(
 
                 if getattr(result, 'diagnostics', None) is None:
                     result.diagnostics = []
-                result.diagnostics.extend(
+                diagnostics = cast(List[Dict[str, Any]], result.diagnostics)
+                diagnostics.extend(
                     [
                         {
                             'name': 'fx_g1_median_bar_spacing_seconds',
@@ -1779,8 +1785,9 @@ def train_evaluate_package(
             if fx_g0_tail_ratio_mkt is not None:
                 if getattr(result, 'diagnostics', None) is None:
                     result.diagnostics = []
+                diagnostics = cast(List[Dict[str, Any]], result.diagnostics)
                 # Store series selection as a diagnostic (schema-compatible: numeric value is None).
-                result.diagnostics.append(
+                diagnostics.append(
                     {
                         'name': 'fx_g0_tail_series',
                         'value': None,
@@ -1792,7 +1799,7 @@ def train_evaluate_package(
                         'reason': fx_g0_tail_series or 'market_log_returns',
                     }
                 )
-                result.diagnostics.append(
+                diagnostics.append(
                     {
                         'name': 'fx_g0_cvar95_mkt',
                         'value': float(fx_g0_cvar95_mkt) if fx_g0_cvar95_mkt is not None else None,
@@ -1804,7 +1811,7 @@ def train_evaluate_package(
                         'reason': None,
                     }
                 )
-                result.diagnostics.append(
+                diagnostics.append(
                     {
                         'name': 'fx_g0_vol_mkt',
                         'value': float(fx_g0_vol_mkt) if fx_g0_vol_mkt is not None else None,
@@ -1816,7 +1823,7 @@ def train_evaluate_package(
                         'reason': None,
                     }
                 )
-                result.diagnostics.append(
+                diagnostics.append(
                     {
                         'name': 'fx_g0_tail_ratio_mkt',
                         'value': float(fx_g0_tail_ratio_mkt),
@@ -1861,9 +1868,9 @@ def train_evaluate_package(
         if diagnose_mode and diagnose_reasons:
             try:
                 # preserve existing ordering; tag as hard_kill for visibility.
-                for r in diagnose_reasons:
-                    if r:
-                        result.reasons.append(f"hard_kill:{r}")
+                for reason in diagnose_reasons:
+                    if reason:
+                        result.reasons.append(f"hard_kill:{reason}")
                 result.passed = False
                 _finalize_pass_status()
             except Exception:
@@ -1987,6 +1994,8 @@ def train_evaluate_package(
                         smoke_test_artifact,
                     )
                     pkl = pack_res.get('pkl')
+                    if not isinstance(pkl, str) or not pkl:
+                        raise ValueError("missing_pkl_path")
                     meta = pkl.replace('.pkl', '.meta.json')
                     sha = pkl.replace('.pkl', '.sha256')
                     try:
@@ -1995,9 +2004,9 @@ def train_evaluate_package(
                         state.update_symbol_state(symbol, artifact_smoke_test_status='PASS', artifact_smoke_test_time=datetime.utcnow().isoformat())
                     except Exception as e:
                         # quarantine
-                        qdir = getattr(cfg.packaging, 'quarantine_dir', None) or str(Path(cfg.paths.pkl_dir) / '_quarantine')
-                        quarantine_artifact(pkl, meta, sha, reason=str(e), quarantine_dir=qdir)
-                        state.update_symbol_state(symbol, artifact_smoke_test_status='FAIL', artifact_smoke_test_time=datetime.utcnow().isoformat(), artifact_quarantine_path=qdir, artifact_quarantine_reason=str(e))
+                        qdir_smoke = getattr(cfg.packaging, 'quarantine_dir', None) or str(Path(cfg.paths.pkl_dir) / '_quarantine')
+                        quarantine_artifact(pkl, meta, sha, reason=str(e), quarantine_dir=qdir_smoke)
+                        state.update_symbol_state(symbol, artifact_smoke_test_status='FAIL', artifact_smoke_test_time=datetime.utcnow().isoformat(), artifact_quarantine_path=qdir_smoke, artifact_quarantine_reason=str(e))
                         send_telegram(cfg, f"OCTA: {symbol} smoke-test FAIL -> quarantined. reason={str(e)}", logger=logger)
                         # mark pack_res as quarantined
                         pack_res = {**pack_res, 'quarantined': True, 'quarantine_reason': str(e)}
@@ -2139,13 +2148,13 @@ def evaluate_fx_g0_risk_overlay_1d(
     )
     # Explicit audit marker: alpha is not required at 1D for FX.
     try:
-        gr = getattr(res, 'gate_result', None)
-        if gr is not None:
-            if getattr(gr, 'insufficient_evidence', None) is None:
-                gr.insufficient_evidence = []
-            gr.insufficient_evidence = list(gr.insufficient_evidence) + ['alpha_not_required_at_1d_for_fx']
-            if getattr(gr, 'passed', False):
-                gr.status = 'PASS_LIMITED_STATISTICAL_CONFIDENCE'
+        gate_res = getattr(res, 'gate_result', None)
+        if gate_res is not None:
+            if getattr(gate_res, 'insufficient_evidence', None) is None:
+                gate_res.insufficient_evidence = []
+            gate_res.insufficient_evidence = list(gate_res.insufficient_evidence) + ['alpha_not_required_at_1d_for_fx']
+            if getattr(gate_res, 'passed', False):
+                gate_res.status = 'PASS_LIMITED_STATISTICAL_CONFIDENCE'
     except Exception:
         pass
     return res

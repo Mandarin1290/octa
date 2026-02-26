@@ -119,20 +119,29 @@ class GlobalRegimeGate:
         trend = _trend(prices, self._config.trend_window)
         momentum = _rolling_return(prices, self._config.return_windows[0])
 
-        metrics: dict[str, float] = {
-            "return_20": _rolling_return(prices, self._config.return_windows[0]),
-            "return_60": _rolling_return(prices, self._config.return_windows[1]),
-            "return_120": _rolling_return(prices, self._config.return_windows[2]),
+        return_20 = _rolling_return(prices, self._config.return_windows[0])
+        return_60 = _rolling_return(prices, self._config.return_windows[1])
+        return_120 = _rolling_return(prices, self._config.return_windows[2])
+        if (
+            return_20 is None
+            or return_60 is None
+            or return_120 is None
+            or vol is None
+            or drawdown is None
+            or trend is None
+            or momentum is None
+        ):
+            return None
+
+        return {
+            "return_20": return_20,
+            "return_60": return_60,
+            "return_120": return_120,
             "volatility": vol,
             "drawdown": drawdown,
             "trend": trend,
             "momentum": momentum,
         }
-
-        if any(value is None for value in metrics.values()):
-            return None
-
-        return metrics
 
     def _classify(self, metrics: Mapping[str, float]) -> RegimeLabel:
         drawdown = metrics["drawdown"]

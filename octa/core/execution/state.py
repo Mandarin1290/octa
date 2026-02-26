@@ -23,12 +23,10 @@ class OrderState:
 
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from .fills import Fill
-from .orders import ExecutionReport, OrderRequest
 
 
 class ExecutionStateStore:
@@ -135,6 +133,7 @@ class ExecutionState:
     open_orders: dict[str, OrderState] = field(default_factory=dict)
     fills: list = field(default_factory=list)
     reports: list = field(default_factory=list)
+    positions: dict[str, float] = field(default_factory=dict)
     # Kompatibilitäts-API für Tests und StateMachine
     @property
     def orders(self) -> dict[str, OrderState]:

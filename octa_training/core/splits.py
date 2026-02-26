@@ -80,8 +80,8 @@ def walk_forward_splits(
         train_end = test_start - 1
 
         # Build initial train and val index arrays
-        train_idx = np.arange(train_start, train_end + 1)
-        val_idx = np.arange(test_start, test_end + 1)
+        train_idx: np.ndarray = np.arange(train_start, train_end + 1)
+        val_idx: np.ndarray = np.arange(test_start, test_end + 1)
 
         # I6: Roll embargo — drop fold if val set contains a roll-event bar
         if roll_set is not None:
@@ -141,7 +141,7 @@ def walk_forward_splits(
 
 
 def describe_splits(splits: List[SplitFold], index: pd.Index) -> Dict[str, Any]:
-    res = {"n_folds": len(splits), "folds": []}
+    res: Dict[str, Any] = {"n_folds": len(splits), "folds": []}
     for i, f in enumerate(splits):
         train_idx = f.train_idx
         val_idx = f.val_idx

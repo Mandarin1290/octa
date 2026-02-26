@@ -311,7 +311,7 @@ def run_cascade_training(
             merged = cfg.dict() if hasattr(cfg, "dict") else {}
             if isinstance(merged, dict):
                 _deep_merge_dict(merged, dict(config_overrides))
-                cfg = load_config(config_path, override=merged)  # type: ignore[arg-type]
+                cfg = type(cfg)(**merged)
         except TypeError:
             # Backward-compatible path when load_config does not support override argument.
             try:
@@ -362,7 +362,7 @@ def run_cascade_training(
             stage_state_dir.mkdir(parents=True, exist_ok=True)
             orig_state_dir = getattr(cfg_layer.paths, "state_dir", None)
             cfg_layer.paths.state_dir = stage_state_dir
-            stage_state = StateRegistry(str(stage_state_dir / "state.db"))
+            stage_state = StateRegistry(stage_state_dir / "state.db")
         except Exception:
             # Fail-closed behavior is handled by the caller (no promotion without PKL files).
             stage_state = None
@@ -464,7 +464,7 @@ def run_cascade_training(
             continue
 
         try:
-            gate_overrides = None
+            gate_overrides: Dict[str, Any] | None = None
             try:
                 if isinstance(config_overrides, dict):
                     g_over = config_overrides.get("gates", {})
@@ -491,7 +491,7 @@ def run_cascade_training(
             res = train_evaluate_package(
                 symbol=symbol,
                 cfg=cfg_layer,
-                state=stage_state if stage_state is not None else StateRegistry(str(base_state_root / "state.db")),
+                state=stage_state if stage_state is not None else StateRegistry(base_state_root / "state.db"),
                 run_id=run_id,
                 safe_mode=bool(safe_mode),
                 smoke_test=False,
@@ -515,8 +515,22 @@ def run_cascade_training(
             passed = bool(getattr(res, "passed", False))
             gate_obj = getattr(res, "gate_result", None)
             metrics_obj = getattr(res, "metrics", None)
-            gate_dump = gate_obj.model_dump() if hasattr(gate_obj, "model_dump") else (gate_obj.dict() if hasattr(gate_obj, "dict") else None)
-            metrics_dump = metrics_obj.model_dump() if hasattr(metrics_obj, "model_dump") else (metrics_obj.dict() if hasattr(metrics_obj, "dict") else None)
+            if gate_obj is None:
+                gate_dump = None
+            elif hasattr(gate_obj, "model_dump"):
+                gate_dump = gate_obj.model_dump()
+            elif hasattr(gate_obj, "dict"):
+                gate_dump = gate_obj.dict()
+            else:
+                gate_dump = None
+            if metrics_obj is None:
+                metrics_dump = None
+            elif hasattr(metrics_obj, "model_dump"):
+                metrics_dump = metrics_obj.model_dump()
+            elif hasattr(metrics_obj, "dict"):
+                metrics_dump = metrics_obj.dict()
+            else:
+                metrics_dump = None
             pack = getattr(res, "pack_result", None)
             features_used = None
             altdata_sources = None

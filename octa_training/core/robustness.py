@@ -287,7 +287,7 @@ def _block_bootstrap_sample(rng: np.random.Generator, base: np.ndarray, block: i
     return sample[:n]
 
 
-def block_bootstrap_robustness(returns: np.ndarray, gate: Any, n_trades: Optional[int] = None) -> Dict[str, Any]:
+def block_bootstrap_robustness(returns: Optional[np.ndarray], gate: Any, n_trades: Optional[int] = None) -> Dict[str, Any]:
     """Deterministic block-bootstrap robustness check.
 
     Enabled only when any `bootstrap_*` thresholds are configured on the gate.
@@ -360,7 +360,7 @@ def block_bootstrap_robustness(returns: np.ndarray, gate: Any, n_trades: Optiona
     maxdd_p95 = float(np.nanpercentile(maxdds, 95))
     prob_below = float(np.mean(np.isfinite(sharpes) & (sharpes < sharpe_floor)))
 
-    checks = {}
+    checks: Dict[str, Dict[str, Any]] = {}
     passed = True
 
     thr = getattr(gate, 'bootstrap_sharpe_p05_min', None)
@@ -404,7 +404,7 @@ def block_bootstrap_robustness(returns: np.ndarray, gate: Any, n_trades: Optiona
     }
 
 
-def _primary_target(y_dict: Dict[str, pd.Series]) -> Tuple[str, str]:
+def _primary_target(y_dict: Dict[str, pd.Series]) -> Tuple[str | None, str | None]:
     # return (type, key) where type in {'cls','reg'}
     for k in sorted(y_dict.keys()):
         if k.startswith('y_cls_'):

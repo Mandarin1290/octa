@@ -2,15 +2,17 @@ from __future__ import annotations
 
 import logging
 import traceback
-from typing import Any, Dict, List
+from types import ModuleType
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 
+optuna: ModuleType | None = None
 try:
     import optuna
     from optuna.samplers import TPESampler
 except Exception:
-    optuna = None
+    pass
 
 # metrics helpers
 try:
@@ -95,7 +97,9 @@ def _hgb_space(trial: Any) -> Dict[str, Any]:
     }
 
 
-def tune_model(model_name: str, X, y, splits: List[SplitFold], cfg, device_profile, direction: str = "maximize") -> Dict[str, Any]:
+def tune_model(
+    model_name: str, X, y, splits: List[SplitFold], cfg, device_profile, direction: str = "maximize"
+) -> Tuple[Dict[str, Any], float, Any]:
     """Tune primary model hyperparameters using optuna. Returns best_params dict.
 
     model_name: one of 'lightgbm','xgboost','catboost'

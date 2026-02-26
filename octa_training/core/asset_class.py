@@ -12,7 +12,7 @@ class AssetClass(str, Enum):
     stock = "stock"
     bond = "bond"
     etf = "etf"
-    index = "index"
+    market_index = "index"
     future = "future"
     option = "option"
     crypto = "crypto"
@@ -93,7 +93,7 @@ def infer_asset_class(symbol: str, path: str, df_columns: List[str], cfg) -> str
     except Exception:
         p_res = ""
     if any((k in p_up) or (k in p_res) for k in ("INDICES", "INDICES_PARQUET", "INDEX")):
-        return AssetClass.index.value
+        return AssetClass.market_index.value
 
     # option indicator (name-based)
     if "OPT" in sym or any(re.search(r"\d{3,}-[A-Z]{3}", sym) for _ in [0]):

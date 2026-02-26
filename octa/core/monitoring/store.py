@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator
+from typing import Any, Iterator
 
 
 def _ensure_duckdb():
@@ -77,7 +77,7 @@ def ensure_db(db_path: Path) -> None:
 
 
 @contextmanager
-def connect(db_path: Path | None = None) -> Iterator[object]:
+def connect(db_path: Path | None = None) -> Iterator[Any]:
     duckdb = _ensure_duckdb()
     path = Path(db_path) if db_path is not None else get_default_db_path()
     ensure_db(path)
@@ -86,4 +86,3 @@ def connect(db_path: Path | None = None) -> Iterator[object]:
         yield conn
     finally:
         conn.close()
-

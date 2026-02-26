@@ -287,7 +287,7 @@ def train_models(
                                         va = va[va >= 0]
                                         if tr.size < 50 or va.size < 20:
                                             continue
-                                        remapped.append(SplitFold(train_idx=tr.tolist(), val_idx=va.tolist()))
+                                        remapped.append(SplitFold(train_idx=tr, val_idx=va, fold_meta={}))
                                     if remapped:
                                         X_tune = X.loc[y_mask].fillna(0)
                                         y_tune = y_full.loc[y_mask]
@@ -452,13 +452,13 @@ def train_models(
 
                             model_params = dict(params)
 
-                            dtrain = lgb.Dataset(X_tr_df.fillna(0), label=y_tr)
-                            dval = lgb.Dataset(X_val_df.fillna(0), label=y_val, reference=dtrain)
-                            bst = lgb.train(
+                            dtrain_lgb = lgb.Dataset(X_tr_df.fillna(0), label=y_tr)
+                            dval_lgb = lgb.Dataset(X_val_df.fillna(0), label=y_val, reference=dtrain_lgb)
+                            lgb_model = lgb.train(
                                 params,
-                                dtrain,
+                                dtrain_lgb,
                                 num_boost_round=int(getattr(settings, "num_boost_round", 300)),
-                                valid_sets=[dval],
+                                valid_sets=[dval_lgb],
                                 callbacks=[
                                     lgb.early_stopping(
                                         int(
@@ -472,7 +472,7 @@ def train_models(
                                     )
                                 ],
                             )
-                            pred = bst.predict(X_val_df.fillna(0))
+                            pred = np.asarray(lgb_model.predict(X_val_df.fillna(0)), dtype=float)
                             prob = pred
                             device_used = str(params.get("device", "cpu"))
                         elif model_name == "hgb":
@@ -534,7 +534,7 @@ def train_models(
 
                         # Base predictive metrics
                         if task == "cls":
-                            m: Dict[str, float] = _metrics_cls(y_val.values, prob, pred)
+                            m: Dict[str, Any] = _metrics_cls(y_val.values, prob, pred)
                         else:
                             m = _metrics_reg(y_val.values, pred)
 
@@ -544,6 +544,8 @@ def train_models(
                                 # OOS (validation) strategy metrics
                                 p_val = prices
                                 s_val = pd.Series(np.asarray(prob if task == "cls" else pred, dtype=float), index=y_val.index)
+                                if eval_settings is None:
+                                    raise ValueError("missing_eval_settings")
                                 out_val = compute_equity_and_metrics(p_val, s_val, eval_settings)
                                 mm_val = out_val.get('metrics')
                                 m['sharpe'] = float(getattr(mm_val, 'sharpe', float('nan')))
@@ -560,6 +562,8 @@ def train_models(
                                     pred_tr = np.asarray(model.predict(X_tr_m)).astype(float)
                                     s_tr = pd.Series(pred_tr, index=y_tr.index)
                                 p_tr = prices
+                                if eval_settings is None:
+                                    raise ValueError("missing_eval_settings")
                                 out_tr = compute_equity_and_metrics(p_tr, s_tr, eval_settings)
                                 mm_tr = out_tr.get('metrics')
                                 v = getattr(mm_tr, 'sharpe', None)
@@ -578,6 +582,8 @@ def train_models(
                                 m['oos_start'] = None
                                 m['oos_end'] = None
                             try:
+                                if prices is None:
+                                    raise ValueError("missing_prices")
                                 is_ret = pd.to_numeric(prices.reindex(y_tr.index), errors='coerce').pct_change().dropna()
                                 oos_ret = pd.to_numeric(prices.reindex(y_val.index), errors='coerce').pct_change().dropna()
                                 m['is_ret_count'] = int(len(is_ret))
