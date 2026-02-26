@@ -15,9 +15,14 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from octa.core.governance.artifact_signing import compute_sha256, verify_artifact
+from octa.core.governance.drift_monitor import is_disabled as _drift_is_disabled
+from octa.core.governance.governance_audit import EVENT_MODEL_LOAD_REJECTED
+
+if TYPE_CHECKING:
+    from octa.core.governance.governance_audit import GovernanceAudit
 
 _DEFAULT_APPROVED_ROOT = Path("octa") / "var" / "models" / "approved"
 
@@ -46,6 +51,8 @@ def load_approved_model(
     public_key_path: Path,
     approved_root: Path = _DEFAULT_APPROVED_ROOT,
     model_filename: str = "model.cbm",
+    drift_registry_dir: Optional[Path] = None,
+    audit: Optional["GovernanceAudit"] = None,
 ) -> ModelLoadResult:
     """Load a model from the approved directory with full verification.
 
@@ -122,6 +129,27 @@ def load_approved_model(
                 model_path=model_path,
                 manifest=manifest,
                 reason="sha256_manifest_mismatch",
+            )
+
+    # I4: Drift enforcement — block load if model is in an active drift breach.
+    if drift_registry_dir is not None:
+        model_key = f"{symbol.upper()}_{timeframe.upper()}"
+        if _drift_is_disabled(model_key, drift_registry_dir=drift_registry_dir):
+            if audit is not None:
+                audit.emit(
+                    EVENT_MODEL_LOAD_REJECTED,
+                    {
+                        "reason": "drift_disabled",
+                        "model_key": model_key,
+                        "symbol": symbol,
+                        "timeframe": timeframe,
+                    },
+                )
+            return ModelLoadResult(
+                ok=False,
+                model_path=model_path,
+                manifest=manifest,
+                reason="drift_disabled",
             )
 
     return ModelLoadResult(

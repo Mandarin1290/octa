@@ -85,6 +85,40 @@ def evaluate_drift(
     )
 
 
+def is_disabled(model_key: str, *, drift_registry_dir: Optional[Path] = None) -> bool:
+    """Return True if model_key is currently blocked by an active drift breach.
+
+    Uses registry file semantics: ``disabled=False`` or missing key in an
+    existing state file → breach active → model should be blocked.
+    ``disabled=True`` → entry administratively suppressed → model is clear.
+
+    Returns False (not blocked) when no state file exists, meaning drift has
+    never been evaluated for this model_key.
+
+    Parameters
+    ----------
+    model_key : str
+        Key identifying the model (e.g. ``"ABC_1D"``).
+    drift_registry_dir : Path, optional
+        Override the default drift registry directory (for testing).
+    """
+    if drift_registry_dir is not None:
+        path = drift_registry_dir / f"{model_key}.json"
+        if not path.exists():
+            return False
+        try:
+            state: Dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            return True  # unreadable state → fail-closed
+    else:
+        state = _load_state(model_key)
+    if not state:
+        return False  # no drift history → not blocked
+    # disabled=True → admin-exempt → not blocked
+    # disabled=False or missing key → active breach → blocked (fail-closed)
+    return state.get("disabled") is not True
+
+
 def _collect_navs(ledger: LedgerStore) -> List[tuple[datetime, float]]:
     res: List[tuple[datetime, float]] = []
     for e in ledger.by_action("performance.nav"):
