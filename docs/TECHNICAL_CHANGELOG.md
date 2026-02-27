@@ -3,6 +3,21 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-02-27 16:18:57] CHANGE
+Code-Änderungen - (+249/-69 Zeilen)
+
+**Statistics:**
+- Files Changed: 1
+- Lines Added: +249
+- Lines Deleted: -69
+- Net Change: +180
+
+**File-Level Changes:**
+```
++  249 -   69  scripts/tws_e2e.sh
+```
+
+
 ## [2026-02-27 16:17:50] FEATURE
 Neue Funktionalität hinzugefügt - 4 Code-Dateien - 2 Test-Dateien - (+650/-9 Zeilen)
 

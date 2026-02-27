@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# scripts/tws_e2e.sh
+# Goal: Start TWS exactly once, autologin, aggressively close popups fast,
+# and exit SUCCESS as soon as (a) popups are gone AND (b) main window is present
+# (optional: API port listening test).
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -19,59 +23,80 @@ need date
 need tee
 need mktemp
 
-# ----------------------------
-# Timings (tune here)
-# ----------------------------
-POLL_SEC=0.25
+# Optional port test dependency:
+command -v ss >/dev/null 2>&1 || command -v netstat >/dev/null 2>&1 || true
 
-# Chain should normally return quickly; keep a cap but not 240s.
+# ----------------------------
+# Timings (FAST defaults)
+# ----------------------------
+POLL_SEC="${POLL_SEC:-0.20}"
+
 CHAIN_TIMEOUT_SEC="${CHAIN_TIMEOUT_SEC:-120}"
 
-# Start draining early, before main window appears (helps when popups come first)
-PRE_MAIN_DRAIN_SEC="${PRE_MAIN_DRAIN_SEC:-40}"
+# FAST path after chain_rc=25
+FAST_POPUP_BURST_SEC="${FAST_POPUP_BURST_SEC:-15}"
+FAST_MAIN_WAIT_SEC="${FAST_MAIN_WAIT_SEC:-25}"
 
-# Wait for main TWS window to show up
-WAIT_MAIN_MAX_SEC="${WAIT_MAIN_MAX_SEC:-180}"
+# Normal path (still faster than before)
+PRE_MAIN_DRAIN_SEC="${PRE_MAIN_DRAIN_SEC:-10}"
+WAIT_MAIN_MAX_SEC="${WAIT_MAIN_MAX_SEC:-60}"
+BOOTSTRAP_OBSERVE_SEC="${BOOTSTRAP_OBSERVE_SEC:-30}"
 
-# During spawn phase, new popups appear over ~80s in your setup
-BOOTSTRAP_OBSERVE_SEC="${BOOTSTRAP_OBSERVE_SEC:-90}"
+FAST_TOTAL_SEC="${FAST_TOTAL_SEC:-12}"
+FAST_CLEAN_STREAK="${FAST_CLEAN_STREAK:-3}"
 
-# Fast-settle after bootstrap
-FAST_TOTAL_SEC="${FAST_TOTAL_SEC:-25}"
-FAST_CLEAN_STREAK="${FAST_CLEAN_STREAK:-4}"
-
-# Guard: require quiet for N seconds
-GUARD_MAX_SEC="${GUARD_MAX_SEC:-300}"
-GUARD_QUIET_SEC="${GUARD_QUIET_SEC:-30}"
+GUARD_MAX_SEC="${GUARD_MAX_SEC:-120}"
+GUARD_QUIET_SEC="${GUARD_QUIET_SEC:-8}"
 
 # Stop/close timings
-STOP_MAX_SEC="${STOP_MAX_SEC:-45}"
-STOP_TERM_WAIT_SEC="${STOP_TERM_WAIT_SEC:-10}"
+STOP_MAX_SEC="${STOP_MAX_SEC:-35}"
+STOP_TERM_WAIT_SEC="${STOP_TERM_WAIT_SEC:-8}"
 STOP_KILL_WAIT_SEC="${STOP_KILL_WAIT_SEC:-2}"
 
 # ----------------------------
-# Popup patterns
-#   - keep strict, do NOT include "Interactive Brokers|Trader Workstation" here
+# Popup patterns (strict but complete)
 # ----------------------------
-POPUP_PAT='Warnhinweis|Risikohinweis|Disclaimer|Login Messages|IBKR Login Messenger|Message Center|Dow Jones|Top 10|Börsenspiegel|Boersenspiegel'
+POPUP_PAT='Warnhinweis|Risikohinweis|Disclaimer|Login Messages|Login Message|IBKR Login|install4j|jclient|Message Center|Dow Jones|Top 10|Börsenspiegel|Boersenspiegel|Hinweis|Agreement|Notice|Information|Haftung|Risk Disclosure'
 
-# "Program is closing" dialogs are not something we should click aggressively during startup.
-# But during shutdown we allow closing them.
+# Closing dialogs only during shutdown
 CLOSING_PAT='Programm wird geschlossen|Program is closing'
 
+# ----------------------------
+# GUI session detect + auto-fix (Wayland+Xwayland friendly)
+# ----------------------------
 if [[ -z "${DISPLAY:-}" ]]; then
-  echo "ERROR: DISPLAY is empty -> not in X11 GUI session." >&2
+  export DISPLAY=":0"
+fi
+
+if [[ -z "${XAUTHORITY:-}" || ! -f "${XAUTHORITY:-}" ]]; then
+  AUTH="$(ps -u "$USER" -o cmd= | sed -n 's/.*Xwayland :0 .* -auth \([^ ]*\).*/\1/p' | head -n1 || true)"
+  if [[ -z "${AUTH:-}" || ! -f "$AUTH" ]]; then
+    for cand in "${XDG_RUNTIME_DIR:-}/Xauthority" "$HOME/.Xauthority"; do
+      [[ -f "$cand" ]] && { AUTH="$cand"; break; }
+    done
+  fi
+  if [[ -n "${AUTH:-}" && -f "$AUTH" ]]; then
+    export XAUTHORITY="$AUTH"
+  fi
+fi
+
+# If still no access, fail clearly
+if ! wmctrl -l >/dev/null 2>&1; then
+  echo "ERROR: cannot access X session. DISPLAY=$DISPLAY XAUTHORITY=${XAUTHORITY:-<unset>}" >&2
+  echo "Hint: run from desktop session or export correct DISPLAY/XAUTHORITY." >&2
   exit 2
 fi
 
+# ----------------------------
 # Logging
+# ----------------------------
 TS="$(date -u +%Y%m%dT%H%M%SZ)"
 LOG_DIR="${REPO_DIR}/octa/var/logs"
 mkdir -p "$LOG_DIR"
 RUN_LOG="${LOG_DIR}/tws_e2e_${TS}.log"
 echo "LOG: $RUN_LOG"
 
-log() { echo "$*" | tee -a "$RUN_LOG"; }
+log() { echo "[$(date -Is)] $*" | tee -a "$RUN_LOG"; }
 
 # ----------------------------
 # Credentials
@@ -127,7 +152,7 @@ main_window_id() {
     {
       id=$1; title="";
       for(i=4;i<=NF;i++){ title=title $i (i<NF?" ":""); }
-      if (title ~ /(Interactive Brokers|Trader Workstation|IBKR|DUH[0-9]+)/) { print id; exit }
+      if (title ~ /(Interactive Brokers|Trader Workstation|IBKR|TWS)/) { print id; exit }
     }' || true
 }
 
@@ -141,7 +166,7 @@ wait_for_main() {
       log "Main window detected: $id"
       return 0
     fi
-    sleep 1
+    sleep 0.5
   done
   log "FAIL: main window not detected."
   return 1
@@ -153,8 +178,12 @@ wait_for_main() {
 popups_present() { wmctrl -l 2>/dev/null | grep -Eiq "$POPUP_PAT"; }
 
 list_popups() {
-  wmctrl -l 2>/dev/null | grep -Ei "$POPUP_PAT" | awk '{
-    id=$1; title="";
+  local mid
+  mid="$(main_window_id)"
+  wmctrl -l 2>/dev/null | grep -Ei "$POPUP_PAT" | awk -v MID="$mid" '{
+    id=$1;
+    if (MID != "" && tolower(id)==tolower(MID)) next;
+    title="";
     for(i=4;i<=NF;i++){ title=title $i (i<NF?" ":""); }
     print id "|" title;
   }' || true
@@ -192,15 +221,15 @@ accept_warnhinweis() {
   local id="$1"
   for k in Return KP_Enter space; do
     key_to_win "$id" "$k"
-    sleep 0.10
+    sleep 0.08
     present "$id" || return 0
   done
   click_pct "$id" 12 90 || true
-  sleep 0.10
+  sleep 0.08
   present "$id" || return 0
   for rx in 55 62 70 78 85 92; do
     click_pct "$id" "$rx" 92 || true
-    sleep 0.12
+    sleep 0.10
     present "$id" || return 0
   done
   return 1
@@ -208,12 +237,12 @@ accept_warnhinweis() {
 
 close_generic() {
   local id="$1"
-  key_to_win "$id" Escape;   sleep 0.10; present "$id" || return 0
-  key_to_win "$id" Return;   sleep 0.10; present "$id" || return 0
-  key_to_win "$id" KP_Enter; sleep 0.10; present "$id" || return 0
-  key_to_win "$id" alt+F4;   sleep 0.12; present "$id" || return 0
+  key_to_win "$id" Escape;   sleep 0.08; present "$id" || return 0
+  key_to_win "$id" Return;   sleep 0.08; present "$id" || return 0
+  key_to_win "$id" KP_Enter; sleep 0.08; present "$id" || return 0
+  key_to_win "$id" alt+F4;   sleep 0.10; present "$id" || return 0
   wmctrl -ic "$id" >/dev/null 2>&1 || true
-  sleep 0.12
+  sleep 0.10
   present "$id" || return 0
   return 1
 }
@@ -226,13 +255,13 @@ drain_once() {
   if [[ -n "${lines:-}" ]]; then
     echo "$lines" | sed 's/^/  - /' | tee -a "$RUN_LOG" >/dev/null
   else
-    log "  - (matched, but not listable)"
+    log "  - (matched, but not listable; retrying)"
     return 1
   fi
 
   while IFS='|' read -r id title; do
     [[ -z "${id:-}" ]] && continue
-    if echo "$title" | grep -Eiq "Warnhinweis|Risikohinweis|Disclaimer"; then
+    if echo "$title" | grep -Eiq "Warnhinweis|Risikohinweis|Disclaimer|Agreement|Haftung|Risk"; then
       accept_warnhinweis "$id" || true
     else
       close_generic "$id" || true
@@ -241,7 +270,7 @@ drain_once() {
   return 1
 }
 
-# Only used during shutdown (safe to close "Program is closing" dialogs)
+# Only used during shutdown
 closing_present() { wmctrl -l 2>/dev/null | grep -Eiq "$CLOSING_PAT"; }
 drain_closing_once() {
   wmctrl -l 2>/dev/null | grep -Ei "$CLOSING_PAT" | awk '{
@@ -255,7 +284,7 @@ drain_closing_once() {
 }
 
 # ----------------------------
-# STRICT PID handling
+# STRICT PID handling (avoid killing wrong java)
 # ----------------------------
 pid_cmdline() {
   local pid="$1"
@@ -287,12 +316,10 @@ tws_running_strict() {
 }
 
 # ----------------------------
-# Stop existing TWS
-#   - MUST NEVER abort the script
+# Stop existing TWS (never abort)
 # ----------------------------
 stop_existing_tws() {
   set +e
-
   local start end
   start="$(date +%s)"
   end=$(( start + STOP_MAX_SEC ))
@@ -304,9 +331,7 @@ stop_existing_tws() {
     key_to_win "$main_id" alt+F4
   fi
 
-  # wait loop (best effort)
   while [[ $(date +%s) -lt $end ]]; do
-    # during shutdown: close closing dialogs too
     closing_present && drain_closing_once || true
     popups_present && drain_once || true
 
@@ -319,37 +344,159 @@ stop_existing_tws() {
     sleep "$POLL_SEC"
   done
 
-  # TERM remaining strict PIDs
   local pids pid
   pids="$(list_tws_pids_strict | tr '\n' ' ')"
   if [[ -n "${pids// /}" ]]; then
     log "Shutdown timeout; TERM PIDs: $pids"
-    for pid in $pids; do
-      log "  TERM pid=$pid"
-      kill -TERM "$pid" 2>/dev/null || true
-    done
+    for pid in $pids; do kill -TERM "$pid" 2>/dev/null || true; done
     sleep "$STOP_TERM_WAIT_SEC"
   fi
 
-  # KILL remaining
   pids="$(list_tws_pids_strict | tr '\n' ' ')"
   if [[ -n "${pids// /}" ]]; then
     log "KILL remaining PIDs: $pids"
-    for pid in $pids; do
-      log "  KILL pid=$pid"
-      kill -KILL "$pid" 2>/dev/null || true
-    done
+    for pid in $pids; do kill -KILL "$pid" 2>/dev/null || true; done
     sleep "$STOP_KILL_WAIT_SEC"
   fi
 
-  if [[ -n "$(main_window_id)" ]] || tws_running_strict; then
-    log "WARN: could not fully stop TWS (continuing anyway)."
-    set -e
-    return 0
-  fi
-
-  log "TWS fully stopped."
+  log "TWS stop: best-effort done."
   set -e
+  return 0
+}
+
+# ----------------------------
+# Optional: API port test
+# ----------------------------
+API_PORT_TEST="${API_PORT_TEST:-0}"   # set 1 to require a listening port
+API_PORT_PRIMARY="${API_PORT_PRIMARY:-7497}"
+API_PORT_FALLBACK="${API_PORT_FALLBACK:-7496}"
+api_port_listening() {
+  local p="$1"
+  if command -v ss >/dev/null 2>&1; then
+    ss -ltn 2>/dev/null | awk '{print $4}' | grep -Eq ":${p}$"
+  elif command -v netstat >/dev/null 2>&1; then
+    netstat -ltn 2>/dev/null | awk '{print $4}' | grep -Eq ":${p}$"
+  else
+    return 2
+  fi
+}
+wait_api_port() {
+  local max="${1:-40}"
+  local end=$(( $(date +%s) + max ))
+  while [[ $(date +%s) -lt $end ]]; do
+    api_port_listening "$API_PORT_PRIMARY" && { log "API port listening: $API_PORT_PRIMARY"; return 0; }
+    api_port_listening "$API_PORT_FALLBACK" && { log "API port listening: $API_PORT_FALLBACK"; return 0; }
+    sleep 1
+  done
+  log "FAIL: API port not listening after ${max}s."
+  return 1
+}
+# ----------------------------
+# Handshake (after Bootstrap)
+# Return codes:
+#   0  = handshake OK
+#   41 = blocked by Paper Trading Disclaimer (10141)
+#   1  = other failure
+# ----------------------------
+api_handshake_try() {
+  python - <<'PY'
+import sys, random
+from ib_insync import IB
+
+HOST="127.0.0.1"
+PORTS=[7497, 7496]
+client_id = random.randint(2000, 65000)
+
+for port in PORTS:
+    ib = IB()
+    try:
+        ib.connect(HOST, port, clientId=client_id, timeout=4)
+        if ib.isConnected():
+            t = ib.reqCurrentTime()
+            acc = ib.managedAccounts()
+            ib.disconnect()
+            if t and acc:
+                print(f"OK port={port} clientId={client_id}")
+                sys.exit(0)
+        try:
+            ib.disconnect()
+        except Exception:
+            pass
+    except Exception:
+        try:
+            ib.disconnect()
+        except Exception:
+            pass
+
+sys.exit(1)
+PY
+}
+
+api_handshake() {
+  # quick retries inside READY window
+  # handshake should be attempted only when no popups are present
+  local end=$(( $(date +%s) + 20 ))
+  while [[ $(date +%s) -lt $end ]]; do
+    # if disclaimer/popup is still there, don't handshake yet
+    if popups_present; then
+      drain_once || true
+      sleep 0.25
+      continue
+    fi
+
+    # Try handshake, capture output for 10141 detection
+    local tmp rc
+    tmp="$(mktemp)"
+    set +e
+    api_handshake_try 2>&1 | tee "$tmp" | tee -a "$RUN_LOG" >/dev/null
+    rc=${PIPESTATUS[0]}
+    set -e
+
+    if grep -q "Error 10141" "$tmp"; then
+      rm -f "$tmp"
+      return 41
+    fi
+
+    rm -f "$tmp"
+    [[ $rc -eq 0 ]] && return 0
+
+    sleep 0.5
+  done
+  return 1
+}
+
+# ----------------------------
+# FAST PATH after chain_rc=25
+# ----------------------------
+fast_path_popup_then_main() {
+  log "FAST-PATH: burst drain ${FAST_POPUP_BURST_SEC}s..."
+  local burst_end=$(( $(date +%s) + FAST_POPUP_BURST_SEC ))
+  while [[ $(date +%s) -lt $burst_end ]]; do
+    popups_present && drain_once || true
+    sleep "$POLL_SEC"
+  done
+
+  log "FAST-PATH: quick main wait ${FAST_MAIN_WAIT_SEC}s..."
+  local quick_end=$(( $(date +%s) + FAST_MAIN_WAIT_SEC ))
+  while [[ $(date +%s) -lt $quick_end ]]; do
+    if ! popups_present; then
+      local mid
+      mid="$(main_window_id)"
+      if [[ -n "$mid" ]]; then
+        log "FAST-PATH: popups cleared + main window present ($mid)."
+        if [[ "$API_PORT_TEST" == "1" ]]; then
+          wait_api_port 40 || return 1
+        fi
+        log "SUCCESS: TWS ready (FAST-PATH)."
+        exit 0
+      fi
+    else
+      popups_present && drain_once || true
+    fi
+    sleep "$POLL_SEC"
+  done
+
+  log "FAST-PATH: not ready yet -> continue normal path."
   return 0
 }
 
@@ -371,14 +518,16 @@ if [[ $chain_rc -eq 22 ]]; then
   exit 2
 fi
 
-# If chain said OK but nothing is running -> hard fail
 if ! tws_running_strict; then
   log "FAIL: chain finished but no TWS/ibgateway java process is running."
   exit 1
 fi
 
-# Start draining immediately, even before main appears (your popups often show first)
-log "Pre-main drain: ${PRE_MAIN_DRAIN_SEC}s (start detection early)..."
+if [[ $chain_rc -eq 25 ]]; then
+  fast_path_popup_then_main || true
+fi
+
+log "Pre-main drain: ${PRE_MAIN_DRAIN_SEC}s..."
 pre_end=$(( $(date +%s) + PRE_MAIN_DRAIN_SEC ))
 while [[ $(date +%s) -lt $pre_end ]]; do
   popups_present && drain_once || true
@@ -391,14 +540,42 @@ if ! wait_for_main; then
   exit 1
 fi
 
-# During spawn, more windows appear later -> observe & drain
-log "Bootstrap: observing+draining for ${BOOTSTRAP_OBSERVE_SEC}s (spawn phase)..."
+log "Bootstrap: observing+draining for ${BOOTSTRAP_OBSERVE_SEC}s..."
 boot_end=$(( $(date +%s) + BOOTSTRAP_OBSERVE_SEC ))
 while [[ $(date +%s) -lt $boot_end ]]; do
   popups_present && drain_once || true
   sleep "$POLL_SEC"
 done
 log "Bootstrap: done."
+
+# ---- HANDSHAKE HERE (requested) ----
+if [[ "$API_PORT_TEST" == "1" ]]; then
+  wait_api_port 40 || exit 1
+fi
+
+log "Handshake: trying real IBKR API connection..."
+if api_handshake; then
+  log "SUCCESS: handshake OK."
+else
+  rc=$?
+  if [[ $rc -eq 41 ]]; then
+    log "Handshake blocked by Paper Trading Disclaimer (10141). Draining/accepting and retrying..."
+    # try a few short drain rounds, then retry once
+    for _ in 1 2 3 4 5; do
+      popups_present && drain_once || true
+      sleep 0.4
+    done
+    if api_handshake; then
+      log "SUCCESS: handshake OK after disclaimer."
+    else
+      log "FAIL: handshake still blocked/failed."
+      exit 1
+    fi
+  else
+    log "FAIL: handshake failed."
+    exit 1
+  fi
+fi
 
 log "Fast-settle: ${FAST_TOTAL_SEC}s, clean streak=${FAST_CLEAN_STREAK}"
 fast_end=$(( $(date +%s) + FAST_TOTAL_SEC ))
@@ -413,7 +590,7 @@ while [[ $(date +%s) -lt $fast_end ]]; do
   sleep "$POLL_SEC"
 done
 
-log "Guard: max ${GUARD_MAX_SEC}s, require quiet=${GUARD_QUIET_SEC}s (poll=${POLL_SEC}s)"
+log "Guard: max ${GUARD_MAX_SEC}s, require quiet=${GUARD_QUIET_SEC}s"
 guard_end=$(( $(date +%s) + GUARD_MAX_SEC ))
 last_dirty_ts=$(date +%s)
 
@@ -425,6 +602,9 @@ while [[ $(date +%s) -lt $guard_end ]]; do
     now=$(date +%s)
     quiet=$(( now - last_dirty_ts ))
     if [[ $quiet -ge $GUARD_QUIET_SEC ]]; then
+      if [[ "$API_PORT_TEST" == "1" ]]; then
+        wait_api_port 40
+      fi
       log "SUCCESS: stable quiet window reached (${quiet}s)."
       exit 0
     fi

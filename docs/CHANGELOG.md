@@ -19,6 +19,14 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `tests/test_pre_execution.py`
 
 
+### [2026-02-27 16:18:57] CHANGE
+**Beschreibung:** Code-Änderungen - (+249/-69 Zeilen)
+
+**Geänderte Dateien:**
+- **SCRIPTS:** 1 Dateien
+  - `scripts/tws_e2e.sh`
+
+
 ## 2026-02-26
 
 
