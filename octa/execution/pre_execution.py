@@ -4,6 +4,7 @@ import asyncio
 import hashlib
 import json
 import os
+import random
 import re
 import socket
 import subprocess
@@ -11,7 +12,7 @@ import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import yaml
 
@@ -40,6 +41,10 @@ class HandshakeConfig:
     connect_timeout_sec: float
     wait_for: tuple[str, ...]
     overall_timeout_sec: float
+    # Mirrors tws_e2e.sh api_handshake_try() behaviour:
+    ports: tuple[int, ...] = ()           # empty = use port from PortCheckConfig
+    use_random_client_id: bool = True     # random in [2000, 65000] to avoid conflicts
+    require_managed_accounts: bool = True # ib.managedAccounts() must return non-empty
 
 
 @dataclass(frozen=True)
@@ -117,6 +122,11 @@ def load_pre_execution_settings(config_path: Path, *, mode: str) -> PreExecution
     else:
         wait_for = ("nextValidId", "currentTime")
 
+    ports_raw = hs.get("ports", [])
+    hs_ports: tuple[int, ...] = (
+        tuple(int(p) for p in ports_raw) if isinstance(ports_raw, list) and ports_raw else ()
+    )
+
     settings = PreExecutionSettings(
         enabled=bool(pre.get("enabled", False)),
         tws_e2e_script=str(pre.get("tws_e2e_script", "scripts/tws_e2e.sh")),
@@ -132,9 +142,12 @@ def load_pre_execution_settings(config_path: Path, *, mode: str) -> PreExecution
         handshake=HandshakeConfig(
             enabled=bool(hs.get("enabled", True)),
             mode=str(hs.get("mode", "read_only")),
-            connect_timeout_sec=float(hs.get("connect_timeout_sec", 5)),
+            connect_timeout_sec=float(hs.get("connect_timeout_sec", 4)),
             wait_for=wait_for,
             overall_timeout_sec=float(hs.get("overall_timeout_sec", 15)),
+            ports=hs_ports,
+            use_random_client_id=bool(hs.get("use_random_client_id", True)),
+            require_managed_accounts=bool(hs.get("require_managed_accounts", True)),
         ),
         telegram=TelegramConfig(
             enabled=bool(tg.get("enabled", True)),
@@ -230,21 +243,46 @@ def check_port_open(
 
 
 class IBInsyncReadOnlyBackend:
-    def __init__(self, *, host: str, port: int, client_id: int, connect_timeout_sec: float) -> None:
+    def __init__(
+        self,
+        *,
+        host: str,
+        port: int,
+        client_id: int,
+        connect_timeout_sec: float,
+        ports: tuple[int, ...] = (),
+    ) -> None:
         try:
             from ib_insync import IB  # type: ignore
         except Exception as exc:  # pragma: no cover
             raise PreExecutionError("pre_execution_handshake_failed", f"ib_insync_missing:{exc}") from exc
         self._ib = IB()
         self._host = str(host)
-        self._port = int(port)
+        # Primary port is the first element of ports (if provided) or the explicit port arg.
+        self._ports: tuple[int, ...] = ports if ports else (int(port),)
+        self._active_port: int = self._ports[0]
         self._client_id = int(client_id)
         self._connect_timeout_sec = float(connect_timeout_sec)
-        self.forbidden_calls: list[str] = []
+        self.forbidden_calls: List[str] = []
 
     def connect(self) -> bool:
-        ok = self._ib.connect(self._host, self._port, clientId=self._client_id, timeout=self._connect_timeout_sec)
-        return bool(ok and self._ib.isConnected())
+        """Try each port in order; return True on first successful connection."""
+        for port in self._ports:
+            try:
+                ok = self._ib.connect(
+                    self._host, port, clientId=self._client_id, timeout=self._connect_timeout_sec
+                )
+                if ok and self._ib.isConnected():
+                    self._active_port = port
+                    return True
+            except Exception:
+                pass
+            # Ensure clean state before next port attempt.
+            try:
+                self._ib.disconnect()
+            except Exception:
+                pass
+        return False
 
     def wait_for_next_valid_id(self, timeout_sec: float) -> bool:
         deadline = time.time() + float(timeout_sec)
@@ -265,6 +303,18 @@ class IBInsyncReadOnlyBackend:
         try:
             val = self._ib.reqCurrentTime()
             return val is not None
+        except Exception:
+            return False
+
+    def req_managed_accounts(self) -> bool:
+        """Return True when ib.managedAccounts() yields at least one account.
+
+        Mirrors tws_e2e.sh api_handshake_try(): ``acc = ib.managedAccounts()``
+        must be truthy before the handshake is declared successful.
+        """
+        try:
+            accounts = self._ib.managedAccounts()
+            return bool(accounts)
         except Exception:
             return False
 
@@ -305,19 +355,29 @@ def broker_handshake_read_only(
     if cfg.mode != "read_only":
         raise PreExecutionError("pre_execution_handshake_not_read_only", f"mode={cfg.mode}")
 
+    # Effective port list: cfg.ports (multi-port) overrides the single port arg.
+    effective_ports: tuple[int, ...] = cfg.ports if cfg.ports else (int(port),)
+
+    # Random client_id avoids conflicts with running sessions (mirrors tws_e2e.sh).
+    effective_client_id = (
+        random.randint(2000, 65000) if cfg.use_random_client_id else int(client_id)
+    )
+
     factory = backend_factory or (
         lambda **kw: IBInsyncReadOnlyBackend(
             host=kw["host"],
             port=kw["port"],
             client_id=kw["client_id"],
             connect_timeout_sec=kw["connect_timeout_sec"],
+            ports=kw.get("ports", ()),
         )
     )
     backend = factory(
         host=str(host),
-        port=int(port),
-        client_id=int(client_id),
+        port=int(effective_ports[0]),
+        client_id=int(effective_client_id),
         connect_timeout_sec=float(cfg.connect_timeout_sec),
+        ports=effective_ports,
     )
     seen_events: list[str] = []
     try:
@@ -335,18 +395,35 @@ def broker_handshake_read_only(
         if not seen_events:
             raise PreExecutionError("pre_execution_handshake_failed", "no_expected_callback")
 
+        # managedAccounts() confirms an authenticated session, not just a connection
+        # (mirrors tws_e2e.sh: ``acc = ib.managedAccounts()`` must be truthy).
+        managed_accounts_ok = False
+        if cfg.require_managed_accounts:
+            req_fn = getattr(backend, "req_managed_accounts", None)
+            if callable(req_fn):
+                managed_accounts_ok = bool(req_fn())
+            if not managed_accounts_ok:
+                raise PreExecutionError(
+                    "pre_execution_handshake_failed", "managed_accounts_empty"
+                )
+            seen_events.append("managedAccounts")
+
         forbidden_calls = list(getattr(backend, "forbidden_calls", []) or [])
         if forbidden_calls:
             raise PreExecutionError("pre_execution_handshake_not_read_only", ",".join(forbidden_calls))
 
+        # Resolve which port actually connected (IBInsyncReadOnlyBackend tracks it).
+        active_port = int(getattr(backend, "_active_port", effective_ports[0]))
         out = {
             "enabled": True,
             "mode": cfg.mode,
             "ready": True,
             "seen_events": seen_events,
+            "managed_accounts_ok": managed_accounts_ok,
             "host": str(host),
-            "port": int(port),
-            "client_id": int(client_id),
+            "port": active_port,
+            "client_id": int(effective_client_id),
+            "use_random_client_id": bool(cfg.use_random_client_id),
         }
         _write_json(evidence_dir / "handshake.json", out)
         return out

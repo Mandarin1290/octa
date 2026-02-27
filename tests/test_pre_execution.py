@@ -168,6 +168,10 @@ def test_handshake_read_only_no_order_calls(tmp_path: Path) -> None:
             calls.append("req_current_time")
             return True
 
+        def req_managed_accounts(self):
+            calls.append("req_managed_accounts")
+            return True
+
         def disconnect(self):
             calls.append("disconnect")
 
@@ -190,6 +194,7 @@ def test_handshake_read_only_no_order_calls(tmp_path: Path) -> None:
             connect_timeout_sec=2,
             wait_for=("nextValidId", "currentTime"),
             overall_timeout_sec=2,
+            require_managed_accounts=True,
         ),
         host="127.0.0.1",
         port=7497,
@@ -200,8 +205,11 @@ def test_handshake_read_only_no_order_calls(tmp_path: Path) -> None:
     assert out["ready"] is True
     assert calls[0] == "connect"
     assert "wait_next_valid_id" in calls
+    assert "req_managed_accounts" in calls
     assert "disconnect" in calls
     assert "req_current_time" not in calls
+    assert out["managed_accounts_ok"] is True
+    assert out["use_random_client_id"] is True  # default; random client_id was picked
 
 
 def test_pre_execution_success_sends_ready_telegram(tmp_path: Path) -> None:
@@ -219,6 +227,9 @@ def test_pre_execution_success_sends_ready_telegram(tmp_path: Path) -> None:
             return False
 
         def req_current_time(self, timeout_sec):
+            return True
+
+        def req_managed_accounts(self):
             return True
 
         def disconnect(self):
@@ -250,6 +261,9 @@ def test_handshake_fails_when_forbidden_call_detected(tmp_path: Path) -> None:
         def req_current_time(self, timeout_sec):
             return False
 
+        def req_managed_accounts(self):
+            return True
+
         def disconnect(self):
             return None
 
@@ -261,6 +275,7 @@ def test_handshake_fails_when_forbidden_call_detected(tmp_path: Path) -> None:
                 connect_timeout_sec=2,
                 wait_for=("nextValidId",),
                 overall_timeout_sec=2,
+                require_managed_accounts=True,
             ),
             host="127.0.0.1",
             port=7497,
@@ -408,6 +423,9 @@ def test_preexec_manifest_and_result_json_written_on_success(tmp_path: Path) -> 
         def req_current_time(self, timeout_sec):
             return False
 
+        def req_managed_accounts(self):
+            return True
+
         def disconnect(self):
             pass
 
@@ -466,6 +484,9 @@ def test_telegram_success_message_includes_metadata(tmp_path: Path) -> None:
         def req_current_time(self, timeout_sec):
             return False
 
+        def req_managed_accounts(self):
+            return True
+
         def disconnect(self):
             pass
 
@@ -519,3 +540,155 @@ def test_preexec_manifest_written_on_failure(tmp_path: Path) -> None:
     assert manifest["failure_reason"] == "pre_execution_tws_e2e_failed"
     assert manifest["run_id"] == "fail_run_001"
     assert manifest["mode"] == "shadow"
+
+
+# ---------------------------------------------------------------------------
+# G3: Multi-port fallback, random client_id, managedAccounts enforcement
+# ---------------------------------------------------------------------------
+
+
+def test_handshake_multi_port_fallback(tmp_path: Path) -> None:
+    """When the first port fails to connect, the backend must try the next one."""
+    connect_log: list[int] = []
+
+    class _MultiPortBackend:
+        forbidden_calls: list = []
+
+        def __init__(self, **kw: object) -> None:
+            self._ports: tuple[int, ...] = kw.get("ports", (int(kw["port"]),))  # type: ignore[arg-type]
+            self._active_port: int = self._ports[0]
+
+        def connect(self) -> bool:
+            for p in self._ports:
+                connect_log.append(p)
+                if p == 7496:  # second port succeeds
+                    self._active_port = p
+                    return True
+            return False
+
+        def wait_for_next_valid_id(self, timeout_sec: float) -> bool:
+            return True
+
+        def req_current_time(self, timeout_sec: float) -> bool:
+            return False
+
+        def req_managed_accounts(self) -> bool:
+            return True
+
+        def disconnect(self) -> None:
+            pass
+
+    out = broker_handshake_read_only(
+        cfg=HandshakeConfig(
+            enabled=True,
+            mode="read_only",
+            connect_timeout_sec=2,
+            wait_for=("nextValidId",),
+            overall_timeout_sec=2,
+            ports=(7497, 7496),
+            use_random_client_id=False,
+            require_managed_accounts=True,
+        ),
+        host="127.0.0.1",
+        port=7497,
+        client_id=901,
+        evidence_dir=tmp_path / "ev_multiport",
+        backend_factory=lambda **kw: _MultiPortBackend(**kw),
+    )
+
+    assert out["ready"] is True
+    assert out["port"] == 7496, "active port should be the fallback port"
+    assert 7497 in connect_log, "primary port must have been tried"
+    assert 7496 in connect_log, "fallback port must have been tried"
+
+
+def test_handshake_random_client_id_in_range(tmp_path: Path) -> None:
+    """With use_random_client_id=True the chosen client_id must be in [2000, 65000]."""
+    chosen_ids: list[int] = []
+
+    class _CaptureBackend:
+        forbidden_calls: list = []
+
+        def __init__(self, **kw: object) -> None:
+            chosen_ids.append(int(kw["client_id"]))  # type: ignore[arg-type]
+            self._active_port: int = int(kw["port"])  # type: ignore[arg-type]
+
+        def connect(self) -> bool:
+            return True
+
+        def wait_for_next_valid_id(self, timeout_sec: float) -> bool:
+            return True
+
+        def req_current_time(self, timeout_sec: float) -> bool:
+            return False
+
+        def req_managed_accounts(self) -> bool:
+            return True
+
+        def disconnect(self) -> None:
+            pass
+
+    out = broker_handshake_read_only(
+        cfg=HandshakeConfig(
+            enabled=True,
+            mode="read_only",
+            connect_timeout_sec=2,
+            wait_for=("nextValidId",),
+            overall_timeout_sec=2,
+            use_random_client_id=True,
+            require_managed_accounts=True,
+        ),
+        host="127.0.0.1",
+        port=7497,
+        client_id=901,  # original id — should NOT be used when use_random_client_id=True
+        evidence_dir=tmp_path / "ev_randid",
+        backend_factory=lambda **kw: _CaptureBackend(**kw),
+    )
+
+    assert out["ready"] is True
+    assert out["use_random_client_id"] is True
+    assert len(chosen_ids) == 1
+    assert 2000 <= chosen_ids[0] <= 65000, f"client_id {chosen_ids[0]} out of expected range"
+    assert out["client_id"] == chosen_ids[0]
+
+
+def test_handshake_managed_accounts_empty_raises(tmp_path: Path) -> None:
+    """When req_managed_accounts() returns False and require_managed_accounts=True → error."""
+
+    class _NoAccountsBackend:
+        forbidden_calls: list = []
+
+        def __init__(self, **kw: object) -> None:
+            self._active_port: int = int(kw["port"])  # type: ignore[arg-type]
+
+        def connect(self) -> bool:
+            return True
+
+        def wait_for_next_valid_id(self, timeout_sec: float) -> bool:
+            return True
+
+        def req_current_time(self, timeout_sec: float) -> bool:
+            return False
+
+        def req_managed_accounts(self) -> bool:
+            return False  # simulates an unauthenticated / wrong-account session
+
+        def disconnect(self) -> None:
+            pass
+
+    with pytest.raises(PreExecutionError, match="managed_accounts_empty"):
+        broker_handshake_read_only(
+            cfg=HandshakeConfig(
+                enabled=True,
+                mode="read_only",
+                connect_timeout_sec=2,
+                wait_for=("nextValidId",),
+                overall_timeout_sec=2,
+                require_managed_accounts=True,
+            ),
+            host="127.0.0.1",
+            port=7497,
+            client_id=901,
+            evidence_dir=tmp_path / "ev_noacc",
+            backend_factory=lambda **kw: _NoAccountsBackend(**kw),
+        )
