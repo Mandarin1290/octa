@@ -3,6 +3,21 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-02-27 18:56:07] CHANGE
+Code-Änderungen - (+29/-0 Zeilen)
+
+**Statistics:**
+- Files Changed: 1
+- Lines Added: +29
+- Lines Deleted: -0
+- Net Change: +29
+
+**File-Level Changes:**
+```
++   29 -    0  scripts/run_paper_live.py
+```
+
+
 ## [2026-02-27 16:42:01] TEST
 Code-Änderungen - 1 Code-Dateien - 1 Test-Dateien - (+265/-12 Zeilen)
 

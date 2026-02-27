@@ -39,6 +39,14 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `configs/execution_ibkr.yaml`
 
 
+### [2026-02-27 18:56:07] CHANGE
+**Beschreibung:** Code-Änderungen - (+29/-0 Zeilen)
+
+**Geänderte Dateien:**
+- **SCRIPTS:** 1 Dateien
+  - `scripts/run_paper_live.py`
+
+
 ## 2026-02-26
 
 
