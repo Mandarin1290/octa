@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import os
+import re
 import socket
 import subprocess
 import time
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
@@ -56,6 +59,40 @@ class PreExecutionSettings:
     handshake: HandshakeConfig
     telegram: TelegramConfig
     ibkr_client_id: int
+
+
+# ---------------------------------------------------------------------------
+# Evidence helpers — LOG: parsing, env-snapshot, secret redaction
+# ---------------------------------------------------------------------------
+
+_SECRET_PAT: re.Pattern[str] = re.compile(
+    r"(?i)(password|passwd|secret|token|api[_\-]?key|credential|private[_\-]?key|auth)"
+)
+
+
+def _parse_log_path(stdout: str) -> Optional[str]:
+    """Extract the path emitted by tws_e2e.sh as 'LOG: <path>'."""
+    m = re.search(r"(?m)^LOG:\s*(\S+)", str(stdout))
+    return m.group(1) if m else None
+
+
+def _redact_env(env: Dict[str, str]) -> Dict[str, str]:
+    """Return a copy of *env* with secret values replaced by '<redacted>'."""
+    return {k: ("<redacted>" if _SECRET_PAT.search(k) else v) for k, v in env.items()}
+
+
+def _write_env_snapshot(path: Path, env_passthrough: bool) -> None:
+    """Write a redacted environment snapshot to *path*."""
+    if env_passthrough:
+        raw_env: Dict[str, str] = dict(os.environ)
+    else:
+        raw_env = {k: os.environ.get(k, "") for k in ("HOME", "PATH")}
+    redacted = _redact_env(raw_env)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "\n".join(f"{k}={v}" for k, v in sorted(redacted.items())) + "\n",
+        encoding="utf-8",
+    )
 
 
 def _write_json(path: Path, payload: Dict[str, Any]) -> None:
@@ -135,17 +172,28 @@ def run_tws_e2e(
     if not script.exists():
         raise PreExecutionError("pre_execution_config_invalid", f"missing_script:{script}")
     env = dict(os.environ) if env_passthrough else {"PATH": os.environ.get("PATH", ""), "HOME": os.environ.get("HOME", "")}
+    cmd = ["bash", str(script)]
+    # Write the exact command before execution so it is available even on crash.
+    (evidence_dir / "cmd.txt").write_text(" ".join(cmd) + "\n", encoding="utf-8")
     cp = run_cmd(
-        ["bash", str(script)],
+        cmd,
         capture_output=True,
         text=True,
         timeout=int(timeout_sec),
         env=env,
         check=False,
     )
-    (evidence_dir / "tws_e2e.stdout.log").write_text(str(cp.stdout or ""), encoding="utf-8")
-    (evidence_dir / "tws_e2e.stderr.log").write_text(str(cp.stderr or ""), encoding="utf-8")
-    out = {"returncode": int(cp.returncode), "script": str(script), "timeout_sec": int(timeout_sec)}
+    stdout = str(cp.stdout or "")
+    stderr = str(cp.stderr or "")
+    (evidence_dir / "tws_e2e.stdout.log").write_text(stdout, encoding="utf-8")
+    (evidence_dir / "tws_e2e.stderr.log").write_text(stderr, encoding="utf-8")
+    log_path = _parse_log_path(stdout)
+    out = {
+        "returncode": int(cp.returncode),
+        "script": str(script),
+        "timeout_sec": int(timeout_sec),
+        "log_path": log_path,
+    }
     _write_json(evidence_dir / "tws_e2e.result.json", out)
     if int(cp.returncode) != 0:
         raise PreExecutionError("pre_execution_tws_e2e_failed", f"returncode={cp.returncode}")
@@ -337,13 +385,21 @@ def run_pre_execution_gate(
     connect_fn: Callable[..., Any] = socket.create_connection,
     sleep_fn: Callable[[float], None] = time.sleep,
     backend_factory: Optional[Callable[..., Any]] = None,
+    mode: str = "paper",
+    run_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     gate_dir = evidence_dir / "pre_execution"
     gate_dir.mkdir(parents=True, exist_ok=True)
+    effective_run_id = run_id or evidence_dir.name
+    started_at = datetime.now(timezone.utc).isoformat()
+
     if not settings.enabled:
         out = {"enabled": False, "ready": False, "reason": "pre_execution_disabled"}
         _write_json(gate_dir / "pre_execution.json", out)
         return out
+
+    # Write env snapshot immediately — available even if later gates abort.
+    _write_env_snapshot(gate_dir / "env_snapshot.txt", settings.tws_e2e_env_passthrough)
 
     try:
         tws = run_tws_e2e(
@@ -367,23 +423,101 @@ def run_pre_execution_gate(
             evidence_dir=gate_dir,
             backend_factory=backend_factory,
         )
+        completed_at = datetime.now(timezone.utc).isoformat()
+        script_log_path = tws.get("log_path")
+
+        # preexec_manifest.json — stable config hash for audit cross-reference.
+        config_hash = hashlib.sha256(
+            json.dumps(
+                {
+                    "api_host": settings.port_check.host,
+                    "api_port": settings.port_check.port,
+                    "mode": mode,
+                    "tws_e2e_script": settings.tws_e2e_script,
+                },
+                sort_keys=True,
+            ).encode("utf-8")
+        ).hexdigest()
+        manifest: Dict[str, Any] = {
+            "run_id": effective_run_id,
+            "mode": mode,
+            "started_at": started_at,
+            "completed_at": completed_at,
+            "tws_e2e_script": settings.tws_e2e_script,
+            "api_host": settings.port_check.host,
+            "api_port": settings.port_check.port,
+            "config_hash": config_hash,
+            "failed": False,
+        }
+        _write_json(gate_dir / "preexec_manifest.json", manifest)
+
+        # result.json — composite summary (rc, handshake_ok, log path, …).
+        result_payload: Dict[str, Any] = {
+            "rc": int(tws.get("returncode", -1)),
+            "handshake_ok": bool(handshake.get("ready", False)),
+            "api_host": settings.port_check.host,
+            "api_port": int(settings.port_check.port),
+            "script_log_path": script_log_path,
+            "tws_main_window_id": None,
+            "mode": mode,
+            "run_id": effective_run_id,
+            "started_at": started_at,
+            "completed_at": completed_at,
+        }
+        _write_json(gate_dir / "result.json", result_payload)
+
         out = {
             "enabled": True,
             "ready": True,
             "reason": "pre_execution_ready",
             "tws_e2e": tws,
-            "port_check": {"ready": True, "host": settings.port_check.host, "port": settings.port_check.port, "attempts": len(port.get("attempts", []))},
-            "handshake": {"ready": bool(handshake.get("ready", False)), "seen_events": list(handshake.get("seen_events", []))},
+            "port_check": {
+                "ready": True,
+                "host": settings.port_check.host,
+                "port": settings.port_check.port,
+                "attempts": len(port.get("attempts", [])),
+            },
+            "handshake": {
+                "ready": bool(handshake.get("ready", False)),
+                "seen_events": list(handshake.get("seen_events", [])),
+            },
+            "run_id": effective_run_id,
+            "mode": mode,
         }
         _write_json(gate_dir / "pre_execution.json", out)
+
+        # Telegram success message with metadata.
+        log_suffix = f"\nlog: {script_log_path}" if script_log_path else ""
+        ready_msg = (
+            f"{settings.telegram.on_ready_message}"
+            f"\nmode={mode}  run_id={effective_run_id}"
+            f"  port={settings.port_check.port}{log_suffix}"
+        )
         _notify(
             notifier=notifier,
             telegram_cfg=settings.telegram,
             event_type="pre_execution_ready",
-            message=settings.telegram.on_ready_message,
+            message=ready_msg,
         )
         return out
     except PreExecutionError as exc:
+        completed_at = datetime.now(timezone.utc).isoformat()
+        # Write partial manifest so auditors know a run was attempted.
+        _write_json(
+            gate_dir / "preexec_manifest.json",
+            {
+                "run_id": effective_run_id,
+                "mode": mode,
+                "started_at": started_at,
+                "completed_at": completed_at,
+                "tws_e2e_script": settings.tws_e2e_script,
+                "api_host": settings.port_check.host,
+                "api_port": settings.port_check.port,
+                "failed": True,
+                "failure_reason": exc.reason,
+                "failure_detail": exc.detail,
+            },
+        )
         out = {"enabled": True, "ready": False, "reason": exc.reason, "detail": exc.detail}
         _write_json(gate_dir / "pre_execution.json", out)
         _notify(

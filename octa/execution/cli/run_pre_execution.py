@@ -43,7 +43,13 @@ def main() -> int:
             ibkr_client_id=settings.ibkr_client_id,
         )
     try:
-        out = run_pre_execution_gate(settings=settings, evidence_dir=evidence_dir, notifier=notifier)
+        out = run_pre_execution_gate(
+            settings=settings,
+            evidence_dir=evidence_dir,
+            notifier=notifier,
+            mode=args.mode,
+            run_id=evidence_dir.name,
+        )
         print(json.dumps(out, sort_keys=True))
         return 0
     except PreExecutionError as exc:

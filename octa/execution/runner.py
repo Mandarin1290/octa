@@ -155,6 +155,8 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
                 settings=pre_settings,
                 evidence_dir=cfg.evidence_dir,
                 notifier=notifier,
+                mode=cfg.mode,
+                run_id=cfg.evidence_dir.name,
             )
             _write_json(cfg.evidence_dir / "pre_execution_status.json", pre_exec_res)
         except PreExecutionError as exc:

@@ -4,7 +4,7 @@ import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
@@ -159,6 +159,68 @@ def _intent_to_order(intent: PaperOrderIntent) -> Dict[str, Any]:
     return order
 
 
+def _run_paper_pre_execution(
+    *,
+    run_id: str,
+    mode: str,
+    broker_mode: str,
+    broker_cfg_path: Optional[str],
+) -> None:
+    """Run TWS pre-execution gate before paper/live trading.
+
+    Skipped transparently when:
+      - broker_mode is "sandbox" (no real IBKR connection needed), OR
+      - no broker config is discoverable, OR
+      - pre_execution.enabled is False in the config.
+
+    Fail-closed when broker_mode is "ib_insync" and pre_execution is enabled:
+    raises RuntimeError so run_paper() never proceeds with a broken TWS.
+    """
+    if broker_mode == "sandbox":
+        return  # sandbox adapter needs no TWS
+
+    effective_cfg = broker_cfg_path or os.environ.get("OCTA_BROKER_CFG")
+    if effective_cfg is None:
+        _default = Path("configs/execution_ibkr.yaml")
+        if _default.exists():
+            effective_cfg = str(_default)
+    if effective_cfg is None:
+        return  # no config discoverable — skip gracefully
+
+    try:
+        from octa.execution.pre_execution import (
+            PreExecutionError,
+            load_pre_execution_settings,
+            run_pre_execution_gate,
+        )
+        from octa.execution.notifier import ExecutionNotifier
+    except ImportError:
+        return  # execution module not available in this environment
+
+    try:
+        pre_settings = load_pre_execution_settings(Path(effective_cfg), mode=mode)
+    except Exception:
+        return  # malformed config — do not block
+
+    if not pre_settings.enabled:
+        return
+
+    evidence_base = Path("octa") / "var" / "evidence" / f"pre_exec_{run_id}"
+    notifier = ExecutionNotifier(evidence_base)
+    try:
+        run_pre_execution_gate(
+            settings=pre_settings,
+            evidence_dir=evidence_base,
+            notifier=notifier,
+            mode=mode,
+            run_id=run_id,
+        )
+    except PreExecutionError as exc:
+        raise RuntimeError(
+            f"pre_execution_failed:{exc.reason}:{exc.detail}"
+        ) from exc
+
+
 def run_paper(
     *,
     run_id: str,
@@ -172,6 +234,7 @@ def run_paper(
     max_runtime_s: int = 3600,
     max_ram_mb: int = 12000,
     max_threads: int = 4,
+    broker_cfg_path: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Load promoted PASS artifacts and place PAPER orders.
 
@@ -180,6 +243,17 @@ def run_paper(
 
     budget = ResourceBudgetController(max_runtime_s=max_runtime_s, max_ram_mb=max_ram_mb, max_threads=max_threads)
     budget.apply_thread_caps()
+
+    # Pre-execution gate — runs before any broker connection is attempted.
+    # Broker mode is read from env (set by operator); defaults to sandbox.
+    broker_mode = str(os.getenv("OCTA_BROKER_MODE") or "sandbox")
+    cfg_tmp_mode = "live" if bool(live_enable) else (str(level).strip().lower() or "paper")
+    _run_paper_pre_execution(
+        run_id=run_id,
+        mode=cfg_tmp_mode,
+        broker_mode=broker_mode,
+        broker_cfg_path=broker_cfg_path,
+    )
 
     cfg = load_config(config_path)
     mode = "live" if bool(live_enable) else ("shadow" if str(level).strip().lower() == "shadow" else "paper")

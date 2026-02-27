@@ -11,6 +11,8 @@ from octa.execution.pre_execution import (
     PreExecutionError,
     PreExecutionSettings,
     TelegramConfig,
+    _parse_log_path,
+    _redact_env,
     broker_handshake_read_only,
     check_port_open,
     run_pre_execution_gate,
@@ -312,3 +314,208 @@ def test_pre_execution_fail_closed_and_no_execution_progress(tmp_path: Path, mon
             )
         )
     assert events == ["pre_exec"]
+
+
+# ---------------------------------------------------------------------------
+# G1/G2: Evidence pack — cmd.txt, LOG: parsing, env_snapshot, manifest, result.json
+# ---------------------------------------------------------------------------
+
+
+def test_parse_log_path_extracts_log_line() -> None:
+    assert _parse_log_path("LOG: /tmp/tws_e2e_20260227T161812Z.log\nsome other line") == "/tmp/tws_e2e_20260227T161812Z.log"
+    assert _parse_log_path("no log here") is None
+    assert _parse_log_path("  LOG: /path/with/spaces.log") is None  # leading spaces → not BOL
+    assert _parse_log_path("LOG: /octa/var/logs/tws_e2e_X.log\n") == "/octa/var/logs/tws_e2e_X.log"
+
+
+def test_redact_env_masks_secret_keys() -> None:
+    env = {
+        "HOME": "/home/user",
+        "OCTA_IBKR_PASSWORD": "s3cr3t",
+        "OCTA_TELEGRAM_BOT_TOKEN": "mytoken",
+        "OCTA_IBKR_USERNAME": "trader",
+        "PATH": "/usr/bin",
+        "MY_SECRET": "hidden",
+        "API_KEY": "key123",
+    }
+    redacted = _redact_env(env)
+    assert redacted["HOME"] == "/home/user"
+    assert redacted["PATH"] == "/usr/bin"
+    assert redacted["OCTA_IBKR_USERNAME"] == "trader"
+    assert redacted["OCTA_IBKR_PASSWORD"] == "<redacted>"
+    assert redacted["OCTA_TELEGRAM_BOT_TOKEN"] == "<redacted>"
+    assert redacted["MY_SECRET"] == "<redacted>"
+    assert redacted["API_KEY"] == "<redacted>"
+
+
+def test_cmd_txt_written_by_run_tws_e2e(tmp_path: Path) -> None:
+    script = tmp_path / "ok.sh"
+    script.write_text("#!/usr/bin/env bash\necho 'LOG: /tmp/x.log'\nexit 0\n", encoding="utf-8")
+    ev = tmp_path / "ev"
+
+    run_tws_e2e(
+        script_path=str(script),
+        timeout_sec=10,
+        env_passthrough=False,
+        evidence_dir=ev,
+        run_cmd=lambda *a, **k: SimpleNamespace(returncode=0, stdout="LOG: /tmp/x.log\n", stderr=""),
+    )
+
+    cmd_txt = ev / "cmd.txt"
+    assert cmd_txt.exists(), "cmd.txt must be written"
+    assert "bash" in cmd_txt.read_text()
+    assert str(script) in cmd_txt.read_text()
+
+
+def test_run_tws_e2e_log_path_in_result(tmp_path: Path) -> None:
+    script = tmp_path / "ok.sh"
+    script.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8")
+    ev = tmp_path / "ev"
+
+    out = run_tws_e2e(
+        script_path=str(script),
+        timeout_sec=10,
+        env_passthrough=False,
+        evidence_dir=ev,
+        run_cmd=lambda *a, **k: SimpleNamespace(
+            returncode=0,
+            stdout="starting...\nLOG: /octa/var/logs/tws_e2e_20260227T161812Z.log\nready\n",
+            stderr="",
+        ),
+    )
+
+    assert out["log_path"] == "/octa/var/logs/tws_e2e_20260227T161812Z.log"
+    import json
+    result_json = json.loads((ev / "tws_e2e.result.json").read_text())
+    assert result_json["log_path"] == "/octa/var/logs/tws_e2e_20260227T161812Z.log"
+
+
+def test_preexec_manifest_and_result_json_written_on_success(tmp_path: Path) -> None:
+    import json
+    script = tmp_path / "ok.sh"
+    script.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8")
+    notifier = _FakeNotifier()
+
+    class _Backend:
+        forbidden_calls: list = []
+
+        def connect(self):
+            return True
+
+        def wait_for_next_valid_id(self, timeout_sec):
+            return True
+
+        def req_current_time(self, timeout_sec):
+            return False
+
+        def disconnect(self):
+            pass
+
+    ev = tmp_path / "evidence"
+    out = run_pre_execution_gate(
+        settings=_settings(script_path=str(script)),
+        evidence_dir=ev,
+        notifier=notifier,
+        run_cmd=lambda *a, **k: SimpleNamespace(
+            returncode=0,
+            stdout="LOG: /octa/var/logs/tws_e2e_XYZ.log\n",
+            stderr="",
+        ),
+        connect_fn=lambda *a, **k: _DummyConn(),
+        sleep_fn=lambda s: None,
+        backend_factory=lambda **kw: _Backend(),
+        mode="paper",
+        run_id="test_run_001",
+    )
+
+    gate_dir = ev / "pre_execution"
+    manifest = json.loads((gate_dir / "preexec_manifest.json").read_text())
+    assert manifest["run_id"] == "test_run_001"
+    assert manifest["mode"] == "paper"
+    assert "started_at" in manifest
+    assert "completed_at" in manifest
+    assert "config_hash" in manifest
+    assert manifest["failed"] is False
+
+    result = json.loads((gate_dir / "result.json").read_text())
+    assert result["rc"] == 0
+    assert result["handshake_ok"] is True
+    assert result["api_port"] == 7497
+    assert result["script_log_path"] == "/octa/var/logs/tws_e2e_XYZ.log"
+    assert result["mode"] == "paper"
+    assert result["run_id"] == "test_run_001"
+
+    env_snap = (gate_dir / "env_snapshot.txt").read_text()
+    assert "=" in env_snap  # at least one KEY=value line
+
+
+def test_telegram_success_message_includes_metadata(tmp_path: Path) -> None:
+    script = tmp_path / "ok.sh"
+    script.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8")
+    notifier = _FakeNotifier()
+
+    class _Backend:
+        forbidden_calls: list = []
+
+        def connect(self):
+            return True
+
+        def wait_for_next_valid_id(self, timeout_sec):
+            return True
+
+        def req_current_time(self, timeout_sec):
+            return False
+
+        def disconnect(self):
+            pass
+
+    run_pre_execution_gate(
+        settings=_settings(script_path=str(script)),
+        evidence_dir=tmp_path / "ev",
+        notifier=notifier,
+        run_cmd=lambda *a, **k: SimpleNamespace(
+            returncode=0,
+            stdout="LOG: /octa/var/logs/tws_e2e_METACHECK.log\n",
+            stderr="",
+        ),
+        connect_fn=lambda *a, **k: _DummyConn(),
+        sleep_fn=lambda s: None,
+        backend_factory=lambda **kw: _Backend(),
+        mode="live",
+        run_id="meta_run_007",
+    )
+
+    assert notifier.events, "at least one event expected"
+    evt_type, payload = notifier.events[-1]
+    assert evt_type == "pre_execution_ready"
+    msg = payload["message"]
+    assert "mode=live" in msg
+    assert "meta_run_007" in msg
+    assert "7497" in msg
+    assert "/octa/var/logs/tws_e2e_METACHECK.log" in msg
+
+
+def test_preexec_manifest_written_on_failure(tmp_path: Path) -> None:
+    import json
+    script = tmp_path / "bad.sh"
+    script.write_text("#!/usr/bin/env bash\nexit 1\n", encoding="utf-8")
+    notifier = _FakeNotifier()
+
+    with pytest.raises(PreExecutionError):
+        run_pre_execution_gate(
+            settings=_settings(script_path=str(script)),
+            evidence_dir=tmp_path / "ev",
+            notifier=notifier,
+            run_cmd=lambda *a, **k: SimpleNamespace(returncode=7, stdout="", stderr="boom"),
+            connect_fn=lambda *a, **k: _DummyConn(),
+            sleep_fn=lambda s: None,
+            mode="shadow",
+            run_id="fail_run_001",
+        )
+
+    gate_dir = tmp_path / "ev" / "pre_execution"
+    manifest = json.loads((gate_dir / "preexec_manifest.json").read_text())
+    assert manifest["failed"] is True
+    assert manifest["failure_reason"] == "pre_execution_tws_e2e_failed"
+    assert manifest["run_id"] == "fail_run_001"
+    assert manifest["mode"] == "shadow"
