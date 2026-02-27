@@ -47,6 +47,14 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `scripts/run_paper_live.py`
 
 
+### [2026-02-27 19:52:36] CHANGE
+**Beschreibung:** Code-Änderungen - (+81/-0 Zeilen)
+
+**Geänderte Dateien:**
+- **CONFIG:** 1 Dateien
+  - `configs/autopilot_daily.yaml`
+
+
 ## 2026-02-26
 
 

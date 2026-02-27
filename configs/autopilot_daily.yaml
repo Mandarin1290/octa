@@ -1,0 +1,81 @@
+# Daily scheduled autopilot: universe → gates → cascade training → promote.
+# Paper execution is handled separately by octa-paper-runner.timer (every 30 min).
+# Keeping paper.enabled: false here keeps the autopilot in research context so
+# the immutability guard permits training registry writes.
+
+run_id: null
+
+registry_root: artifacts
+reports_dir: reports
+pkl_dir: raw/PKL
+training_config: configs/dev.yaml
+runtime_profile: smoke_plus
+
+universe:
+  stock_dir: raw/Stock_parquet
+  fx_dir: raw/FX_parquet
+  crypto_dir: raw/Crypto_parquet
+  futures_dir: raw/Future_parquet
+  asset_map_path: assets/asset_map.yaml
+  limit: 50
+
+timeframes: [1D, 1H, 30M, 5M, 1M]
+cascade_order: [1D, 1H, 30M, 5M, 1M]
+
+data_quality:
+  max_duplicate_frac: 0.001
+  max_missing_frac: 0.02
+  min_spacing_match_frac: 0.95
+  spacing_tolerance_seconds: 120
+  require_utc_timezone: true
+  allow_naive_timestamps: false
+
+global_gate:
+  min_history_days: 252
+  max_drawdown_max: 0.6
+  max_vol_annual: 2.5
+  fred_enabled: true
+  edgar_enabled: true
+  edgar_user_agent: "OCTA/1.0 (research; contact=ops@example.com)"
+
+budgets:
+  max_runtime_s: 7200
+  max_ram_mb: 14000
+  max_threads: 4
+  max_disk_mb: 20000
+
+dynamic_gate:
+  enabled: true
+  method: percentile_rank
+  min_population: 30
+  top_percentile: 0.70
+  fallback_top_k_if_empty: 1
+  required_metrics: [sharpe, pf, calmar, max_dd]
+  metrics:
+    sharpe: {direction: high, weight: 0.35}
+    pf: {direction: high, weight: 0.25}
+    calmar: {direction: high, weight: 0.20}
+    max_dd: {direction: low, weight: 0.20}
+
+training_budget:
+  enabled: true
+  max_train_symbols_per_tf:
+    1D: 2
+    1H: 3
+    30M: 2
+    5M: 1
+    1M: 0
+  selection_method: history_ranked
+  decouple_tf_pool_from_prev_tf: true
+  per_symbol_timeout_s: 600
+  stage_timeout_s: 1800
+  stop_after_first_candidate: false
+
+debug:
+  one_symbol: null
+  max_internal_steps: null
+
+# Paper execution disabled here — octa-paper-runner.timer fires every 30 min
+# and runs run_paper_live.py with the full pre-execution gate.
+paper:
+  enabled: false
