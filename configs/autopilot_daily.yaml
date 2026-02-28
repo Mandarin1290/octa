@@ -13,9 +13,8 @@ runtime_profile: smoke_plus
 
 universe:
   stock_dir: raw/Stock_parquet
-  fx_dir: raw/FX_parquet
-  crypto_dir: raw/Crypto_parquet
-  futures_dir: raw/Future_parquet
+  fx_dir: raw/fx
+  futures_dir: raw/futures
   asset_map_path: assets/asset_map.yaml
   limit: 50
 
