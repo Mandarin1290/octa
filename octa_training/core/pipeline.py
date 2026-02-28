@@ -675,6 +675,13 @@ def train_evaluate_package(
             pass
         try:
             splits_cfg = cfg.splits if hasattr(cfg, 'splits') else {}
+            # Apply per-timeframe splits override when configured.
+            _splits_by_tf = getattr(cfg, 'splits_by_timeframe', None) or {}
+            if isinstance(_splits_by_tf, dict) and _splits_by_tf:
+                _tf_key = _infer_timeframe_key(df.index)
+                _tf_spec = _splits_by_tf.get(_tf_key, {}) or {}
+                if _tf_spec:
+                    splits_cfg = {**splits_cfg, **_tf_spec}
             min_train_size = int(splits_cfg.get('min_train_size', 500))
             min_test_size = int(splits_cfg.get('min_test_size', 100))
             eff_settings.walk_forward_resolver = {
@@ -796,6 +803,13 @@ def train_evaluate_package(
                     return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error='missing_cost_model')
                 diagnose_reasons.append('missing_cost_model')
         splits_cfg = cfg.splits if hasattr(cfg, 'splits') else {}
+        # Apply per-timeframe splits override when configured.
+        _splits_by_tf2 = getattr(cfg, 'splits_by_timeframe', None) or {}
+        if isinstance(_splits_by_tf2, dict) and _splits_by_tf2:
+            _tf_key2 = _infer_timeframe_key(df.index)
+            _tf_spec2 = _splits_by_tf2.get(_tf_key2, {}) or {}
+            if _tf_spec2:
+                splits_cfg = {**splits_cfg, **_tf_spec2}
         try:
             folds = walk_forward_splits(features_res.X.index, n_folds=int(splits_cfg.get('n_folds',5)), train_window=int(splits_cfg.get('train_window',1000)), test_window=int(splits_cfg.get('test_window',200)), step=int(splits_cfg.get('step',200)), purge_size=int(splits_cfg.get('purge_size',10)), embargo_size=int(splits_cfg.get('embargo_size',5)), min_train_size=int(splits_cfg.get('min_train_size',500)), min_test_size=int(splits_cfg.get('min_test_size',100)), expanding=bool(splits_cfg.get('expanding',True)), min_folds_required=int(splits_cfg.get('min_folds_required',1)))
         except ValueError:

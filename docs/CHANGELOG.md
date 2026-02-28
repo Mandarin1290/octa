@@ -2,6 +2,22 @@
 
 Automatisch generiert. Alle Änderungen werden hier dokumentiert.
 
+## 2026-02-28
+
+
+### [2026-02-28 12:14:16] TEST
+**Beschreibung:** Code-Änderungen - 2 Code-Dateien - 1 Test-Dateien - (+362/-0 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 2 Dateien
+  - `octa_training/core/config.py`
+  - `octa_training/core/pipeline.py`
+- **TESTS:** 1 Dateien
+  - `tests/test_cascade_splits_per_tf.py`
+- **CONFIG:** 1 Dateien
+  - `configs/dev.yaml`
+
+
 ## 2026-02-27
 
 

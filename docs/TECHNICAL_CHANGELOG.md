@@ -3,6 +3,53 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-02-28 12:14:16] TEST
+Code-Änderungen - 2 Code-Dateien - 1 Test-Dateien - (+362/-0 Zeilen)
+
+**Statistics:**
+- Files Changed: 5
+- Lines Added: +362
+- Lines Deleted: -0
+- Net Change: +362
+
+**File-Level Changes:**
+```
++   26 -    0  configs/dev.yaml
++   28 -    0  docs/TECHNICAL_CHANGELOG.md
++    5 -    0  octa_training/core/config.py
++   14 -    0  octa_training/core/pipeline.py
++  289 -    0  tests/test_cascade_splits_per_tf.py
+```
+
+
+## [2026-02-28] FIX — Per-TF splits_by_timeframe config (cascade_diag_20260228T082442Z)
+
+**Root cause**: Default splits `{n_folds:5, test_window:200}` produced only 1000 OOF bars for
+ALL timeframes. The institutional gate `evaluate_walk_forward_oos` requires
+`len(df_backtest) >= train_bars + 2×oos_bars` per TF:
+- 1H: min_2=3840 → OOF=1000 < 3840 → `insufficient_history_for_walkforward` → structural_pass=False
+- ALL candidates structural_pass=False → `dynamic_gate_hard_fail:1H:no_dynamic_gate_input_candidates`
+
+**Fix**: Added `splits_by_timeframe` per-TF override (merged on top of global `splits`).
+`step = test_window` ensures non-overlapping OOF windows; values calibrated so
+`n_folds × test_window >= institutional min_3`.
+
+| TF | test_window | OOF (5×tw) | min_3 |
+|---|---|---|---|
+| 1H | 960 | 4800 | 4320 ✓ |
+| 30M | 500 | 2500 | 2340 ✓ |
+| 5M | 2000 | 10000 | 9750 ✓ |
+| 1M | 6500 | 32500 | 31200 ✓ |
+| 1D | (global 200) | 1000 | 441 ✓ |
+
+**Files changed**: `octa_training/core/config.py` (+field), `octa_training/core/pipeline.py`
+(+per-TF override at 2 call sites), `configs/dev.yaml` (+splits_by_timeframe section),
+`tests/test_cascade_splits_per_tf.py` (15 new tests).
+
+**No thresholds weakened.** Full suite: 1512 passed, 2 skipped.
+Evidence: `octa/var/evidence/cascade_diag_20260228T082442Z/`
+
+
 ## [2026-02-27 19:52:36] CHANGE
 Code-Änderungen - (+81/-0 Zeilen)
 

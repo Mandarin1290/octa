@@ -3,3 +3,29 @@ env: dev
 service_name: octa-foundation-dev
 broker:
   requires_secret: false
+
+# Per-timeframe walk-forward split overrides.
+# Each entry merges on top of the default `splits` dict.
+# Goal: n_folds * test_window >= institutional gate min_2 (train_bars + 2*oos_bars)
+# so that evaluate_walk_forward_oos(df_backtest) always has enough OOF bars.
+#
+# Calculation (from institutional_gates.py TimeWindowPolicy):
+#   1D:  min_2 =  252 + 2* 63 =  378  → OOF default=1000 ≥ 378 ✓  (no override needed)
+#   1H:  min_2 = 2880 + 2*480 = 3840  → need 5*test_window ≥ 3840 → test_window=960 (OOF=4800 ≥ min_3=4320)
+#   30M: min_2 = 1560 + 2*260 = 2080  → need 5*test_window ≥ 2080 → test_window=500 (OOF=2500 ≥ min_3=2340)
+#   5M:  min_2 = 6240 + 2*1170= 8580  → need 5*test_window ≥ 8580 → test_window=2000 (OOF=10000 ≥ min_3=9750)
+#   1M:  min_2 =23400 + 2*3900=31200  → need 5*test_window ≥31200 → test_window=6500 (OOF=32500 ≥ min_3=31200)
+# step=test_window ensures non-overlapping validation windows (unique OOF bars = n_folds*test_window)
+splits_by_timeframe:
+  1H:
+    test_window: 960
+    step: 960
+  30M:
+    test_window: 500
+    step: 500
+  5M:
+    test_window: 2000
+    step: 2000
+  1M:
+    test_window: 6500
+    step: 6500

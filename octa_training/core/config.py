@@ -279,6 +279,11 @@ class TrainingConfig(BaseModel):
         "min_folds_required": 1,
         "expanding": True
     })
+    # Per-timeframe split overrides (keys: 1D, 1H, 30M, 5M, 1M).
+    # Each entry merges on top of `splits` for that timeframe only.
+    # Required so the OOF window (n_folds * test_window) meets the
+    # institutional gate minimum (train_bars + 2*oos_bars) per TF.
+    splits_by_timeframe: Dict[str, Any] = Field(default_factory=dict)
     # Model training settings
     seed: int = 42
     scale_linear: bool = True
