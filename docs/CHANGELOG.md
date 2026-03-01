@@ -44,6 +44,15 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `docs/altdata_training_safety.md`
 
 
+### [2026-03-01 18:47:08] CHANGE
+**Beschreibung:** Code-Änderungen - (+110/-0 Zeilen)
+
+**Geänderte Dateien:**
+- **SCRIPTS:** 2 Dateien
+  - `scripts/daily_refresh.sh`
+  - `scripts/run_altdata_refresh.py`
+
+
 ## 2026-02-28
 
 

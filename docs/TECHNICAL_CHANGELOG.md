@@ -3,6 +3,22 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-03-01 18:47:08] CHANGE
+Code-Änderungen - (+110/-0 Zeilen)
+
+**Statistics:**
+- Files Changed: 2
+- Lines Added: +110
+- Lines Deleted: -0
+- Net Change: +110
+
+**File-Level Changes:**
+```
++   19 -    0  scripts/daily_refresh.sh
++   91 -    0  scripts/run_altdata_refresh.py
+```
+
+
 ## [2026-03-01 01:25:02] DOCS
 Code-Änderungen - 1 Dokumentations-Dateien - (+132/-0 Zeilen)
 
