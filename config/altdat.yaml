@@ -3,6 +3,19 @@
 
 enabled: true
 
+# ─── Training vs Refresh mode ────────────────────────────────────────────────
+# offline_only: true  → TRAINING MODE (default)
+#   The feature pipeline reads ONLY from local cache snapshots (octa/var/altdata/).
+#   If a source snapshot is missing: evidence error in meta, training continues
+#   without those features. No live network call is ever made during training.
+#   Override per-run: env OKTA_ALTDATA_OFFLINE_ONLY=0
+#
+# offline_only: false → REFRESH MODE (used by scripts/run_altdata_refresh.py)
+#   The orchestrator (build_altdata_stack) may fetch live data when allow_net=True.
+#   This path is only triggered by the daily refresh script, never by training.
+# ─────────────────────────────────────────────────────────────────────────────
+offline_only: true
+
 # If true, any detected future-leakage will mark features invalid.
 # Strict mode can also be set via env `OKTA_ALTDATA_STRICT=1`.
 strict_mode: false

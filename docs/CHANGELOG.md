@@ -2,6 +2,19 @@
 
 Automatisch generiert. Alle Änderungen werden hier dokumentiert.
 
+## 2026-03-01
+
+
+### [2026-03-01 01:04:47] CONFIG
+**Beschreibung:** Code-Änderungen - 1 Test-Dateien - (+213/-0 Zeilen)
+
+**Geänderte Dateien:**
+- **TESTS:** 1 Dateien
+  - `tests/test_altdata_training_offline_mode.py`
+- **CONFIG:** 1 Dateien
+  - `config/altdat.yaml`
+
+
 ## 2026-02-28
 
 
