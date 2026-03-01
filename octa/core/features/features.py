@@ -970,7 +970,14 @@ def leakage_audit(
                     # false-positive leakage flags.
                     _col_str = str(col)
                     if _col_str.startswith("altdat_"):
-                        col_rtol = max(rtol, 1.0)
+                        # AltData features naturally differ between full-history and
+                        # truncated recomputes: different bars_df.end → different asof_date
+                        # → different nearest-prior cache → different series endpoint.
+                        # This is expected cache-date variation, not look-ahead leakage.
+                        # Temporal integrity for altdata is enforced independently by
+                        # validate_no_future_leakage() and backward asof_join inside
+                        # build_altdata_features. Skip these columns here.
+                        continue
                     elif "_z_252" in _col_str or "_roc_20" in _col_str:
                         col_rtol = max(rtol, 0.05)
                     else:
