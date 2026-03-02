@@ -104,7 +104,7 @@ def build_altdata_features(
         "leakage": {"detected": False, "rows": 0},
     }
 
-    feat_parts = []
+    feat_parts: list[tuple[str, pd.DataFrame]] = []  # (source_name, df)
 
     def _duckdb_try_insert(table: str, df: pd.DataFrame) -> None:
         if not ok_db or df is None or df.empty:
@@ -190,7 +190,7 @@ def build_altdata_features(
                             j.loc[leak.values, macro.columns] = pd.NA
                     j = j.drop(columns=["ts"], errors="ignore")
                     j = j.add_prefix("altdat_macro_")
-                    feat_parts.append(j)
+                    feat_parts.append(("macro", j))
                     meta["coverage"]["macro"] = float(j.notna().any(axis=1).mean())
         else:
             if not api_key:
@@ -230,7 +230,7 @@ def build_altdata_features(
                     # drop ts marker
                     j = j.drop(columns=["ts"], errors="ignore")
                     j = j.add_prefix("altdat_macro_")
-                    feat_parts.append(j)
+                    feat_parts.append(("macro", j))
                     meta["coverage"]["macro"] = float(j.notna().any(axis=1).mean())
 
     # EDGAR
@@ -273,7 +273,7 @@ def build_altdata_features(
                                 j.loc[leak.values, ff.columns] = pd.NA
                         j = j.drop(columns=["ts"], errors="ignore")
                         j = j.add_prefix("altdat_edgar_")
-                        feat_parts.append(j)
+                        feat_parts.append(("edgar", j))
                         meta["coverage"]["edgar"] = float(j.notna().any(axis=1).mean())
         else:
             edgar_res = fetch_edgar_filings(ticker=symbol, forms=forms, start_ts=tw.start_ts, end_ts=tw.end_ts)
@@ -306,7 +306,7 @@ def build_altdata_features(
                             j.loc[leak.values, ff.columns] = pd.NA
                     j = j.drop(columns=["ts"], errors="ignore")
                     j = j.add_prefix("altdat_edgar_")
-                    feat_parts.append(j)
+                    feat_parts.append(("edgar", j))
                     meta["coverage"]["edgar"] = float(j.notna().any(axis=1).mean())
 
     # Weights manifest (explainable)
@@ -325,9 +325,10 @@ def build_altdata_features(
     )
     meta["weights"] = {"final": w1, "reasons": reasons}
 
-    # Merge features
-    if feat_parts:
-        feats = pd.concat(feat_parts, axis=1)
+    # Merge features — skip sources whose final weight is zero
+    active_parts = [df for src, df in feat_parts if w1.get(src, 1.0) != 0.0]
+    if active_parts:
+        feats = pd.concat(active_parts, axis=1)
         feats = feats.reindex(bars_df.index)
     else:
         feats = pd.DataFrame(index=bars_df.index)
