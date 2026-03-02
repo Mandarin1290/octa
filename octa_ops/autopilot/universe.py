@@ -86,7 +86,8 @@ def discover_universe(
     stock_dir: str = "raw/Stock_parquet",
     fx_dir: str = "raw/FX_parquet",
     crypto_dir: str = "raw/Crypto_parquet",
-    futures_dir: str = "raw/Future_parquet",
+    futures_dir: str = "raw/Futures_Parquet",
+    etf_dir: str = "raw/ETF_Parquet",
     asset_map_path: str = "assets/asset_map.yaml",
     limit: int = 0,
 ) -> List[UniverseSymbol]:
@@ -120,6 +121,7 @@ def discover_universe(
     fx = scan_dir(Path(fx_dir))
     crypto = scan_dir(Path(crypto_dir))
     fut = scan_dir(Path(futures_dir))
+    etf = scan_dir(Path(etf_dir))
 
     symbols: Dict[str, UniverseSymbol] = {}
 
@@ -157,6 +159,8 @@ def discover_universe(
         upsert(sym, "crypto", "parquet:crypto", pp)
     for sym, pp in fut.items():
         upsert(sym, "future", "parquet:future", pp)
+    for sym, pp in etf.items():
+        upsert(sym, "etf", "parquet:etf", pp)
 
     for sym, ac in sorted(asset_map.items()):
         upsert(sym, ac, "asset_map", None)
