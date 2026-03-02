@@ -1279,7 +1279,7 @@ def main() -> None:
         stock_dir=str(ucfg.get("stock_dir", "raw/Stock_parquet")),
         fx_dir=str(ucfg.get("fx_dir", "raw/FX_parquet")),
         crypto_dir=str(ucfg.get("crypto_dir", "raw/Crypto_parquet")),
-        futures_dir=str(ucfg.get("futures_dir", "raw/Future_parquet")),
+        futures_dir=str(ucfg.get("futures_dir", "raw/Futures_Parquet")),
         asset_map_path=str(ucfg.get("asset_map_path", "assets/asset_map.yaml")),
         limit=0,
     )

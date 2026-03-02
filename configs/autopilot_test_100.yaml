@@ -18,8 +18,8 @@ runtime_profile: default
 
 universe:
   stock_dir: raw/Stock_parquet
-  fx_dir: raw/fx
-  futures_dir: raw/futures
+  fx_dir: raw/FX_parquet
+  futures_dir: raw/Futures_Parquet
   asset_map_path: assets/asset_map.yaml
   limit: 100
 
