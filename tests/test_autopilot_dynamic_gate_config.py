@@ -10,6 +10,7 @@ from scripts.octa_autopilot import (
     _load_dynamic_gate_cfg,
     _resolve_universe_limit,
     _write_dynamic_gate_evidence,
+    _write_resolved_config_snapshot,
 )
 
 
@@ -104,3 +105,16 @@ def test_config_resolution_snapshot_written(tmp_path) -> None:
     )
     snap = json.loads((run_dir / "resolved_config_snapshot.json").read_text(encoding="utf-8"))
     assert snap["dynamic_gate"]["resolved"]["enabled"] is True
+
+
+def test_resolved_config_snapshot_includes_training_config_path(tmp_path) -> None:
+    """training_config_path must be present in the snapshot after incremental writes."""
+    run_dir = tmp_path / "run_snap"
+    _write_resolved_config_snapshot(run_dir, {"timeframe_resolution": {"ok": True}})
+    _write_resolved_config_snapshot(run_dir, {"runtime_profile": "default"})
+    _write_resolved_config_snapshot(run_dir, {"training_config_path": "configs/dev.yaml"})
+    snap = json.loads((run_dir / "resolved_config_snapshot.json").read_text(encoding="utf-8"))
+    assert "training_config_path" in snap, "training_config_path missing from resolved_config_snapshot"
+    assert snap["training_config_path"] == "configs/dev.yaml"
+    assert snap["runtime_profile"] == "default"
+    assert "timeframe_resolution" in snap

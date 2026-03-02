@@ -1409,6 +1409,7 @@ def main() -> None:
             details={"run_id": str(run_id), "execution_active": bool(execution_active)},
         )
     train_cfg_path = str(cfg.get("training_config", "configs/dev.yaml"))
+    _write_resolved_config_snapshot(run_dir, {"training_config_path": train_cfg_path})
 
     train_decisions = []
     dynamic_thresholds: Dict[str, Any] = {}
