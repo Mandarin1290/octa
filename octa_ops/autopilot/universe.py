@@ -53,6 +53,16 @@ def _normalize_asset_class(label: Optional[str]) -> str:
 
 _TIMEFRAME_PAT = re.compile(r"_(1D|1H|30M|15M|5M|1M)\.parquet$", re.IGNORECASE)
 
+# Indices_parquet uses SYMBOL_full_Ntf.parquet naming (e.g. AEX_full_1day.parquet)
+_INDEX_TF_PAT = re.compile(r"^(.+?)_full_(1day|1hour|30min|5min|1min)\.parquet$", re.IGNORECASE)
+_INDEX_TF_MAP = {
+    "1day": "1D",
+    "1hour": "1H",
+    "30min": "30M",
+    "5min": "5M",
+    "1min": "1M",
+}
+
 
 def resolve_parquet_for_symbol_tf(
     *, symbol: str, tf: str, raw_root: str = "raw"
@@ -88,6 +98,7 @@ def discover_universe(
     crypto_dir: str = "raw/Crypto_parquet",
     futures_dir: str = "raw/Futures_Parquet",
     etf_dir: str = "raw/ETF_Parquet",
+    index_dir: str = "raw/Indices_parquet",
     asset_map_path: str = "assets/asset_map.yaml",
     limit: int = 0,
 ) -> List[UniverseSymbol]:
@@ -117,11 +128,29 @@ def discover_universe(
             by_sym.setdefault(sym, {})[tf] = str(fp)
         return by_sym
 
+    def scan_dir_index(p: Path) -> Dict[str, Dict[str, str]]:
+        """Scan a dir using the alternate SYMBOL_full_Ntf.parquet naming convention."""
+        by_sym: Dict[str, Dict[str, str]] = {}
+        if not p.exists():
+            return by_sym
+        for fp in sorted(p.glob("*.parquet")):
+            m = _INDEX_TF_PAT.match(fp.name)
+            if not m:
+                continue
+            sym = m.group(1).strip().upper()
+            tf_raw = m.group(2).lower()
+            tf = normalize_timeframe(_INDEX_TF_MAP.get(tf_raw, ""))
+            if not sym or not tf:
+                continue
+            by_sym.setdefault(sym, {})[tf] = str(fp)
+        return by_sym
+
     stock = scan_dir(Path(stock_dir))
     fx = scan_dir(Path(fx_dir))
     crypto = scan_dir(Path(crypto_dir))
     fut = scan_dir(Path(futures_dir))
     etf = scan_dir(Path(etf_dir))
+    idx = scan_dir_index(Path(index_dir))
 
     symbols: Dict[str, UniverseSymbol] = {}
 
@@ -161,6 +190,8 @@ def discover_universe(
         upsert(sym, "future", "parquet:future", pp)
     for sym, pp in etf.items():
         upsert(sym, "etf", "parquet:etf", pp)
+    for sym, pp in idx.items():
+        upsert(sym, "index", "parquet:index", pp)
 
     for sym, ac in sorted(asset_map.items()):
         upsert(sym, ac, "asset_map", None)
