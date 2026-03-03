@@ -12,6 +12,7 @@ from octa.core.governance.governance_audit import (
     EVENT_EXECUTION_PREFLIGHT,
     EVENT_GOVERNANCE_ENFORCED,
     EVENT_PORTFOLIO_PREFLIGHT,
+    EVENT_RISK_AGGREGATION,
     GovernanceAudit,
 )
 from octa.execution.capital_state import CapitalState, NAV_DISCREPANCY_THRESHOLD
@@ -25,6 +26,7 @@ from .pre_execution import PreExecutionError, load_pre_execution_settings, run_p
 from .risk_fail_closed import incident_to_dict, safe_decide
 from .risk_engine import RiskDecision, RiskEngine, RiskEngineConfig
 from .tws_probe import tws_probe
+from octa_core.risk_institutional.risk_aggregator import RiskSnapshot, aggregate_risk
 
 
 def _utc_now_iso() -> str:
@@ -114,6 +116,140 @@ class ExecutionConfig:
     broker_cfg_path: Optional[Path] = None
     pre_execution_enabled: Optional[bool] = None
     tws_probe_timeout_sec: int = 10
+
+
+_ASSET_CLASS_META: Dict[str, Dict[str, str]] = {
+    "equity":   {"exchange": "SMART",    "currency": "USD"},
+    "equities": {"exchange": "SMART",    "currency": "USD"},
+    "stock":    {"exchange": "SMART",    "currency": "USD"},
+    "etf":      {"exchange": "SMART",    "currency": "USD"},
+    "forex":    {"exchange": "IDEALPRO", "currency": "FOREIGN"},
+    "fx_carry": {"exchange": "IDEALPRO", "currency": "FOREIGN"},
+    "futures":  {"exchange": "GLOBEX",   "currency": "USD"},
+    "future":   {"exchange": "GLOBEX",   "currency": "USD"},
+    "index":    {"exchange": "CBOE",     "currency": "USD"},
+    "options":  {"exchange": "CBOE",     "currency": "USD"},
+    "option":   {"exchange": "CBOE",     "currency": "USD"},
+    "crypto":   {"exchange": "PAXOS",    "currency": "USD"},
+    "bond":     {"exchange": "SMART",    "currency": "USD"},
+}
+
+
+def _build_exposure_dict(
+    eligible_rows: List[Dict[str, Any]],
+    nav: float,
+) -> Dict[str, Any]:
+    """Build structured exposure dict for risk_aggregator.
+
+    Raises RuntimeError on unknown asset_class or missing currency.
+    Aggregates by: symbol, asset_class, exchange, currency.
+    """
+    by_symbol: Dict[str, float] = {}
+    by_asset_class: Dict[str, float] = {}
+    by_exchange: Dict[str, float] = {}
+    by_currency: Dict[str, float] = {}
+    unit_notional = float(nav) * 0.01  # 1% NAV per unit position
+
+    for row in eligible_rows:
+        symbol = str(row.get("symbol", "")).upper()
+        asset_class = str(row.get("asset_class", "")).lower().strip()
+
+        if not asset_class or asset_class == "unknown":
+            raise RuntimeError(f"UNKNOWN_ASSET_CLASS:{symbol}:{asset_class!r}")
+
+        meta = _ASSET_CLASS_META.get(asset_class)
+        if meta is None:
+            raise RuntimeError(f"UNKNOWN_ASSET_CLASS:{symbol}:{asset_class!r}")
+
+        exchange = meta["exchange"]
+        currency = meta.get("currency", "")
+        if not currency:
+            raise RuntimeError(f"CURRENCY_MISSING:{symbol}:{asset_class!r}")
+
+        by_symbol[symbol] = by_symbol.get(symbol, 0.0) + unit_notional
+        by_asset_class[asset_class] = by_asset_class.get(asset_class, 0.0) + unit_notional
+        by_exchange[exchange] = by_exchange.get(exchange, 0.0) + unit_notional
+        by_currency[currency] = by_currency.get(currency, 0.0) + unit_notional
+
+    return {
+        "by_symbol": by_symbol,
+        "by_asset_class": by_asset_class,
+        "by_exchange": by_exchange,
+        "by_currency": by_currency,
+        "total_notional": sum(by_symbol.values()),
+        "symbol_count": len(by_symbol),
+    }
+
+
+def _run_aggregate_risk_fail_closed(
+    *,
+    eligible_rows: List[Dict[str, Any]],
+    nav: float,
+    evidence_dir: Path,
+    gov_audit: GovernanceAudit,
+    cycle_idx: int,
+    blocks: List[Dict[str, Any]],
+    notifier: "ExecutionNotifier",
+) -> Optional[RiskSnapshot]:
+    """Call aggregate_risk() with fail-closed semantics.
+
+    Returns RiskSnapshot on success.
+    Returns None on any failure — caller MUST skip all orders for this cycle.
+    """
+    try:
+        exposures = _build_exposure_dict(eligible_rows, nav)
+        snapshot = aggregate_risk(exposures=exposures)
+
+        _write_json(
+            evidence_dir / f"exposure_snapshot_cycle_{cycle_idx:03d}.json",
+            {
+                "cycle": cycle_idx,
+                "timestamp_utc": _utc_now_iso(),
+                "nav": nav,
+                "exposures": exposures,
+                "risk_snapshot": {
+                    "source": snapshot.source,
+                    "var_es": snapshot.var_es,
+                    "stress": snapshot.stress,
+                },
+            },
+        )
+        gov_audit.emit(
+            EVENT_RISK_AGGREGATION,
+            {
+                "cycle": cycle_idx,
+                "symbol_count": exposures["symbol_count"],
+                "total_notional": exposures["total_notional"],
+                "by_asset_class": exposures["by_asset_class"],
+                "by_currency": exposures["by_currency"],
+                "source": snapshot.source,
+            },
+        )
+        return snapshot
+
+    except Exception as exc:
+        reason = f"RISK_AGGREGATION_FAIL:{type(exc).__name__}:{exc}"
+        blocks.append({"cycle": cycle_idx, "strategy": "all", "reason": reason})
+        _write_json(
+            evidence_dir / f"risk_aggregation_fail_cycle_{cycle_idx:03d}.json",
+            {
+                "cycle": cycle_idx,
+                "timestamp_utc": _utc_now_iso(),
+                "reason": reason,
+                "error": str(exc),
+                "blocked": True,
+            },
+        )
+        gov_audit.emit(
+            EVENT_GOVERNANCE_ENFORCED,
+            {
+                "reason": "risk_aggregation_fail_closed",
+                "cycle": cycle_idx,
+                "error": str(exc)[:300],
+            },
+        )
+        notifier.emit("risk_block", {"strategy": "all", "reason": reason})
+        return None
 
 
 def _ml_multiplier(level: int) -> float:
@@ -438,7 +574,19 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
         if not eligible_rows:
             blocks.append({"cycle": cycle_idx, "strategy": "ml", "reason": "no_symbols_entry_eligible"})
 
-        for row in eligible_rows:
+        # --- Risk Aggregation (fail-closed, pre-trade) ---
+        _agg_snapshot = _run_aggregate_risk_fail_closed(
+            eligible_rows=eligible_rows,
+            nav=nav,
+            evidence_dir=cfg.evidence_dir,
+            gov_audit=gov_audit,
+            cycle_idx=cycle_idx,
+            blocks=blocks,
+            notifier=notifier,
+        )
+        _risk_agg_blocked = _agg_snapshot is None
+
+        for row in (eligible_rows if not _risk_agg_blocked else []):
             symbol = str(row.get("symbol", "")).upper()
             scaling_level = int(row.get("scaling_level", 0))
             last_level = last_scaling.get(symbol, 0)
@@ -505,6 +653,7 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
             if not _enforce_portfolio_preflight(cycle=cycle_idx, strategy="ml", symbol=symbol, qty=qty):
                 continue
             result = broker.place_order(strategy="ml", order=order)
+            ml_current_gross += ml_decision.final_size / max(1.0, float(nav))
             ml_orders.append(
                 {
                     "cycle": cycle_idx,
@@ -536,7 +685,7 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
             "intents": 0,
             "timestamp_utc": _utc_now_iso(),
         }
-        if cfg.enable_carry:
+        if cfg.enable_carry and not _risk_agg_blocked:
             snapshot = broker.account_snapshot()
             rates_info = resolve_carry_rates(
                 carry_cfg=carry_cfg,
