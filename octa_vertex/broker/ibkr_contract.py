@@ -66,6 +66,15 @@ class IBKRContractAdapter(BrokerAdapter):
         if order["qty"] <= 0:
             return {"status": "REJECTED", "reason": "INVALID_QTY"}
 
+        # Optional asset_class validation: if present, must resolve to a known contract spec
+        ac = str(order.get("asset_class", "")).lower().strip()
+        if ac:
+            try:
+                from octa_vertex.broker.asset_class_router import resolve_contract_spec
+                resolve_contract_spec(order.get("instrument", ""), ac)
+            except RuntimeError as exc:
+                return {"status": "REJECTED", "reason": str(exc)}
+
         return None
 
     def submit_order(self, order: Dict[str, Any]) -> Dict[str, Any]:
@@ -87,6 +96,25 @@ class IBKRContractAdapter(BrokerAdapter):
         if v is not None:
             self.audit("broker.submit_reject", v)
             return v
+
+        # Market-hours check (fail-closed when calendar says closed)
+        ac = str(order.get("asset_class", "")).lower().strip()
+        if ac:
+            try:
+                from octa_vertex.broker.asset_class_router import (
+                    check_market_open,
+                    resolve_contract_spec,
+                )
+                spec = resolve_contract_spec(order.get("instrument", ""), ac)
+                mkt_err = check_market_open(spec.exchange)
+                if mkt_err is not None:
+                    reject = {"status": "REJECTED", "reason": mkt_err, "order_id": order.get("order_id", "")}
+                    self.audit("broker.submit_reject", reject)
+                    return reject
+            except RuntimeError as exc:
+                reject = {"status": "REJECTED", "reason": str(exc), "order_id": order.get("order_id", "")}
+                self.audit("broker.submit_reject", reject)
+                return reject
 
         # accept into local simulated book
         oid = order["order_id"]

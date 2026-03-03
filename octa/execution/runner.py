@@ -649,6 +649,7 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
                 "qty": qty,
                 "side": side,
                 "order_type": "MKT",
+                "asset_class": str(row.get("asset_class", "equities")).lower(),
             }
             if not _enforce_portfolio_preflight(cycle=cycle_idx, strategy="ml", symbol=symbol, qty=qty):
                 continue
@@ -786,6 +787,7 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
                         "qty": qty,
                         "side": side,
                         "order_type": "MKT",
+                        "asset_class": str(intent.asset_class or "fx_carry").lower(),
                     }
                     if not _enforce_portfolio_preflight(
                         cycle=cycle_idx,

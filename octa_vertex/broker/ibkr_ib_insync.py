@@ -23,6 +23,27 @@ class IBKRIBInsyncConfig:
         return cls(host=host, port=port, client_id=client_id, account=account)
 
 
+def _make_ib_contract(spec: Any) -> Any:
+    """Build an ib_insync contract object from a ContractSpec."""
+    from ib_insync import Crypto, Forex, Future, Index, Option, Stock  # type: ignore
+
+    ct = spec.contract_type
+    if ct == "stock":
+        return Stock(spec.symbol, spec.exchange, spec.currency)
+    elif ct == "forex":
+        return Forex(spec.symbol)
+    elif ct == "future":
+        return Future(spec.symbol, exchange=spec.exchange, currency=spec.currency)
+    elif ct == "option":
+        return Option(spec.symbol, exchange=spec.exchange, currency=spec.currency)
+    elif ct == "crypto":
+        return Crypto(spec.symbol, spec.exchange, spec.currency)
+    elif ct == "index":
+        return Index(spec.symbol, spec.exchange, spec.currency)
+    else:
+        return Stock(spec.symbol, spec.exchange, spec.currency)  # fallback: equity
+
+
 class IBKRIBInsyncAdapter(BrokerAdapter):
     """IBKR adapter via ib_insync.
 
@@ -45,9 +66,8 @@ class IBKRIBInsyncAdapter(BrokerAdapter):
             raise RuntimeError("ibkr_connect_failed")
 
     def submit_order(self, order: Dict[str, Any]) -> Dict[str, Any]:
-        # Minimal: Market order for Stock-like instruments.
-        # Contract qualification and asset-class routing should be extended for FX/futures/crypto.
-        from ib_insync import MarketOrder, Stock  # type: ignore
+        from ib_insync import MarketOrder  # type: ignore
+        from octa_vertex.broker.asset_class_router import resolve_contract_spec
 
         instrument = str(order.get("instrument") or "")
         if not instrument:
@@ -58,7 +78,9 @@ class IBKRIBInsyncAdapter(BrokerAdapter):
         side = str(order.get("side") or "").upper()
         action = "BUY" if side == "BUY" else "SELL"
 
-        contract = Stock(instrument, "SMART", "USD")
+        asset_class = str(order.get("asset_class", "equity")).lower().strip()
+        spec = resolve_contract_spec(instrument, asset_class)
+        contract = _make_ib_contract(spec)
         self.ib.qualifyContracts(contract)
         o = MarketOrder(action, qty)
         trade = self.ib.placeOrder(contract, o)

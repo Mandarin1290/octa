@@ -31,6 +31,19 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `tests/test_risk_aggregation_wiring.py`
 
 
+### [2026-03-03 21:01:07] TEST
+**Beschreibung:** Code-Änderungen - 4 Code-Dateien - 1 Test-Dateien - (+453/-4 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 4 Dateien
+  - `octa/execution/runner.py`
+  - `octa_vertex/broker/asset_class_router.py`
+  - `octa_vertex/broker/ibkr_contract.py`
+  - ... und 1 weitere
+- **TESTS:** 1 Dateien
+  - `tests/test_asset_class_routing.py`
+
+
 ## 2026-03-02
 
 
