@@ -727,6 +727,33 @@ def _resolve_stage_pool(
     return "prev_tf_promoted", set(str(s) for s in eligible_symbols)
 
 
+def _resolve_cascade_input_symbols(
+    *,
+    tf: str,
+    prev_survivors: list[str],
+    gg_pass_symbols: list[str],
+    cascade_mode: str,
+    decouple_tf_pool_from_prev_tf: bool,
+) -> tuple[str, set[str]]:
+    """Resolve the eligible symbol pool for a cascade stage.
+
+    strict_survivor: 1H+ stages use prev-TF survivors as pool.
+    When survivors is empty (fallback), reverts to gg_pass_symbols (existing DQ-pass pool).
+    legacy: delegates unchanged to _resolve_stage_pool.
+    """
+    tf_norm = normalize_timeframe(tf)
+    if cascade_mode == "strict_survivor" and tf_norm != "1D":
+        if prev_survivors:
+            return "strict_survivor", set(str(s) for s in prev_survivors)
+        return "strict_survivor_fallback_empty", set(str(s) for s in gg_pass_symbols)
+    return _resolve_stage_pool(
+        tf=tf,
+        eligible_symbols=prev_survivors,
+        gg_pass_symbols=gg_pass_symbols,
+        decouple_tf_pool_from_prev_tf=decouple_tf_pool_from_prev_tf,
+    )
+
+
 def _resolve_max_train_cap_for_tf(
     *,
     max_train_symbols_per_tf: Any,
@@ -1411,7 +1438,8 @@ def main() -> None:
             details={"run_id": str(run_id), "execution_active": bool(execution_active)},
         )
     train_cfg_path = str(cfg.get("training_config", "configs/dev.yaml"))
-    _write_resolved_config_snapshot(run_dir, {"training_config_path": train_cfg_path})
+    cascade_mode = str(cfg.get("cascade_mode", "legacy"))
+    _write_resolved_config_snapshot(run_dir, {"training_config_path": train_cfg_path, "cascade_mode": cascade_mode})
 
     train_decisions = []
     dynamic_thresholds: Dict[str, Any] = {}
@@ -1525,10 +1553,11 @@ def main() -> None:
             gg_pass_symbols = [s for s in dq_pass_symbols if (global_decisions.get(s) and global_decisions[s].status == "PASS")]
         else:
             gg_pass_symbols = list(dq_pass_symbols)
-        pool_source, eligible_set = _resolve_stage_pool(
+        pool_source, eligible_set = _resolve_cascade_input_symbols(
             tf=str(tf),
-            eligible_symbols=list(eligible_symbols),
+            prev_survivors=list(eligible_symbols),
             gg_pass_symbols=list(gg_pass_symbols),
+            cascade_mode=cascade_mode,
             decouple_tf_pool_from_prev_tf=bool(training_budget_cfg.get("decouple_tf_pool_from_prev_tf", True)),
         )
         stage_state["pool_source"] = str(pool_source)
