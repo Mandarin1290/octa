@@ -3,11 +3,15 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 
 from octa.core.utils.typing_safe import as_float
+from octa.core.data.io.timeseries_integrity import (
+    validate_timeseries_integrity,
+    write_quarantine_entry,
+)
 from octa_training.core.io_parquet import load_parquet
 
 from .types import GateDecision, normalize_timeframe, timeframe_seconds
@@ -48,9 +52,48 @@ def evaluate_data_quality(
     parquet_path: str,
     asset_class: str,
     policy: DataQualityPolicy,
+    quarantine_dir: Optional[Path] = None,
 ) -> GateDecision:
     tf = normalize_timeframe(timeframe)
     exp_s = timeframe_seconds(tf)
+
+    # --- Pre-flight integrity check for Futures 1D ---
+    # All Futures 1D parquets in raw/Futures_Parquet have a corrupt 'datetime'
+    # index (price float strings instead of timestamps).  Detect this before
+    # load_parquet() crashes with a generic "missing time column" error.
+    ac_lower = str(asset_class or "").lower().strip()
+    if ac_lower in {"futures", "future"} and tf == "1D":
+        try:
+            raw_df = pd.read_parquet(str(parquet_path))
+        except Exception as e:
+            return GateDecision(
+                symbol=symbol,
+                timeframe=tf,
+                stage="data_quality",
+                status="FAIL",
+                reason="FUTURES_1D_CORRUPT_DATA:UNREADABLE",
+                details={"error": str(e), "path": parquet_path},
+            )
+        ok, reason, integrity_details = validate_timeseries_integrity(
+            raw_df, asset_class, tf, parquet_path
+        )
+        if not ok:
+            if quarantine_dir is not None:
+                write_quarantine_entry(
+                    quarantine_dir,
+                    path=parquet_path,
+                    reason=reason,
+                    asset_class=asset_class,
+                    timeframe=tf,
+                )
+            return GateDecision(
+                symbol=symbol,
+                timeframe=tf,
+                stage="data_quality",
+                status="FAIL",
+                reason=reason,
+                details=integrity_details,
+            )
 
     try:
         df = load_parquet(Path(parquet_path))
