@@ -9,7 +9,7 @@ registry_root: artifacts
 reports_dir: reports
 pkl_dir: raw/PKL
 training_config: configs/dev.yaml
-runtime_profile: smoke_plus
+runtime_profile: paper_observe
 
 universe:
   stock_dir: raw/Stock_parquet

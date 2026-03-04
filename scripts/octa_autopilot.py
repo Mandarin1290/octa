@@ -678,6 +678,20 @@ def _load_training_budget_cfg(
             stage_timeout_cap = 1200
         per_symbol_timeout_s = min(int(per_symbol_timeout_s), int(per_symbol_timeout_cap))
         stage_timeout_s = min(int(stage_timeout_s), int(stage_timeout_cap))
+    elif str(runtime_profile) == "paper_observe":
+        # paper_observe: scheduled production profile for 7-day observation.
+        # Does NOT clamp max_train_per_tf to 1 or per_symbol_timeout to 360s.
+        # Applies conservative ceilings to prevent runaway resource use.
+        _MAX_TRAIN_CEILING = 5
+        _PER_SYMBOL_TIMEOUT_CEILING = 1800
+        _STAGE_TIMEOUT_CEILING = 7200
+        enabled = bool(tb.get("enabled", True))
+        if isinstance(max_train_norm, dict):
+            max_train_norm = {str(k): min(int(v), _MAX_TRAIN_CEILING) for k, v in max_train_norm.items()}
+        else:
+            max_train_norm = min(int(max_train_norm), _MAX_TRAIN_CEILING)
+        per_symbol_timeout_s = min(int(per_symbol_timeout_s), _PER_SYMBOL_TIMEOUT_CEILING)
+        stage_timeout_s = min(int(stage_timeout_s), _STAGE_TIMEOUT_CEILING)
 
     return {
         "enabled": enabled,
@@ -1266,7 +1280,7 @@ def main() -> None:
     tfs = [str(t) for t in tf_resolved.get("timeframes", [])]
     cascade_order = [str(t) for t in tf_resolved.get("cascade_order", [])]
     runtime_profile = str(cfg.get("runtime_profile", "default") or "default").strip().lower()
-    if runtime_profile not in {"default", "fast_smoke", "smoke_plus"}:
+    if runtime_profile not in {"default", "fast_smoke", "smoke_plus", "paper_observe"}:
         reason = f"config_invalid:runtime_profile:{runtime_profile}"
         reg.record_run_end(run_id, "FAIL", note=reason)
         raise SystemExit(reason)
@@ -2304,6 +2318,20 @@ def main() -> None:
                         meta_json = Path(meta_path).read_text(encoding="utf-8")
                 except Exception:
                     meta_json = None
+                # Audit: promotion stage reached (evidence-only, does not change decision)
+                _append_stage_progress(
+                    run_dir,
+                    tf=str(tf_norm),
+                    step="promotion.stage_reached",
+                    event="reached",
+                    elapsed_s=0.0,
+                    counts={
+                        "symbol": str(symbol),
+                        "gate_status": str(effective.status),
+                        "pkl_path_present": bool(pkl_path),
+                        "runtime_profile": str(runtime_profile),
+                    },
+                )
                 art_id = reg.add_artifact(
                     run_id, symbol, tf_norm, "tradeable", pkl_path, sha_txt, 1, meta_json=meta_json
                 )
