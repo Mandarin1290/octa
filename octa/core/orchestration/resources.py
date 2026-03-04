@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -30,7 +31,7 @@ def get_paths(var_root: Path | None = None) -> OrchestrationPaths:
 
 
 def new_run_id(prefix: str = "run") -> str:
-    return f"{prefix}_{_now_tag()}"
+    return f"{prefix}_{_now_tag()}_{uuid.uuid4().hex[:8]}"
 
 
 def ensure_run_dirs(run_id: str, var_root: Path | None = None) -> Mapping[str, Path]:

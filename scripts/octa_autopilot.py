@@ -10,6 +10,7 @@ import tempfile
 import traceback
 import multiprocessing as mp
 import time
+import uuid
 from collections import Counter
 from pathlib import Path
 from typing import Any, Dict
@@ -1206,7 +1207,7 @@ def main() -> None:
     run_id = (
         args.run_id
         or cfg.get("run_id")
-        or now_utc_iso().replace(":", "").replace("-", "")[:15] + "Z"
+        or now_utc_iso().replace(":", "").replace("-", "")[:15] + "Z_" + uuid.uuid4().hex[:8]
     )
 
     paper_cfg = cfg.get("paper") if isinstance(cfg.get("paper"), dict) else {}

@@ -10,13 +10,14 @@ from __future__ import annotations
 import json
 import os
 import sys
+import uuid
 from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from octa_ops.autopilot.paper_runner import run_paper
 
-run_id = "paper_live_" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+run_id = "paper_live_" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "_" + uuid.uuid4().hex[:8]
 
 result = run_paper(
     run_id=run_id,
