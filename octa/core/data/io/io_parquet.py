@@ -2,14 +2,17 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 
 from typing import TYPE_CHECKING
+
+_LOG = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from octa_training.core.state import StateRegistry
@@ -170,6 +173,111 @@ def discover_parquets(raw_dir: Path, state: Optional[StateRegistry] = None, igno
     return found
 
 
+def _normalize_time_column(series: pd.Series, path: Path) -> Tuple[pd.Series, Dict[str, str]]:
+    """Normalize a time series to UTC-aware datetime64[ns, tz=UTC].
+
+    Dispatch table:
+      - datetime64[ns, tz=*]  → tz_convert("UTC")           action="passed_through"
+      - datetime64[ns]         → tz_localize("UTC")          action="localized_naive_ts_to_utc"
+      - string / object        → pd.to_datetime(utc=True)    action="parsed_string_to_utc"
+      - other                  → pd.to_datetime(utc=True)    action="coerced_to_utc"
+
+    Returns:
+        (normalized_series, metadata) where metadata contains:
+          - original_dtype: str
+          - normalization_action: str
+          - detected_time_col: str  (name of series)
+
+    Raises:
+        ValueError: if any NaT results from conversion (fail-closed).
+    """
+    original_dtype = str(series.dtype)
+
+    if isinstance(series.dtype, pd.DatetimeTZDtype):
+        # Already tz-aware → convert to UTC if needed.
+        try:
+            result = series.dt.tz_convert("UTC")
+        except Exception as exc:
+            raise ValueError(
+                f"Parquet {path}: cannot convert tz-aware column to UTC "
+                f"(dtype={original_dtype}): {exc}"
+            ) from exc
+        action = "passed_through"
+    elif pd.api.types.is_datetime64_any_dtype(series):
+        # Naive datetime[ns] — deterministically interpret as UTC.
+        result = series.dt.tz_localize("UTC")
+        action = "localized_naive_ts_to_utc"
+    elif pd.api.types.is_string_dtype(series) or pd.api.types.is_object_dtype(series):
+        result = pd.to_datetime(series, utc=True, errors="coerce")
+        action = "parsed_string_to_utc"
+    else:
+        result = pd.to_datetime(series, utc=True, errors="coerce")
+        action = "coerced_to_utc"
+
+    # Fail-closed: any NaT means an unparseable timestamp.
+    if result.isna().any():
+        nat_count = int(result.isna().sum())
+        raise ValueError(
+            f"Parquet {path}: {nat_count} unparseable timestamps in time column "
+            f"(original_dtype={original_dtype}, action={action})"
+        )
+
+    metadata: Dict[str, str] = {
+        "detected_time_col": str(series.name or "<unknown>"),
+        "original_dtype": original_dtype,
+        "normalization_action": action,
+    }
+    _LOG.debug(
+        "io_parquet normalize: detected_time_col=%s original_dtype=%s "
+        "normalization_action=%s path=%s",
+        metadata["detected_time_col"],
+        original_dtype,
+        action,
+        path,
+    )
+    return result, metadata
+
+
+def _normalize_datetimeindex(idx: pd.DatetimeIndex, path: Path) -> Tuple[pd.DatetimeIndex, Dict[str, str]]:
+    """Normalize an existing DatetimeIndex to UTC.
+
+    Used when the parquet was written with the DatetimeIndex as the Parquet index
+    (not as a regular column).  Same fail-closed contract as _normalize_time_column.
+    """
+    original_tz = str(idx.tz) if idx.tz is not None else None
+
+    if idx.tz is None:
+        idx = idx.tz_localize("UTC")
+        action = "localized_naive_index_to_utc"
+    elif str(idx.tz).upper() == "UTC":
+        action = "passed_through_index"
+    else:
+        try:
+            idx = idx.tz_convert("UTC")
+        except Exception as exc:
+            raise ValueError(
+                f"Parquet {path}: cannot convert DatetimeIndex tz={original_tz} to UTC: {exc}"
+            ) from exc
+        action = "converted_index_tz_to_utc"
+
+    if idx.isna().any():
+        nat_count = int(idx.isna().sum())
+        raise ValueError(f"Parquet {path}: {nat_count} NaT values in DatetimeIndex")
+
+    metadata: Dict[str, str] = {
+        "detected_time_col": "index",
+        "original_dtype": f"DatetimeIndex[tz={original_tz}]",
+        "normalization_action": action,
+    }
+    _LOG.debug(
+        "io_parquet normalize index: original_tz=%s normalization_action=%s path=%s",
+        original_tz,
+        action,
+        path,
+    )
+    return idx, metadata
+
+
 def _find_time_column(columns: List[str]) -> Optional[str]:
     candidates = ["timestamp", "datetime", "date", "time"]
     cols_lower = [c.lower() for c in columns]
@@ -244,12 +352,34 @@ def load_parquet(path: Path, *, nan_threshold: float = 0.2, allow_negative_price
     if "close" not in df.columns:
         raise ValueError(f"Parquet file {path} missing required 'close' column")
 
-    # detect time column
+    # detect and normalize time column
     time_col = _find_time_column(list(df.columns))
     if time_col:
         df[time_col] = _maybe_fix_fx_intraday_timestamp_encoding(path, df[time_col])
-        df[time_col] = pd.to_datetime(df[time_col], utc=True, errors="coerce")
+        normalized, tc_meta = _normalize_time_column(df[time_col], path)
+        _LOG.debug(
+            "io_parquet load: detected_time_col=%s original_dtype=%s "
+            "normalization_action=%s path=%s",
+            tc_meta["detected_time_col"],
+            tc_meta["original_dtype"],
+            tc_meta["normalization_action"],
+            path,
+        )
+        df[time_col] = normalized
         df = df.set_index(time_col)
+        df = df.sort_index()
+        df = df[~df.index.duplicated(keep="first")]
+    elif isinstance(df.index, pd.DatetimeIndex):
+        # Index-based parquet: time already set as DataFrame index (no separate column).
+        normalized_idx, idx_meta = _normalize_datetimeindex(df.index, path)
+        _LOG.debug(
+            "io_parquet load: detected_time_col=index original_dtype=%s "
+            "normalization_action=%s path=%s",
+            idx_meta["original_dtype"],
+            idx_meta["normalization_action"],
+            path,
+        )
+        df.index = normalized_idx
         df = df.sort_index()
         df = df[~df.index.duplicated(keep="first")]
     else:

@@ -102,10 +102,21 @@ def evaluate_data_quality(
     if strict_spacing:
         deltas = idx.to_series().diff().dropna().dt.total_seconds().astype(float)
         tol = float(policy.spacing_tolerance_seconds)
-        if is_continuous:
-            # Continuous markets (fx/crypto): evaluate all deltas.
+        if is_continuous and tf == "1D":
+            # FX/crypto daily: market is 24/5 (not 24/7) — exclude weekend and holiday
+            # gaps before checking regular business-day spacing.
+            # Regular business-day delta is ~exp_s (86400 s); any delta > 1.5× exp_s
+            # (≈ 36 h) is a non-trading-day gap (weekend Fri→Mon = 3 days, holiday = 2-4 days).
+            weekend_threshold_s = as_float(exp_s) * 1.5
+            comparable = deltas[deltas <= weekend_threshold_s]
+            details["fx_1d_weekend_threshold_s"] = float(weekend_threshold_s)
+            details["fx_1d_weekend_gaps_excluded"] = int(len(deltas) - len(comparable))
+        elif is_continuous:
+            # Intraday continuous markets (fx/crypto): evaluate all deltas.
             comparable = deltas
         elif tf == "1D":
+            # Non-continuous 1D (equity/futures/index): no strict spacing (already skipped
+            # via strict_spacing gate above) — kept for completeness.
             comparable = deltas
         else:
             # Session markets (equities/futures/options): ignore known session breaks
@@ -122,8 +133,9 @@ def evaluate_data_quality(
         if match_frac < policy.min_spacing_match_frac:
             return GateDecision(symbol=symbol, timeframe=tf, stage="data_quality", status="FAIL", reason="spacing_not_timeframe_like", details=details)
 
-        # missing bars (continuous markets only: fx/crypto)
-        if is_continuous:
+        # missing bars: continuous intraday only (fx/crypto hourly or sub-hourly).
+        # Skipped for 1D because weekend/holiday calendar gaps inflate expected_n.
+        if is_continuous and tf != "1D":
             span_s = float((idx[-1] - idx[0]).total_seconds())
             expected_n = int(span_s // as_float(exp_s)) + 1 if span_s > 0 else len(idx)
             missing_frac = 0.0
