@@ -29,10 +29,21 @@ class ArtifactRegistry:
         self.paths.root.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(str(self.paths.db_path), timeout=30, isolation_level=None)
         self._conn.row_factory = sqlite3.Row
+        self._apply_wal_pragmas()
         self._init_db()
 
     def set_context(self, ctx: Optional[Mapping[str, Any]]) -> None:
         self._ctx = dict(ctx or {})
+
+    def _apply_wal_pragmas(self) -> None:
+        """Enable WAL journal mode and set concurrency-friendly pragmas.
+
+        WAL mode persists in the database file — idempotent (safe to call multiple times).
+        busy_timeout=5000 ms prevents SQLITE_BUSY errors under concurrent readers/writers.
+        """
+        self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.execute("PRAGMA synchronous=NORMAL")
+        self._conn.execute("PRAGMA busy_timeout=5000")
 
     def _assert_mutation_allowed(self, *, operation: str, target: str, details: Optional[Mapping[str, Any]] = None) -> None:
         assert_write_allowed(
