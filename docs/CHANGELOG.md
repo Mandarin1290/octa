@@ -40,6 +40,19 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `tests/test_futures_1d_integrity_quarantine.py`
 
 
+### [2026-03-04 11:21:31] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 2 Code-Dateien - 1 Test-Dateien - (+576/-0 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 2 Dateien
+  - `octa/core/data/builders/__init__.py`
+  - `octa/core/data/builders/futures_1d_regen.py`
+- **TESTS:** 1 Dateien
+  - `tests/test_futures_1d_regen.py`
+- **SCRIPTS:** 1 Dateien
+  - `scripts/rebuild_futures_1d.py`
+
+
 ## 2026-03-03
 
 
