@@ -234,6 +234,8 @@ def run_paper(
     max_runtime_s: int = 3600,
     max_ram_mb: int = 12000,
     max_threads: int = 4,
+    max_disk_mb: int = 10000,
+    disk_root: str = "artifacts",
     broker_cfg_path: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Load promoted PASS artifacts and place PAPER orders.
@@ -241,7 +243,7 @@ def run_paper(
     Fail-closed: missing artifacts/features/config => no order.
     """
 
-    budget = ResourceBudgetController(max_runtime_s=max_runtime_s, max_ram_mb=max_ram_mb, max_threads=max_threads)
+    budget = ResourceBudgetController(max_runtime_s=max_runtime_s, max_ram_mb=max_ram_mb, max_threads=max_threads, max_disk_mb=max_disk_mb, disk_root=disk_root)
     budget.apply_thread_caps()
 
     # Pre-execution gate — runs before any broker connection is attempted.
