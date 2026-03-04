@@ -16,6 +16,19 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `tests/test_data_schema_normalization.py`
 
 
+### [2026-03-04 09:14:59] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 4 Code-Dateien - 1 Test-Dateien - (+1016/-0 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 4 Dateien
+  - `octa/core/promotion/__init__.py`
+  - `octa/core/promotion/promote.py`
+  - `octa/core/promotion/promotion_criteria.py`
+  - ... und 1 weitere
+- **TESTS:** 1 Dateien
+  - `tests/test_b4_promotion_gate.py`
+
+
 ## 2026-03-03
 
 

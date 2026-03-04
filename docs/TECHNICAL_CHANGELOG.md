@@ -3,6 +3,25 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-03-04 09:14:59] FEATURE
+Neue Funktionalität hinzugefügt - 4 Code-Dateien - 1 Test-Dateien - (+1016/-0 Zeilen)
+
+**Statistics:**
+- Files Changed: 5
+- Lines Added: +1016
+- Lines Deleted: -0
+- Net Change: +1016
+
+**File-Level Changes:**
+```
++    1 -    0  octa/core/promotion/__init__.py
++   78 -    0  octa/core/promotion/promote.py
++  176 -    0  octa/core/promotion/promotion_criteria.py
++  467 -    0  octa/core/promotion/promotion_engine.py
++  294 -    0  tests/test_b4_promotion_gate.py
+```
+
+
 ## [2026-03-04 08:21:57] TEST
 Code-Änderungen - 2 Code-Dateien - 1 Test-Dateien - (+356/-7 Zeilen)
 
