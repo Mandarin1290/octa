@@ -15,6 +15,14 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `tests/test_cascade_splits_per_tf.py`
 
 
+### [2026-03-05 12:17:07] CHANGE
+**Beschreibung:** Code-Änderungen - (+104/-0 Zeilen)
+
+**Geänderte Dateien:**
+- **SCRIPTS:** 1 Dateien
+  - `scripts/run_universe_training.sh`
+
+
 ## 2026-03-04
 
 
