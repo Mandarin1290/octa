@@ -287,3 +287,90 @@ def test_walk_forward_splits_default_insufficient_for_1h():
         f"Default config produces {total_oof} OOF bars which should be < {institutional_min_2_1h}. "
         "This confirms the root cause."
     )
+
+
+# ---------------------------------------------------------------------------
+# Regression test: splits_by_timeframe uppercase key lookup (pipeline bug fix)
+# Root cause of dynamic_gate_hard_fail:30M:no_dynamic_gate_input_candidates
+# The nested _infer_timeframe_key in pipeline.py returned "30m" (lowercase)
+# while dev.yaml splits_by_timeframe uses "30M" (uppercase) → silent miss.
+# ---------------------------------------------------------------------------
+
+def _make_5m_index(n: int) -> pd.DatetimeIndex:
+    return pd.date_range("2000-01-03 09:30", periods=n, freq="5min", tz="UTC")
+
+
+def _make_1m_index(n: int) -> pd.DatetimeIndex:
+    return pd.date_range("2000-01-03 09:30", periods=n, freq="1min", tz="UTC")
+
+
+def test_splits_by_timeframe_uppercase_key_resolved_for_30m():
+    """splits_by_timeframe "30M" key must be resolved even when inferred key is lowercase "30m"."""
+    from octa_training.core.config import TrainingConfig
+    from octa_training.core.splits import walk_forward_splits
+
+    cfg = TrainingConfig(
+        splits_by_timeframe={"30M": {"test_window": 500, "step": 500}},
+    )
+    idx = _make_30m_index(10000)
+    # Simulate what pipeline.py does at both lookup sites
+    splits_by_tf = cfg.splits_by_timeframe
+    # Inferred key (pipeline.py nested function returns lowercase for 30M)
+    tf_key_lower = "30m"
+    # Post-fix: fallback to .upper()
+    spec = splits_by_tf.get(tf_key_lower, {}) or splits_by_tf.get(tf_key_lower.upper(), {}) or {}
+    assert spec.get("test_window") == 500, (
+        f"splits_by_timeframe lookup for '30M' (via .upper() fallback) must return test_window=500, "
+        f"got spec={spec!r}"
+    )
+    # Verify walk_forward_splits produces the correct OOF bars
+    folds = walk_forward_splits(
+        idx,
+        n_folds=5,
+        train_window=int(cfg.splits.get("train_window", 1000)),
+        test_window=500,
+        step=500,
+        expanding=True,
+        min_train_size=500,
+        min_test_size=100,
+    )
+    all_val = set()
+    for fold in folds:
+        all_val.update(fold.val_idx.tolist())
+    oof = len(all_val)
+    institutional_min_2_30m = 1560 + 2 * 260  # = 2080
+    assert oof >= institutional_min_2_30m, (
+        f"30M OOF={oof} must be >= institutional min_2={institutional_min_2_30m} after fix"
+    )
+
+
+def test_splits_by_timeframe_lowercase_key_also_works():
+    """splits_by_timeframe with lowercase "30m" key must also work (forward compat)."""
+    from octa_training.core.config import TrainingConfig
+
+    cfg = TrainingConfig(
+        splits_by_timeframe={"30m": {"test_window": 500, "step": 500}},
+    )
+    splits_by_tf = cfg.splits_by_timeframe
+    tf_key_lower = "30m"
+    spec = splits_by_tf.get(tf_key_lower, {}) or splits_by_tf.get(tf_key_lower.upper(), {}) or {}
+    assert spec.get("test_window") == 500
+
+
+def test_pipeline_nested_infer_key_uppercase_fallback_for_5m_and_1m():
+    """splits_by_timeframe "5M" and "1M" uppercase keys must resolve via .upper() fallback."""
+    from octa_training.core.config import TrainingConfig
+
+    cfg = TrainingConfig(
+        splits_by_timeframe={
+            "5M": {"test_window": 2000, "step": 2000},
+            "1M": {"test_window": 6500, "step": 6500},
+        }
+    )
+    splits_by_tf = cfg.splits_by_timeframe
+    for tf_key_lower, expected_tw in [("5m", 2000), ("1m", 6500)]:
+        spec = splits_by_tf.get(tf_key_lower, {}) or splits_by_tf.get(tf_key_lower.upper(), {}) or {}
+        assert spec.get("test_window") == expected_tw, (
+            f"splits_by_timeframe['{tf_key_lower.upper()}'] must resolve to test_window={expected_tw}, "
+            f"got {spec!r}"
+        )

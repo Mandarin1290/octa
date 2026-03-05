@@ -679,7 +679,7 @@ def train_evaluate_package(
             _splits_by_tf = getattr(cfg, 'splits_by_timeframe', None) or {}
             if isinstance(_splits_by_tf, dict) and _splits_by_tf:
                 _tf_key = _infer_timeframe_key(df.index)
-                _tf_spec = _splits_by_tf.get(_tf_key, {}) or {}
+                _tf_spec = _splits_by_tf.get(_tf_key, {}) or _splits_by_tf.get(_tf_key.upper(), {}) or {}
                 if _tf_spec:
                     splits_cfg = {**splits_cfg, **_tf_spec}
             min_train_size = int(splits_cfg.get('min_train_size', 500))
@@ -807,7 +807,7 @@ def train_evaluate_package(
         _splits_by_tf2 = getattr(cfg, 'splits_by_timeframe', None) or {}
         if isinstance(_splits_by_tf2, dict) and _splits_by_tf2:
             _tf_key2 = _infer_timeframe_key(df.index)
-            _tf_spec2 = _splits_by_tf2.get(_tf_key2, {}) or {}
+            _tf_spec2 = _splits_by_tf2.get(_tf_key2, {}) or _splits_by_tf2.get(_tf_key2.upper(), {}) or {}
             if _tf_spec2:
                 splits_cfg = {**splits_cfg, **_tf_spec2}
         try:
@@ -1285,21 +1285,21 @@ def train_evaluate_package(
                 "min_trades": 60,
                 "min_bars": 260,
             },
-            "30m": {
+            "30M": {
                 "profit_factor_min": 1.12,
                 "sharpe_min": 0.55,
                 "max_drawdown_max": 0.045,
                 "min_trades": 120,
                 "min_bars": 400,
             },
-            "5m": {
+            "5M": {
                 "profit_factor_min": 1.10,
                 "sharpe_min": 0.50,
                 "max_drawdown_max": 0.040,
                 "min_trades": 240,
                 "min_bars": 600,
             },
-            "1m": {
+            "1M": {
                 "profit_factor_min": 1.08,
                 "sharpe_min": 0.45,
                 "max_drawdown_max": 0.035,
