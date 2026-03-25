@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import multiprocessing
 import os
+import queue
+import re
+import signal
 import subprocess
 import sys
 import time
@@ -16,13 +20,24 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 from octa import __version__ as OCTA_VERSION
 from octa.core.cascade.policies import DEFAULT_TIMEFRAMES
 from octa_training.core.institutional_gates import evaluate_cross_timeframe_consistency
+from octa_training.core.config import load_config
 from octa_ops.autopilot.cascade_train import CascadePolicy, run_cascade_training
 from octa.core.data.sources.altdata.orchestrator import load_altdat_config
 from octa.core.data.sources.altdata.cache import resolve_cache_root
+from octa.support.ops.universe_preflight import ASSET_CLASS_ALIASES, KNOWN_ASSET_CLASSES
 
 
 MAX_EXCEPTION_MESSAGE_CHARS = 2000
 MAX_EXCEPTION_TRACEBACK_CHARS = 20000
+VALID_SYMBOL_RE = re.compile(r"^[A-Z0-9][A-Z0-9._-]*$")
+
+
+class RunAbortRequested(Exception):
+    """Raised when the operator terminates a run and we must fail closed."""
+
+
+class SymbolTrainingTimeout(Exception):
+    """Raised when a symbol-level training process exceeds its bounded runtime."""
 
 
 def _utc_now() -> datetime:
@@ -133,14 +148,33 @@ def _pick_rep(paths: Sequence[str]) -> Optional[str]:
     return sorted(paths, key=lambda p: (len(p), p))[0]
 
 
-def _build_parquet_paths(symbol: str, inventory: Dict[str, Dict[str, Any]]) -> Dict[str, str]:
+def _build_parquet_paths(symbol: str, inventory: Dict[str, Dict[str, Any]], tfs: Sequence[str] = DEFAULT_TIMEFRAMES) -> Dict[str, str]:
     by_tf = (inventory.get(symbol) or {}).get("tfs", {})
     out: Dict[str, str] = {}
-    for tf in DEFAULT_TIMEFRAMES:
+    for tf in tfs:
         rep = _pick_rep(by_tf.get(tf, []))
         if rep:
             out[tf] = rep
     return out
+
+
+def _normalize_asset_class_filter(values: Optional[Sequence[str]]) -> Optional[Tuple[str, ...]]:
+    if not values:
+        return None
+    normalized: List[str] = []
+    seen: set[str] = set()
+    for raw in values:
+        label = str(raw).strip().lower()
+        if not label:
+            continue
+        canonical = ASSET_CLASS_ALIASES.get(label, label)
+        if canonical not in KNOWN_ASSET_CLASSES and canonical != "unknown":
+            canonical = label
+        if canonical in seen:
+            continue
+        seen.add(canonical)
+        normalized.append(canonical)
+    return tuple(sorted(normalized)) or None
 
 
 def _metrics_summary(metrics: Optional[Dict[str, Any]]) -> Dict[str, Any]:
@@ -179,6 +213,193 @@ def _artifacts_valid(paths: Optional[Sequence[str]]) -> Tuple[bool, str]:
     if missing:
         return False, "missing_model_artifacts"
     return True, ""
+
+
+def _validate_tradeable_artifacts(
+    paths: Optional[Sequence[str]],
+    *,
+    expected_symbol: str,
+    expected_asset_class: str,
+) -> Dict[str, Any]:
+    result: Dict[str, Any] = {
+        "valid": False,
+        "reason": "missing_model_artifacts",
+        "checked_pkls": [],
+        "valid_tradeable_pkls": [],
+        "invalid_details": [],
+    }
+    ok_paths, why_paths = _artifacts_valid(paths)
+    if not ok_paths:
+        result["reason"] = why_paths
+        return result
+
+    from octa_training.core.artifact_io import load_tradeable_artifact, read_meta
+
+    pkl_candidates = [
+        str(Path(p))
+        for p in (paths or [])
+        if str(p).lower().endswith(".pkl") and Path(p).name != "model.pkl"
+    ]
+    result["checked_pkls"] = list(pkl_candidates)
+    if not pkl_candidates:
+        result["reason"] = "missing_tradeable_artifact_bundle"
+        return result
+
+    for pkl_path in pkl_candidates:
+        p = Path(pkl_path)
+        meta_path = p.with_suffix(".meta.json")
+        sha_path = p.with_suffix(".sha256")
+        detail: Dict[str, Any] = {
+            "pkl_path": str(p),
+            "meta_path": str(meta_path),
+            "sha_path": str(sha_path),
+            "valid": False,
+        }
+        if not meta_path.exists() or not sha_path.exists():
+            detail["reason"] = "artifact_sidecars_missing"
+            result["invalid_details"].append(detail)
+            continue
+        try:
+            artifact = load_tradeable_artifact(str(p), str(sha_path))
+            meta = read_meta(str(meta_path))
+        except Exception as exc:
+            detail["reason"] = f"artifact_load_failed:{type(exc).__name__}"
+            result["invalid_details"].append(detail)
+            continue
+
+        artifact_kind = str(artifact.get("artifact_kind", "")).strip().lower()
+        meta_kind = str(getattr(meta, "artifact_kind", "")).strip().lower()
+        artifact_symbol = str((artifact.get("asset", {}) or {}).get("symbol", "")).strip().upper()
+        artifact_asset_class = str((artifact.get("asset", {}) or {}).get("asset_class", "")).strip().lower()
+        artifact_asset_class = ASSET_CLASS_ALIASES.get(artifact_asset_class, artifact_asset_class)
+        expected_asset_class_norm = ASSET_CLASS_ALIASES.get(expected_asset_class, expected_asset_class)
+
+        if artifact_kind != "tradeable" or meta_kind != "tradeable":
+            detail["reason"] = "artifact_kind_not_tradeable"
+            detail["artifact_kind"] = artifact_kind
+            detail["meta_artifact_kind"] = meta_kind
+            result["invalid_details"].append(detail)
+            continue
+        if artifact_symbol != str(expected_symbol).upper():
+            detail["reason"] = "artifact_symbol_mismatch"
+            detail["artifact_symbol"] = artifact_symbol
+            result["invalid_details"].append(detail)
+            continue
+        if expected_asset_class_norm not in {"", "unknown"} and artifact_asset_class not in {"", expected_asset_class_norm}:
+            detail["reason"] = "artifact_asset_class_mismatch"
+            detail["artifact_asset_class"] = artifact_asset_class
+            result["invalid_details"].append(detail)
+            continue
+        detail["valid"] = True
+        detail["reason"] = "tradeable_artifact_valid"
+        result["valid_tradeable_pkls"].append(str(p))
+
+    if result["valid_tradeable_pkls"]:
+        result["valid"] = True
+        result["reason"] = "tradeable_artifact_valid"
+        return result
+
+    if len(result["invalid_details"]) == 1:
+        detail_reason = str((result["invalid_details"][0] or {}).get("reason") or "").strip()
+        if detail_reason:
+            result["reason"] = detail_reason
+            return result
+
+    result["reason"] = "invalid_tradeable_artifact"
+    return result
+
+
+def _build_symbol_request_report(
+    requested_symbols: Sequence[str],
+    *,
+    trainable_symbols: Sequence[str],
+    inventory: Dict[str, Dict[str, Any]],
+) -> Tuple[List[str], Dict[str, Any], List[Dict[str, Any]]]:
+    accepted: List[str] = []
+    rejected: List[Dict[str, Any]] = []
+    duplicates_removed: List[str] = []
+    invalid_format: List[str] = []
+    missing_symbols: List[str] = []
+    seen: set[str] = set()
+    trainable_set = {str(sym).upper() for sym in trainable_symbols}
+    inventory_set = {str(sym).upper() for sym in inventory.keys()}
+
+    for raw in requested_symbols:
+        sym = str(raw or "").strip().upper()
+        if not sym:
+            invalid_format.append(sym)
+            rejected.append({"symbol": sym, "reason": "empty_requested_symbol"})
+            continue
+        if not VALID_SYMBOL_RE.match(sym):
+            invalid_format.append(sym)
+            rejected.append({"symbol": sym, "reason": "invalid_requested_symbol_format"})
+            continue
+        if sym in seen:
+            duplicates_removed.append(sym)
+            continue
+        seen.add(sym)
+        if sym not in trainable_set or sym not in inventory_set:
+            missing_symbols.append(sym)
+            rejected.append(
+                {
+                    "symbol": sym,
+                    "reason": "symbol_not_trainable_or_missing",
+                    "detail": {"trainable": sym in trainable_set, "in_inventory": sym in inventory_set},
+                }
+            )
+            continue
+        accepted.append(sym)
+
+    report = {
+        "requested_count": len(list(requested_symbols)),
+        "accepted_count": len(accepted),
+        "rejected_count": len(rejected),
+        "duplicates_removed_count": len(duplicates_removed),
+        "invalid_format_count": len(invalid_format),
+        "missing_count": len(missing_symbols),
+        "accepted_symbols": list(accepted),
+        "duplicates_removed": sorted(dict.fromkeys(duplicates_removed)),
+        "invalid_format_symbols": sorted(dict.fromkeys(invalid_format)),
+        "rejected_symbols": rejected,
+    }
+    return accepted, report, rejected
+
+
+def _classify_symbol_outcome(result: Dict[str, Any]) -> str:
+    status = str(result.get("status", "")).upper()
+    reason = str(result.get("reason", "") or "")
+    stages = result.get("stages") or []
+    if status == "DRY_RUN":
+        return "dry_run"
+    if status == "PASS":
+        return "trained_successfully"
+    if not stages:
+        if reason in {"missing_parquet_paths", "symbol_not_trainable_or_missing"}:
+            return "skipped"
+        return "failed"
+    if all(str(stage.get("status", "")).upper() == "SKIP" for stage in stages):
+        return "skipped"
+    if any(str(stage.get("status", "")).upper() == "TRAIN_ERROR" for stage in stages):
+        return "failed"
+    if any(
+        stage.get("model_artifacts")
+        and str((stage.get("artifact_validation") or {}).get("valid", True)).lower() == "false"
+        for stage in stages
+    ):
+        return "trained_but_invalid"
+    if status == "PASS":
+        return "trained_successfully"
+    if reason in {"missing_parquet_paths", "symbol_not_trainable_or_missing"}:
+        return "skipped"
+    return "failed"
+
+
+def _compute_exit_code(*, error_reason: Optional[str], outcome_counts: Dict[str, int], hard_blockers: Sequence[str]) -> int:
+    if error_reason or hard_blockers:
+        return 2
+    if int(outcome_counts.get("failed", 0)) > 0 or int(outcome_counts.get("trained_but_invalid", 0)) > 0:
+        return 1
+    return 0
 
 
 def _compact_gate_result(gate: Any) -> Tuple[Dict[str, Any], Optional[Dict[str, Any]]]:
@@ -398,14 +619,16 @@ def _write_unexplained_gate_artifact(
 def _normalize_decisions(
     decisions: List[Any],
     metrics_by_tf: Dict[str, Any],
+    expected_symbol: str,
     default_asset_class: str = "unknown",
+    cascade_tfs: Sequence[str] = DEFAULT_TIMEFRAMES,
 ) -> Tuple[List[Dict[str, Any]], bool, Optional[str], Optional[Dict[str, Any]]]:
     out: List[Dict[str, Any]] = []
     prev_pass = True
     overall_pass = True
     top_fail_reason: Optional[str] = None
     top_detail: Optional[Dict[str, Any]] = None
-    for tf in DEFAULT_TIMEFRAMES:
+    for tf in cascade_tfs:
         match = next((d for d in decisions if str(getattr(d, "timeframe", "")).upper() == tf), None)
         status = "SKIP"
         reason = "missing_decision"
@@ -437,6 +660,7 @@ def _normalize_decisions(
         cost_stress = None
         liquidity = None
         leakage_audit = None
+        artifact_validation: Dict[str, Any] = {"valid": False, "reason": "missing_model_artifacts", "checked_pkls": [], "valid_tradeable_pkls": [], "invalid_details": []}
         stage_asset_class = str(default_asset_class or "unknown").strip().lower() or "unknown"
         if tf in metrics_by_tf:
             metrics = (metrics_by_tf.get(tf) or {}).get("metrics")
@@ -454,15 +678,19 @@ def _normalize_decisions(
             liquidity = (metrics_by_tf.get(tf) or {}).get("liquidity")
             leakage_audit = (metrics_by_tf.get(tf) or {}).get("leakage_audit")
             stage_asset_class = str((metrics_by_tf.get(tf) or {}).get("asset_class", "unknown")).strip().lower() or "unknown"
+            artifact_validation = _validate_tradeable_artifacts(
+                model_artifacts,
+                expected_symbol=expected_symbol,
+                expected_asset_class=stage_asset_class,
+            )
         if status == "PASS":
             ok_metrics, why_metrics = _metrics_valid(metrics)
-            ok_artifacts, why_artifacts = _artifacts_valid(model_artifacts)
             if not ok_metrics:
                 status = "GATE_FAIL"
                 reason = why_metrics
-            elif not ok_artifacts:
+            elif not bool(artifact_validation.get("valid", False)):
                 status = "GATE_FAIL"
-                reason = why_artifacts
+                reason = str(artifact_validation.get("reason") or "invalid_tradeable_artifact")
             elif not isinstance(monte_carlo, dict):
                 status = "GATE_FAIL"
                 reason = "monte_carlo_missing"
@@ -533,14 +761,17 @@ def _normalize_decisions(
                 "cost_stress": _safe_json_obj(cost_stress) if isinstance(cost_stress, dict) else cost_stress,
                 "liquidity": _safe_json_obj(liquidity) if isinstance(liquidity, dict) else liquidity,
                 "leakage_audit": _safe_json_obj(leakage_audit) if isinstance(leakage_audit, dict) else leakage_audit,
+                "artifact_validation": _safe_json_obj(artifact_validation),
                 "decision_detail": decision_detail,
             }
         )
     return out, overall_pass, top_fail_reason, top_detail
 
 
-def _run_preflight(root: Path, preflight_out: Path, log_path: Path, *, follow_symlinks: bool = False) -> None:
+def _run_preflight(root: Path, preflight_out: Path, log_path: Path, *, follow_symlinks: bool = False, required_tfs: Optional[Sequence[str]] = None) -> None:
     cmd = [sys.executable, "-m", "octa.support.ops.universe_preflight", "--root", str(root), "--strict", "--out", str(preflight_out)]
+    if required_tfs:
+        cmd += ["--required-tfs", ",".join(str(t) for t in required_tfs)]
     if follow_symlinks:
         cmd.append("--follow-symlinks")
     _log(log_path, f"[cmd] {' '.join(cmd)}")
@@ -580,6 +811,7 @@ def _write_hashes(out_dir: Path, summary_path: Path, manifest_path: Path, result
     lines: List[str] = []
     extra = [
         out_dir / "run_manifest.json",
+        out_dir / "input_symbols_report.json",
         out_dir / "logs" / "runner.log",
     ]
     for p in [summary_path, manifest_path, *extra]:
@@ -664,6 +896,104 @@ class RunSettings:
     promote_required_tfs: Tuple[str, ...] = ("1D", "1H")
     paper_registry_dir: Path = Path("octa") / "var" / "models" / "paper_ready"
     symbols_override: Optional[List[str]] = None
+    cascade_timeframes: Optional[Tuple[str, ...]] = None
+    symbols_requested_explicitly: bool = False
+    symbols_file_path: Optional[str] = None
+    symbol_timeout_sec: Optional[int] = None
+    symbol_timeout_grace_sec: int = 60
+
+
+def _train_fn_supports_isolation(train_fn: Callable[..., Tuple[List[Any], Dict[str, Any]]]) -> bool:
+    qualname = str(getattr(train_fn, "__qualname__", "") or "")
+    if "<locals>" in qualname:
+        return False
+    return bool(getattr(train_fn, "__module__", None))
+
+
+def _resolve_symbol_timeout_sec(settings: RunSettings) -> Optional[int]:
+    if settings.symbol_timeout_sec is not None:
+        try:
+            if int(settings.symbol_timeout_sec) > 0:
+                return int(settings.symbol_timeout_sec)
+            return None
+        except Exception:
+            return None
+    try:
+        cfg = load_config(settings.config_path or "octa_training/config/training.yaml")
+        raw = getattr(getattr(cfg, "tuning", None), "timeout_sec", None)
+        if raw is None or str(raw).strip() == "":
+            return None
+        base = int(float(raw))
+        if base <= 0:
+            return None
+        grace = max(0, int(settings.symbol_timeout_grace_sec))
+        return base + grace
+    except Exception:
+        return None
+
+
+def _symbol_train_child(
+    result_queue: Any,
+    train_fn: Callable[..., Tuple[List[Any], Dict[str, Any]]],
+    train_kwargs: Dict[str, Any],
+) -> None:
+    try:
+        decisions, metrics_by_tf = train_fn(**train_kwargs)
+        result_queue.put(
+            {
+                "status": "ok",
+                "decisions": decisions,
+                "metrics_by_tf": metrics_by_tf,
+            }
+        )
+    except BaseException as exc:
+        result_queue.put(
+            {
+                "status": "exception",
+                "exception_type": type(exc).__name__,
+                "message": str(exc),
+                "traceback": traceback.format_exc(),
+            }
+        )
+
+
+def _run_symbol_training_bounded(
+    *,
+    train_fn: Callable[..., Tuple[List[Any], Dict[str, Any]]],
+    train_kwargs: Dict[str, Any],
+    timeout_sec: Optional[int],
+) -> Tuple[List[Any], Dict[str, Any]]:
+    if timeout_sec is None or timeout_sec <= 0 or not _train_fn_supports_isolation(train_fn):
+        return train_fn(**train_kwargs)
+
+    method = "fork" if "fork" in multiprocessing.get_all_start_methods() else "spawn"
+    ctx = multiprocessing.get_context(method)
+    result_queue = ctx.Queue(maxsize=1)
+    proc = ctx.Process(target=_symbol_train_child, args=(result_queue, train_fn, train_kwargs))
+    proc.start()
+    proc.join(float(timeout_sec))
+
+    if proc.is_alive():
+        proc.terminate()
+        proc.join(10.0)
+        if proc.is_alive():
+            proc.kill()
+            proc.join(5.0)
+        raise SymbolTrainingTimeout(f"symbol_training_timeout:{int(timeout_sec)}s")
+
+    try:
+        payload = result_queue.get_nowait()
+    except queue.Empty as exc:
+        raise RuntimeError(f"symbol_training_child_exit_without_result:exitcode={proc.exitcode}") from exc
+
+    status = str(payload.get("status") or "")
+    if status == "ok":
+        return payload.get("decisions") or [], payload.get("metrics_by_tf") or {}
+    if status == "exception":
+        raise RuntimeError(
+            f"symbol_training_child_exception:{payload.get('exception_type')}:{payload.get('message')}"
+        )
+    raise RuntimeError(f"symbol_training_child_invalid_payload:{status or 'missing_status'}")
 
 
 def _parse_symbols_arg(raw: Optional[str]) -> List[str]:
@@ -715,49 +1045,113 @@ def run_full_cascade(
     timed_out = 0
     total_time = 0.0
     altdata_run_meta: Dict[str, Any] = {"enabled": False, "degraded": False, "missing_sources": [], "total_sources": 0}
+    training_regime = "institutional_production"
+    promotion_allowed = True
+    input_symbols_report: Dict[str, Any] = {
+        "symbols_requested_explicitly": bool(settings.symbols_requested_explicitly),
+        "requested_count": 0,
+        "accepted_count": 0,
+        "rejected_count": 0,
+        "duplicates_removed_count": 0,
+        "invalid_format_count": 0,
+        "missing_count": 0,
+        "accepted_symbols": [],
+        "duplicates_removed": [],
+        "invalid_format_symbols": [],
+        "rejected_symbols": [],
+        "symbols_file_path": settings.symbols_file_path,
+    }
+    hard_blockers: List[str] = []
+    warnings: List[str] = []
+    current_symbol: Optional[str] = None
+    current_symbol_asset_class: str = "unknown"
+    current_symbol_started_at: Optional[str] = None
+    finalized_symbols: set[str] = set()
+    run_exception: Optional[BaseException] = None
+    outcome_counts: Dict[str, int] = {
+        "trained_successfully": 0,
+        "trained_but_invalid": 0,
+        "skipped": 0,
+        "failed": 0,
+        "dry_run": 0,
+    }
+    artifacts_valid = 0
+    artifacts_invalid = 0
+    symbol_timeout_sec = _resolve_symbol_timeout_sec(settings)
+
+    previous_sigterm = signal.getsignal(signal.SIGTERM)
+    previous_sigint = signal.getsignal(signal.SIGINT)
+
+    def _abort_handler(signum, _frame):  # type: ignore[no-untyped-def]
+        signame = signal.Signals(signum).name
+        raise RunAbortRequested(f"signal_abort:{signame}")
+
+    signal.signal(signal.SIGTERM, _abort_handler)
+    signal.signal(signal.SIGINT, _abort_handler)
+
+    try:
+        cfg_for_policy = load_config(settings.config_path or "octa_training/config/training.yaml")
+        training_regime = str(getattr(cfg_for_policy, "regime", "institutional_production") or "institutional_production").strip() or "institutional_production"
+        promotion_allowed = training_regime != "foundation_validation"
+    except Exception:
+        cfg_for_policy = None
 
     try:
         if not settings.skip_preflight:
-            _run_preflight(settings.root, settings.preflight_out, log_path, follow_symlinks=bool(settings.follow_symlinks))
+            _run_preflight(settings.root, settings.preflight_out, log_path, follow_symlinks=bool(settings.follow_symlinks), required_tfs=settings.cascade_timeframes)
 
         files = _discover_preflight_files(settings.preflight_out)
         symbols = _load_trainable_symbols(files["trainable"])
         inventory = _load_inventory(files["inventory"])
-        selected_asset_classes = tuple(sorted({str(x).strip().lower() for x in (settings.asset_classes or ()) if str(x).strip()}))
+        selected_asset_classes = _normalize_asset_class_filter(settings.asset_classes)
         if selected_asset_classes:
             before_count = len(symbols)
             selected_set = set(selected_asset_classes)
             symbols = [s for s in symbols if str((inventory.get(s) or {}).get("asset_class", "unknown")).lower() in selected_set]
             _log(log_path, f"[info] selected_asset_classes={list(selected_asset_classes)} before_count={before_count} after_count={len(symbols)}")
 
-        if settings.symbols_override:
-            requested: List[str] = []
-            seen: set[str] = set()
-            for sym in settings.symbols_override:
-                s = str(sym).strip().upper()
-                if not s or s in seen:
-                    continue
-                seen.add(s)
-                requested.append(s)
-
-            trainable_set = set(symbols)
-            inventory_set = set(inventory.keys())
+        explicit_scope_requested = bool(settings.symbols_requested_explicitly or settings.symbols_override is not None)
+        if explicit_scope_requested:
+            requested = list(settings.symbols_override or [])
+            accepted, request_report, rejected_rows = _build_symbol_request_report(
+                requested,
+                trainable_symbols=symbols,
+                inventory=inventory,
+            )
+            input_symbols_report = {**input_symbols_report, **request_report}
             results_dir.mkdir(parents=True, exist_ok=True)
-            for sym in requested:
-                if sym not in trainable_set or sym not in inventory_set:
-                    result = {
-                        "symbol": sym,
-                        "status": "FAIL",
-                        "reason": "symbol_not_trainable_or_missing",
-                        "detail": {"requested": True, "trainable": sym in trainable_set, "in_inventory": sym in inventory_set},
-                        "stages": [],
-                        "started_at": _utc_now_iso(),
-                        "ended_at": _utc_now_iso(),
-                    }
-                    _write_json(results_dir / f"{sym}.json", result)
-                    _append_jsonl(manifest_path, {"symbol": sym, "status": "FAIL", "reason": "symbol_not_trainable_or_missing"})
+            for row in rejected_rows:
+                sym = str(row.get("symbol", "")).upper() or "__INVALID__"
+                reject_reason = str(row.get("reason", "symbol_request_rejected"))
+                result = {
+                    "symbol": sym,
+                    "status": "FAIL",
+                    "reason": reject_reason,
+                    "detail": {"requested": True, **(row.get("detail") or {})},
+                    "stages": [],
+                    "training_outcome": "failed" if reject_reason == "invalid_requested_symbol_format" else "skipped",
+                    "artifact_summary": {"valid_tradeable_artifacts": 0, "invalid_tradeable_artifacts": 0},
+                    "started_at": _utc_now_iso(),
+                    "ended_at": _utc_now_iso(),
+                }
+                _write_json(results_dir / f"{sym}.json", result)
+                _append_jsonl(manifest_path, {"symbol": sym, "status": "FAIL", "reason": reject_reason})
+                if result["training_outcome"] == "failed":
+                    outcome_counts["failed"] += 1
                     failed += 1
-            symbols = [s for s in requested if s in trainable_set and s in inventory_set]
+                else:
+                    outcome_counts["skipped"] += 1
+            symbols = accepted
+            _write_json(settings.evidence_dir / "input_symbols_report.json", input_symbols_report)
+        elif settings.symbols_requested_explicitly:
+            input_symbols_report["requested_count"] = 0
+            _write_json(settings.evidence_dir / "input_symbols_report.json", input_symbols_report)
+
+        if explicit_scope_requested and not symbols:
+            error_reason = "no_valid_requested_symbols"
+            hard_blockers.append("no_valid_requested_symbols")
+            start_ts = _utc_now()
+            _log(log_path, "[error] no_valid_requested_symbols")
 
         if settings.start_at:
             start = settings.start_at.strip().upper()
@@ -790,10 +1184,12 @@ def run_full_cascade(
         if error_reason is None:
             altdata_run_meta = _check_altdata_cache(log_path)
         else:
-            return {
+            final_exit_code = _compute_exit_code(error_reason=error_reason, outcome_counts=outcome_counts, hard_blockers=hard_blockers)
+            summary = {
                 "run_id": settings.evidence_dir.name,
                 "started_at": start_ts.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "ended_at": _utc_now_iso(),
+                "training_regime": training_regime,
                 "total_trainable": total,
                 "passed": passed,
                 "failed": failed,
@@ -802,6 +1198,22 @@ def run_full_cascade(
                 "error": error_reason,
                 "altdata_degraded": bool(altdata_run_meta.get("degraded", False)),
                 "altdata_run_meta": _safe_json_obj(altdata_run_meta),
+                "input_symbols_requested": int(input_symbols_report.get("requested_count", 0) or 0),
+                "input_symbols_accepted": int(input_symbols_report.get("accepted_count", 0) or 0),
+                "input_symbols_rejected": int(input_symbols_report.get("rejected_count", 0) or 0),
+                "input_symbols_report": _safe_json_obj(input_symbols_report),
+                "outcome_counts": dict(sorted(outcome_counts.items())),
+                "artifacts_valid": int(artifacts_valid),
+                "artifacts_invalid": int(artifacts_invalid),
+                "hard_blockers": sorted(dict.fromkeys(hard_blockers)),
+                "warnings": sorted(dict.fromkeys(warnings)),
+                "final_verdict": "blocked_fail_closed",
+                "exit_code": int(final_exit_code),
+            }
+            _write_json(summary_path, summary)
+            _write_hashes(settings.evidence_dir, summary_path, manifest_path, results_dir)
+            return {
+                **summary,
             }
         for i in range(0, total, settings.batch_size):
             batch = symbols[i : i + settings.batch_size]
@@ -821,8 +1233,9 @@ def run_full_cascade(
                     _append_jsonl(manifest_path, {"symbol": sym, "status": "DRY_RUN", "reason": "dry_run"})
                     continue
 
-                parquet_paths = _build_parquet_paths(sym, inventory)
-                if len(parquet_paths) != len(DEFAULT_TIMEFRAMES):
+                cascade_tfs = settings.cascade_timeframes or DEFAULT_TIMEFRAMES
+                parquet_paths = _build_parquet_paths(sym, inventory, tfs=cascade_tfs)
+                if len(parquet_paths) != len(cascade_tfs):
                     result = {
                         "symbol": sym,
                         "status": "FAIL",
@@ -840,26 +1253,68 @@ def run_full_cascade(
                 run_id = settings.evidence_dir.name
                 model_root = Path("octa") / "var" / "models" / "runs" / run_id / sym
                 symbol_asset_class = str((inventory.get(sym) or {}).get("asset_class", "unknown")).strip().lower() or "unknown"
+                current_symbol = sym
+                current_symbol_asset_class = symbol_asset_class
+                current_symbol_started_at = _utc_now_iso()
                 _log(log_path, f"[train] symbol={sym} asset_class={symbol_asset_class} run_id={run_id}")
                 try:
-                    decisions, metrics_by_tf = train_fn(
-                        run_id=run_id,
-                        config_path=settings.config_path or "octa_training/config/training.yaml",
-                        symbol=sym,
-                        asset_class=symbol_asset_class,
-                        parquet_paths=parquet_paths,
-                        cascade=CascadePolicy(order=list(DEFAULT_TIMEFRAMES)),
-                        safe_mode=False,
-                        reports_dir=str(settings.evidence_dir),
-                        model_root=str(model_root),
+                    decisions, metrics_by_tf = _run_symbol_training_bounded(
+                        train_fn=train_fn,
+                        timeout_sec=symbol_timeout_sec,
+                        train_kwargs={
+                            "run_id": run_id,
+                            "config_path": settings.config_path or "octa_training/config/training.yaml",
+                            "symbol": sym,
+                            "asset_class": symbol_asset_class,
+                            "parquet_paths": parquet_paths,
+                            "cascade": CascadePolicy(order=list(cascade_tfs)),
+                            "safe_mode": False,
+                            "reports_dir": str(settings.evidence_dir),
+                            "model_root": str(model_root),
+                        },
                     )
                     stages, ok, top_reason, top_detail = _normalize_decisions(
                         decisions,
                         metrics_by_tf,
+                        expected_symbol=sym,
                         default_asset_class=symbol_asset_class,
+                        cascade_tfs=cascade_tfs,
                     )
                     status = "PASS" if ok else "FAIL"
                     reason = None if ok else (top_reason or "stage_failed")
+                except RunAbortRequested:
+                    raise
+                except SymbolTrainingTimeout as exc:
+                    tf = DEFAULT_TIMEFRAMES[0]
+                    _log(log_path, f"[error] symbol={sym} tf={tf} reason=symbol_training_timeout timeout_sec={symbol_timeout_sec}")
+                    stages = [
+                        {
+                            "timeframe": tf,
+                            "asset_class": symbol_asset_class,
+                            "status": "TRAIN_ERROR",
+                            "reason": "symbol_training_timeout",
+                            "metrics_summary": {},
+                            "model_artifacts": [],
+                            "features_used": [],
+                            "altdata_sources_used": [],
+                            "altdata_enabled": False,
+                            "training_window": None,
+                            "gate_summary": {},
+                            "gate_result": None,
+                            "error_type": type(exc).__name__,
+                            "error_message": _truncate_text(str(exc), MAX_EXCEPTION_MESSAGE_CHARS),
+                            "exception_ref": None,
+                        }
+                    ]
+                    status = "FAIL"
+                    reason = "symbol_training_timeout"
+                    top_detail = {
+                        "timeframe": tf,
+                        "timeout_sec": int(symbol_timeout_sec or 0),
+                        "error_type": type(exc).__name__,
+                    }
+                    metrics_by_tf = {}
+                    timed_out += 1
                 except Exception as exc:
                     tb = traceback.format_exc()
                     tf = DEFAULT_TIMEFRAMES[0]
@@ -985,9 +1440,10 @@ def run_full_cascade(
 
                 paper_ready = False
                 paper_artifacts: List[str] = []
+                paper_block_reason: Optional[str] = None
                 required = set(settings.promote_required_tfs)
                 stage_by_tf = {s.get("timeframe"): s for s in stages}
-                if required and all(
+                if required and promotion_allowed and all(
                     stage_by_tf.get(tf, {}).get("status") == "PASS"
                     and bool((stage_by_tf.get(tf, {}).get("monte_carlo") or {}).get("passed", False))
                     for tf in required
@@ -999,10 +1455,13 @@ def run_full_cascade(
                         settings.paper_registry_dir,
                         run_id,
                     )
+                elif required and not promotion_allowed:
+                    paper_block_reason = f"paper_promotion_blocked_for_regime:{training_regime}"
 
                 result = {
                     "symbol": sym,
                     "asset_class": symbol_asset_class,
+                    "training_regime": training_regime,
                     "status": status,
                     "reason": reason,
                     "detail": top_detail,
@@ -1010,14 +1469,32 @@ def run_full_cascade(
                     "stages": stages,
                     "paper_ready": paper_ready,
                     "paper_artifacts": paper_artifacts,
+                    "paper_block_reason": paper_block_reason,
+                    "artifact_summary": {
+                        "valid_tradeable_artifacts": sum(
+                            1 for stage in stages if bool((stage.get("artifact_validation") or {}).get("valid", False))
+                        ),
+                        "invalid_tradeable_artifacts": sum(
+                            1
+                            for stage in stages
+                            if stage.get("model_artifacts") and not bool((stage.get("artifact_validation") or {}).get("valid", False))
+                        ),
+                    },
                     "altdata_degraded": bool(altdata_run_meta.get("degraded", False)),
                     "altdata_run_meta": _safe_json_obj(altdata_run_meta),
                     "started_at": _utc_now_iso(),
                     "ended_at": _utc_now_iso(),
                 }
+                result["training_outcome"] = _classify_symbol_outcome(result)
                 results_dir.mkdir(parents=True, exist_ok=True)
                 _write_json(results_dir / f"{sym}.json", result)
                 _append_jsonl(manifest_path, {"symbol": sym, "status": status, "reason": reason})
+                finalized_symbols.add(sym)
+                current_symbol = None
+                current_symbol_started_at = None
+                artifacts_valid += int((result.get("artifact_summary") or {}).get("valid_tradeable_artifacts", 0) or 0)
+                artifacts_invalid += int((result.get("artifact_summary") or {}).get("invalid_tradeable_artifacts", 0) or 0)
+                outcome_counts[result["training_outcome"]] = outcome_counts.get(result["training_outcome"], 0) + 1
                 if status == "PASS":
                     passed += 1
                 else:
@@ -1025,13 +1502,64 @@ def run_full_cascade(
 
                 total_time += time.time() - sym_start
     except Exception as exc:
+        run_exception = exc
         error_reason = f"run_exception:{exc}"
     finally:
+        try:
+            signal.signal(signal.SIGTERM, previous_sigterm)
+            signal.signal(signal.SIGINT, previous_sigint)
+        except Exception:
+            pass
+
+        if error_reason and current_symbol and current_symbol not in finalized_symbols:
+            results_dir.mkdir(parents=True, exist_ok=True)
+            fail_reason = "aborted_fail_closed" if isinstance(run_exception, RunAbortRequested) else "run_interrupted_before_symbol_finalization"
+            result = {
+                "symbol": current_symbol,
+                "asset_class": current_symbol_asset_class,
+                "training_regime": training_regime,
+                "status": "FAIL",
+                "reason": fail_reason,
+                "detail": {
+                    "error_reason": error_reason,
+                    "error_type": type(run_exception).__name__ if run_exception is not None else None,
+                },
+                "cross_tf_meta": {},
+                "stages": [],
+                "paper_ready": False,
+                "paper_artifacts": [],
+                "paper_block_reason": None,
+                "artifact_summary": {
+                    "valid_tradeable_artifacts": 0,
+                    "invalid_tradeable_artifacts": 0,
+                },
+                "altdata_degraded": bool(altdata_run_meta.get("degraded", False)),
+                "altdata_run_meta": _safe_json_obj(altdata_run_meta),
+                "started_at": current_symbol_started_at or _utc_now_iso(),
+                "ended_at": _utc_now_iso(),
+                "training_outcome": "failed",
+            }
+            _write_json(results_dir / f"{current_symbol}.json", result)
+            _append_jsonl(manifest_path, {"symbol": current_symbol, "status": "FAIL", "reason": fail_reason})
+            finalized_symbols.add(current_symbol)
+            outcome_counts["failed"] = outcome_counts.get("failed", 0) + 1
+            failed += 1
+
         if error_reason:
             _log(log_path, f"[error] {error_reason}")
         avg_time = total_time / (passed + failed) if (passed + failed) else 0.0
+        final_exit_code = _compute_exit_code(error_reason=error_reason, outcome_counts=outcome_counts, hard_blockers=hard_blockers)
+        if error_reason:
+            final_verdict = "run_failed"
+        elif final_exit_code == 0:
+            final_verdict = "offline_training_ready"
+        elif final_exit_code == 1:
+            final_verdict = "completed_with_symbol_failures"
+        else:
+            final_verdict = "blocked_fail_closed"
         summary = {
             "run_id": settings.evidence_dir.name,
+            "training_regime": training_regime,
             "started_at": start_ts.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "ended_at": _utc_now_iso(),
             "total_trainable": total,
@@ -1042,6 +1570,17 @@ def run_full_cascade(
             "error": error_reason,
             "altdata_degraded": bool(altdata_run_meta.get("degraded", False)),
             "altdata_run_meta": _safe_json_obj(altdata_run_meta),
+            "input_symbols_requested": int(input_symbols_report.get("requested_count", 0) or 0),
+            "input_symbols_accepted": int(input_symbols_report.get("accepted_count", 0) or 0),
+            "input_symbols_rejected": int(input_symbols_report.get("rejected_count", 0) or 0),
+            "input_symbols_report": _safe_json_obj(input_symbols_report),
+            "outcome_counts": dict(sorted(outcome_counts.items())),
+            "artifacts_valid": int(artifacts_valid),
+            "artifacts_invalid": int(artifacts_invalid),
+            "hard_blockers": sorted(dict.fromkeys(hard_blockers)),
+            "warnings": sorted(dict.fromkeys(warnings)),
+            "final_verdict": final_verdict,
+            "exit_code": int(final_exit_code),
         }
         _write_json(summary_path, summary)
         _write_hashes(settings.evidence_dir, summary_path, manifest_path, results_dir)
@@ -1066,6 +1605,7 @@ def main() -> None:
     p.add_argument("--follow-symlinks", action="store_true", default=False)
     p.add_argument("--promote-required-tfs", default="1D,1H")
     p.add_argument("--paper-registry-dir", default=str(Path("octa") / "var" / "models" / "paper_ready"))
+    p.add_argument("--cascade-timeframes", default=None, help="Comma-separated cascade TF order, e.g. '1D,4H,1H,30M,5M,1M'. Overrides config + DEFAULT_TIMEFRAMES.")
     args = p.parse_args()
 
     run_id = str(args.run_id).strip() if args.run_id else _run_id()
@@ -1074,6 +1614,14 @@ def main() -> None:
 
     promote_tfs = tuple([t.strip().upper() for t in str(args.promote_required_tfs).split(",") if t.strip()])
     symbols_override = _parse_symbols_arg(args.symbols) + _load_symbols_file(args.symbols_file)
+    cfg = load_config(args.config or "octa_training/config/training.yaml")
+    cascade_tfs_raw = args.cascade_timeframes
+    if cascade_tfs_raw:
+        cascade_tfs: Optional[Tuple[str, ...]] = tuple([t.strip().upper() for t in cascade_tfs_raw.split(",") if t.strip()])
+    elif getattr(cfg, "cascade_timeframes", None):
+        cascade_tfs = tuple(cfg.cascade_timeframes)
+    else:
+        cascade_tfs = None
     settings = RunSettings(
         root=Path(args.root),
         preflight_out=preflight_out,
@@ -1085,11 +1633,13 @@ def main() -> None:
         dry_run=bool(args.dry_run),
         config_path=args.config,
         follow_symlinks=bool(args.follow_symlinks),
-        asset_classes=tuple(str(x).strip().lower() for x in (args.asset_classes or []) if str(x).strip()) or None,
+        asset_classes=_normalize_asset_class_filter(args.asset_classes),
         promote_required_tfs=promote_tfs or ("1D", "1H"),
         paper_registry_dir=Path(args.paper_registry_dir),
         symbols_override=symbols_override or None,
+        cascade_timeframes=cascade_tfs,
     )
+    training_regime = str(getattr(cfg, "regime", "institutional_production") or "institutional_production").strip() or "institutional_production"
 
     manifest = {
         "run_id": run_id,
@@ -1097,6 +1647,7 @@ def main() -> None:
         "python": _python_version(),
         "git_commit": _git_hash(),
         "argv": sys.argv,
+        "training_regime": training_regime,
         "settings": {
             "root": str(settings.root),
             "preflight_out": str(settings.preflight_out),
@@ -1109,7 +1660,7 @@ def main() -> None:
             "symbols_override": settings.symbols_override,
             "follow_symlinks": bool(settings.follow_symlinks),
             "asset_classes": list(settings.asset_classes or ()),
-            "cascade_order": list(DEFAULT_TIMEFRAMES),
+            "cascade_order": list(settings.cascade_timeframes or DEFAULT_TIMEFRAMES),
             "pipeline_version": OCTA_VERSION,
             "promote_required_tfs": list(settings.promote_required_tfs),
             "paper_registry_dir": str(settings.paper_registry_dir),

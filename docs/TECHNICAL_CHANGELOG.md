@@ -3,6 +3,27 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-03-25 17:41:41] TEST
+Code-Änderungen - 3 Code-Dateien - 3 Test-Dateien - (+2767/-106 Zeilen)
+
+**Statistics:**
+- Files Changed: 7
+- Lines Added: +2767
+- Lines Deleted: -106
+- Net Change: +2661
+
+**File-Level Changes:**
+```
++   94 -    0  configs/p03_research.yaml
++  587 -    0  octa/core/data/sources/altdata/news/feed_classifier.py
++   80 -    0  octa/core/data/sources/altdata/scheduled_events.py
++  602 -   51  octa/support/ops/run_full_cascade_training_from_parquets.py
++  380 -    0  tests/test_news_classifier.py
++  452 -    0  tests/test_news_source.py
++  572 -   55  tests/test_run_full_cascade_training_from_parquets.py
+```
+
+
 ## [2026-03-05 21:02:51] CHANGE
 Code-Änderungen - (+201/-0 Zeilen)
 

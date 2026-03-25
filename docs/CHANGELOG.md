@@ -2,6 +2,46 @@
 
 Automatisch generiert. Alle Änderungen werden hier dokumentiert.
 
+## 2026-03-25
+
+
+### [2026-03-25 17:41:41] TEST
+**Beschreibung:** Code-Änderungen - 3 Code-Dateien - 3 Test-Dateien - (+2767/-106 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 3 Dateien
+  - `octa/core/data/sources/altdata/news/feed_classifier.py`
+  - `octa/core/data/sources/altdata/scheduled_events.py`
+  - `octa/support/ops/run_full_cascade_training_from_parquets.py`
+- **TESTS:** 3 Dateien
+  - `tests/test_news_classifier.py`
+  - `tests/test_news_source.py`
+  - `tests/test_run_full_cascade_training_from_parquets.py`
+- **CONFIG:** 1 Dateien
+  - `configs/p03_research.yaml`
+
+
+## 2026-03-09
+
+
+### [2026-03-09 00:00:00] RELEASE
+**Beschreibung:** Foundation Release Closeout für `v0.0.0` dokumentiert. Scope explizit auf `offline training + shadow/smoke only` fixiert. Remediation- und Closeout-Evidence konsolidiert. Keine Live-Freigabe.
+
+**Geänderte Dateien:**
+- **CODE:** 1 Datei
+  - `octa/execution/evidence_selection.py`
+- **TESTS:** 1 Datei
+  - `tests/test_execution_selection.py`
+- **DOCS:** mehrere Dateien
+  - `OCTA_v0.0.0_REMEDIATION_REPORT.md`
+  - `RELEASE_SCOPE_v0.0.0.md`
+  - `RELEASE_MANIFEST_v0.0.0.md`
+  - `RELEASE_NOTES_v0.0.0.md`
+  - `GO_NO_GO_v0.0.0.md`
+  - `OCTA_v0.0.0_FOUNDATION_RELEASE_CLOSEOUT.md`
+- **CONFIG / LOCAL TEMPLATES:** 1 Datei
+  - `.env.local.template`
+
 ## 2026-03-05
 
 
@@ -1088,4 +1128,3 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `octa/support/ops/build_raw_tree_from_flat_parquets.py`
 - **TESTS:** 1 Dateien
   - `tests/test_build_raw_tree_from_flat_parquets.py`
-
