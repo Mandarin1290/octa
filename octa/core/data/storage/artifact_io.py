@@ -158,16 +158,34 @@ def smoke_test_artifact(pkl_path: str, raw_dir: str, last_n: int = 50) -> Dict[s
         raise ValueError('Artifact missing symbol in asset')
     # find parquet
     discovered = discover_parquets(Path(raw_dir), state=None)
-    match = [d for d in discovered if d.symbol == symbol]
 
-    # Fallback: many raw feeds store timeframe-suffixed parquets (e.g. STOCKS:
-    # raw/Stock_parquet/AAPL_1H.parquet) while artifacts store base symbols.
-    # Use the artifact's recorded bar_size to resolve the correct parquet.
+    # Infer bar_size from the artifact asset field, or fall back to parsing the pkl path.
+    # pkl paths follow the convention: .../runs/<RUN>/<SYM>/<ASSET_CLASS>/<TF>/[_quarantine/...]/<SYM>.pkl
+    # Artifacts serialised before bar_size was stored have asset.bar_size=null.
+    _KNOWN_TFS = {"1D", "1H", "30M", "5M", "1M", "4H"}
+    bar_size = (obj.get('asset', {}) or {}).get('bar_size') or ''
+    if not bar_size:
+        bar_size = next(
+            (part.upper() for part in Path(pkl_path).parts if part.upper() in _KNOWN_TFS),
+            '',
+        )
+
+    # Prefer the timeframe-specific parquet when bar_size is known.
+    # discover_parquets strips standard TF suffixes (1D/1H/30M/5M/1M) from symbol names,
+    # so ADC_1H.parquet → symbol="ADC".  Multiple TFs may match the same base symbol;
+    # use path substring matching to select the one matching the artifact's bar_size.
+    match: list = []
+    if bar_size:
+        tf_tag = f"_{bar_size.upper()}"
+        match = [d for d in discovered if d.symbol == symbol and tf_tag in Path(d.path).name.upper()]
+    if not match:
+        match = [d for d in discovered if d.symbol == symbol]
+
+    # Legacy fallback for feeds that encode the timeframe in the symbol name itself.
     attempted_alt = None
     if not match:
-        bar_size = (obj.get('asset', {}) or {}).get('bar_size')
         if bar_size:
-            attempted_alt = sanitize_symbol(f"{symbol}_{str(bar_size).upper()}")
+            attempted_alt = sanitize_symbol(f"{symbol}_{bar_size.upper()}")
             match = [d for d in discovered if d.symbol == attempted_alt]
 
     if not match:
@@ -223,6 +241,10 @@ def smoke_test_artifact(pkl_path: str, raw_dir: str, last_n: int = 50) -> Dict[s
         Settings = type('S', (), {})
         s = Settings()
         s.features = feature_settings
+        # Pass bar_size as timeframe so build_features generates intraday features
+        # (ib_*, vwap, hour, minute) for sub-daily artifacts (1H, 30M, 5M, 1M).
+        if bar_size:
+            s.timeframe = str(bar_size).upper()
         # keep legacy attribute fallbacks too
         for k in ('window_short', 'window_med', 'window_long', 'vol_window', 'horizons'):
             if k in feature_settings:
@@ -271,7 +293,15 @@ def smoke_test_artifact(pkl_path: str, raw_dir: str, last_n: int = 50) -> Dict[s
         proc.join(15)  # 15s timeout for predict
         if proc.is_alive():
             proc.terminate()
-            proc.join()
+            proc.join(5)  # bounded: kill -9 if SIGTERM ignored
+            if proc.is_alive():
+                try:
+                    import signal as _signal
+                    import os as _os
+                    _os.kill(proc.pid, _signal.SIGKILL)
+                except Exception:
+                    pass
+                proc.join(2)
             return {'symbol': symbol, 'keys_ok': False, 'nan_free': False, 'output': None, 'error': 'predict_timeout'}
         # collect result
         out_status = None

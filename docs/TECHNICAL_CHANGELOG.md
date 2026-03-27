@@ -3,6 +3,25 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-03-27 08:24:05] TEST
+Code-Änderungen - 2 Code-Dateien - 1 Test-Dateien - (+407/-17 Zeilen)
+
+**Statistics:**
+- Files Changed: 5
+- Lines Added: +407
+- Lines Deleted: -17
+- Net Change: +390
+
+**File-Level Changes:**
+```
++   37 -    7  octa/core/data/storage/artifact_io.py
++   42 -   10  octa_ops/autopilot/paper_runner.py
++   64 -    0  scripts/run_shadow_execution.py
++   76 -    0  scripts/shadow_refresh_parquets.py
++  188 -    0  tests/test_canonical_orchestration.py
+```
+
+
 ## [2026-03-25 17:41:41] TEST
 Code-Änderungen - 3 Code-Dateien - 3 Test-Dateien - (+2767/-106 Zeilen)
 

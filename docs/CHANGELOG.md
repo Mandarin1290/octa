@@ -2,6 +2,23 @@
 
 Automatisch generiert. Alle Änderungen werden hier dokumentiert.
 
+## 2026-03-27
+
+
+### [2026-03-27 08:24:05] TEST
+**Beschreibung:** Code-Änderungen - 2 Code-Dateien - 1 Test-Dateien - (+407/-17 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 2 Dateien
+  - `octa/core/data/storage/artifact_io.py`
+  - `octa_ops/autopilot/paper_runner.py`
+- **TESTS:** 1 Dateien
+  - `tests/test_canonical_orchestration.py`
+- **SCRIPTS:** 2 Dateien
+  - `scripts/run_shadow_execution.py`
+  - `scripts/shadow_refresh_parquets.py`
+
+
 ## 2026-03-25
 
 
