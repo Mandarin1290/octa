@@ -3,6 +3,21 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-03-28 10:11:11] DOCS
+Code-Änderungen - 1 Dokumentations-Dateien - (+358/-0 Zeilen)
+
+**Statistics:**
+- Files Changed: 1
+- Lines Added: +358
+- Lines Deleted: -0
+- Net Change: +358
+
+**File-Level Changes:**
+```
++  358 -    0  docs/OCTA_CITADEL_UPGRADE_ROADMAP.md
+```
+
+
 ## [2026-03-28 09:43:31] CHANGE
 Code-Änderungen - (+294/-0 Zeilen)
 
