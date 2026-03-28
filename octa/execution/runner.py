@@ -30,6 +30,7 @@ from .risk_engine import RiskDecision, RiskEngine, RiskEngineConfig
 from .tws_probe import tws_probe
 from octa_core.risk_institutional.risk_aggregator import RiskSnapshot, aggregate_risk
 from octa.core.governance.kill_switch import KillSwitchConfig, KillSwitchState, evaluate_kill_switch
+from octa.core.portfolio.engine import PortfolioEngineConfig
 
 
 # PRODUCTION SHADOW = mode "dry-run" or "shadow".
@@ -79,6 +80,28 @@ def _extract_nav(snapshot: Dict[str, Any]) -> tuple[float | None, str]:
             except Exception:
                 return None, key
     return None, ""
+
+
+_NAV_HWM_FILENAME = "nav_hwm.json"
+
+
+def _load_nav_hwm(state_dir: Path) -> float:
+    path = state_dir / _NAV_HWM_FILENAME
+    if path.exists():
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            return float(data.get("hwm_nav", 0.0))
+        except Exception:
+            pass
+    return 0.0
+
+
+def _save_nav_hwm(state_dir: Path, hwm_nav: float) -> None:
+    state_dir.mkdir(parents=True, exist_ok=True)
+    (state_dir / _NAV_HWM_FILENAME).write_text(
+        json.dumps({"hwm_nav": hwm_nav}, indent=2),
+        encoding="utf-8",
+    )
 
 
 def _detect_drift_breaches(drift_registry_dir: Path) -> List[Dict[str, Any]]:
@@ -487,6 +510,45 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
         )
     # Conservative: use the larger of broker nav and persisted nav
     nav = max(nav, capital_state.nav)
+
+    # Module 3: NAV high-water mark drawdown circuit breaker
+    _pe_config = PortfolioEngineConfig()
+    _hwm_nav = _load_nav_hwm(cfg.state_dir)
+    if nav > _hwm_nav:
+        _hwm_nav = nav
+        _save_nav_hwm(cfg.state_dir, _hwm_nav)
+    _portfolio_drawdown = max(0.0, 1.0 - nav / _hwm_nav) if _hwm_nav > 0 else 0.0
+    if _portfolio_drawdown > _pe_config.drawdown_limit:
+        _dd_incident = {
+            "timestamp_utc": _utc_now_iso(),
+            "mode": mode_label,
+            "reason": "DRAWDOWN_LIMIT_BREACH",
+            "portfolio_drawdown": round(_portfolio_drawdown, 6),
+            "drawdown_limit": _pe_config.drawdown_limit,
+            "nav": float(nav),
+            "hwm_nav": float(_hwm_nav),
+        }
+        _write_json(cfg.evidence_dir / "drawdown_circuit_breaker.json", _dd_incident)
+        gov_audit.emit(
+            EVENT_GOVERNANCE_ENFORCED,
+            {
+                "reason": "drawdown_limit_breach",
+                "portfolio_drawdown": round(_portfolio_drawdown, 6),
+                "drawdown_limit": _pe_config.drawdown_limit,
+                "mode": mode_label,
+            },
+        )
+        if mode_norm in {"paper", "live"}:
+            notifier.emit_alert("GOVERNANCE_ENFORCED", {"reason": "drawdown_limit_breach", "mode": mode_label})
+            raise RuntimeError("DRAWDOWN_LIMIT_BREACH")
+        notifier.emit(
+            "drawdown_limit_warning",
+            {
+                "mode": mode_label,
+                "portfolio_drawdown_pct": round(_portfolio_drawdown * 100, 2),
+                "drawdown_limit_pct": round(_pe_config.drawdown_limit * 100, 2),
+            },
+        )
 
     drift_breaches = _detect_drift_breaches(cfg.drift_registry_dir)
     if drift_breaches:
