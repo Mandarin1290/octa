@@ -45,6 +45,11 @@ try:
 except ImportError:  # pragma: no cover
     _build_features = None  # type: ignore[assignment]
 
+try:
+    from octa.core.data.quality.series_validator import validate_price_series as _validate_price_series
+except ImportError:  # pragma: no cover
+    _validate_price_series = None  # type: ignore[assignment]
+
 
 # ---------------------------------------------------------------------------
 # InferenceResult
@@ -280,6 +285,22 @@ def build_inference_proposal(
                           artifact_path=str(pkl_path),
                           artifact_hash=artifact_hash,
                           feature_count_model=len(feature_names))
+
+    # 5b. Validate price series quality before building features.
+    # Fail-closed: validation errors return no_signal; validation unavailable → pass through.
+    if _validate_price_series is not None:
+        try:
+            _health = _validate_price_series(df_raw)
+            if not _health.ok:
+                return _no_signal(
+                    sym_u, tf_u, f"parquet_invalid:{_health.code}",
+                    artifact_path=str(pkl_path),
+                    artifact_hash=artifact_hash,
+                    feature_count_model=len(feature_names),
+                    diagnostics={"validation_code": _health.code},
+                )
+        except Exception:
+            pass  # validation failure must never block inference
 
     # 6. Compute features
     try:

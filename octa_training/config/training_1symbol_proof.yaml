@@ -126,7 +126,6 @@ models_order: ["logreg"]
 
 logreg_params:
   C: 0.05
-  penalty: "l2"
   solver: "liblinear"
   max_iter: 1000
 

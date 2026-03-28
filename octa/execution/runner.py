@@ -29,6 +29,7 @@ from .risk_fail_closed import incident_to_dict, safe_decide
 from .risk_engine import RiskDecision, RiskEngine, RiskEngineConfig
 from .tws_probe import tws_probe
 from octa_core.risk_institutional.risk_aggregator import RiskSnapshot, aggregate_risk
+from octa.core.governance.kill_switch import KillSwitchConfig, KillSwitchState, evaluate_kill_switch
 
 
 # PRODUCTION SHADOW = mode "dry-run" or "shadow".
@@ -608,9 +609,41 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
         preflight_positions = projected_positions
         return True
 
+    _ks_config = KillSwitchConfig()
+
     for cycle_idx in range(1, cycle_count + 1):
         cycle_dir = run_log_dir / f"cycle_{cycle_idx:03d}"
         cycle_dir.mkdir(parents=True, exist_ok=True)
+
+        # Kill switch: check accumulated execution failures before each cycle.
+        # Slippage and daily_loss are not yet tracked (Module 4); wired to 0.0 until then.
+        _ks_state = KillSwitchState(
+            execution_failures=len(blocks),
+            slippage=0.0,
+            daily_loss=0.0,
+            system_health=1.0,
+        )
+        _ks_decision = evaluate_kill_switch(_ks_state, _ks_config)
+        if _ks_decision.triggered:
+            _write_json(
+                cfg.evidence_dir / f"kill_switch_triggered_cycle_{cycle_idx:03d}.json",
+                {
+                    "cycle": cycle_idx,
+                    "timestamp_utc": _utc_now_iso(),
+                    "reason": _ks_decision.reason,
+                    "execution_failures": len(blocks),
+                },
+            )
+            gov_audit.emit(
+                EVENT_GOVERNANCE_ENFORCED,
+                {"reason": f"kill_switch:{_ks_decision.reason}", "cycle": cycle_idx},
+            )
+            notifier.emit_alert(
+                "kill_switch_triggered",
+                {"reason": _ks_decision.reason, "cycle": cycle_idx},
+            )
+            break
+
         sel = build_ml_selection(
             evidence_out_dir=cfg.evidence_dir,
             base_evidence_dir=cfg.base_evidence_dir,

@@ -302,7 +302,6 @@ class TrainingConfig(BaseModel):
     models_order: List[str] = Field(default_factory=lambda: ["lightgbm", "xgboost", "catboost", "logreg", "ridge"])
     logreg_params: Dict[str, Any] = Field(default_factory=lambda: {
         "C": 0.1,
-        "penalty": "l2",
         "solver": "liblinear",
         "max_iter": 500,
     })

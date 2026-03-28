@@ -314,7 +314,7 @@ def train_models(
 
                     try:
                         if model_name == "logreg":
-                            params = {"C": 0.1, "penalty": "l2", "solver": "liblinear", "max_iter": 500}
+                            params = {"C": 0.1, "solver": "liblinear", "max_iter": 500}
                             try:
                                 user_params = getattr(settings, "logreg_params", {}) or {}
                                 if isinstance(user_params, dict):

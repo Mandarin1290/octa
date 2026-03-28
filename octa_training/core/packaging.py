@@ -86,6 +86,8 @@ class SafeInference:
     leverage_cap: float
     vol_target: float
     vol_window: int
+    upper_threshold: Optional[float] = None  # training-calibrated signal threshold (90th pct)
+    lower_threshold: Optional[float] = None  # training-calibrated signal threshold (10th pct)
 
     def predict(self, X: pd.DataFrame) -> Dict[str, Any]:
         # Expect X contains the precomputed features; pick columns
@@ -120,16 +122,27 @@ class SafeInference:
         except Exception as e:
             return {"signal": 0.0, "position": 0.0, "confidence": 0.0, "diagnostics": {"error": str(e)}}
 
-        # threshold signals
-        up = pd.Series(score_series).quantile(self.upper_q)
-        low = pd.Series(score_series).quantile(self.lower_q)
+        # threshold signals using training-calibrated thresholds when available.
+        # When called with X.tail(1) (single row), computing quantile from that 1-element
+        # score_series is degenerate: q(0.9) == q(0.1) == the value, so latest>up is always
+        # False. Fix: use stored training-time percentile thresholds (new artifacts), or fall
+        # back to using upper_q directly as a probability confidence threshold (old artifacts).
         sig = 0
         latest = float(pd.Series(score_series).iloc[-1])
-        # Classification target is 1 for up-move; higher score => LONG.
-        if latest > up:
-            sig = 1
-        elif latest < low:
-            sig = -1
+        _ut = getattr(self, "upper_threshold", None)
+        _lt = getattr(self, "lower_threshold", None)
+        if _ut is not None and _lt is not None:
+            # Training-calibrated: compare against stored percentile values
+            if latest >= _ut:
+                sig = 1
+            elif latest <= _lt:
+                sig = -1
+        else:
+            # Fallback for existing artifacts: use upper_q as a direct probability threshold
+            if latest >= self.upper_q:
+                sig = 1
+            elif latest <= (1.0 - self.upper_q):
+                sig = -1
 
         # position sizing: simple vol scale estimate using recent returns not available here; fallback to cap
         pos = float(sig * min(self.leverage_cap, self.vol_target))
@@ -167,7 +180,7 @@ def _train_full_model(X: pd.DataFrame, y: pd.Series, model_name: str, task: str,
         from sklearn.preprocessing import StandardScaler
         scaler = StandardScaler()
         Xs = scaler.fit_transform(X.fillna(0))
-        params = {"C": 0.1, "penalty": "l2", "solver": "liblinear", "max_iter": 500}
+        params = {"C": 0.1, "solver": "liblinear", "max_iter": 500}
         try:
             user_params = getattr(settings, "logreg_params", {}) or {}
             if isinstance(user_params, dict):
@@ -351,8 +364,28 @@ def save_tradeable_artifact(
         return {"saved": False, "reason": "invalid_task"}
     model_obj, feat_names, scaler = _train_full_model(X, y, model_name, task, cfg, seed=getattr(cfg, 'seed', 42))
 
+    # Compute training-calibrated signal thresholds from full training predictions.
+    # Stored so predict() works correctly at inference time with a single-row input.
+    _upper_threshold: Optional[float] = None
+    _lower_threshold: Optional[float] = None
+    try:
+        _X_thresh = X.fillna(0)
+        _Xv = scaler.transform(_X_thresh) if scaler is not None else _X_thresh.values
+        if hasattr(model_obj, "predict_proba"):
+            _probs = model_obj.predict_proba(_Xv)
+            _scores = _probs[:, 1] if _probs.ndim == 2 else _probs
+        elif hasattr(model_obj, "predict"):
+            _scores = model_obj.predict(_Xv)
+        else:
+            _scores = None
+        if _scores is not None and len(_scores) >= 2:
+            _upper_threshold = float(np.quantile(_scores, cfg.signal.upper_q))
+            _lower_threshold = float(np.quantile(_scores, cfg.signal.lower_q))
+    except Exception:
+        pass  # thresholds remain None → fallback path in predict()
+
     # build safe inference wrapper
-    infer = SafeInference(model_name=model_name, model_obj=model_obj, feature_names=feat_names, scaler=scaler, upper_q=cfg.signal.upper_q, lower_q=cfg.signal.lower_q, leverage_cap=cfg.signal.leverage_cap, vol_target=cfg.signal.vol_target, vol_window=cfg.signal.realized_vol_window)
+    infer = SafeInference(model_name=model_name, model_obj=model_obj, feature_names=feat_names, scaler=scaler, upper_q=cfg.signal.upper_q, lower_q=cfg.signal.lower_q, leverage_cap=cfg.signal.leverage_cap, vol_target=cfg.signal.vol_target, vol_window=cfg.signal.realized_vol_window, upper_threshold=_upper_threshold, lower_threshold=_lower_threshold)
 
     # construct artifact
     metrics_dict = _json_sanitize(metrics.dict())

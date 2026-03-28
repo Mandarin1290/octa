@@ -27,11 +27,15 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 
+from octa.core.data.quality.series_validator import SeriesHealthResult
 from octa.execution.inference_bridge import (
     InferenceResult,
     build_inference_proposal,
     run_inference_cycle,
 )
+
+# Reusable mock: skip parquet validation in tests that mock _load_parquet.
+_VALIDATION_OK = SeriesHealthResult(ok=True, code=None, stats={})
 
 
 # ---------------------------------------------------------------------------
@@ -200,16 +204,17 @@ def test_build_inference_proposal_missing_features_in_parquet(tmp_path: Path) ->
     mock_feats = MagicMock()
     mock_feats.X = pd.DataFrame({"other_col": [1.0]})
 
-    with patch("octa.execution.inference_bridge._build_features", return_value=mock_feats):
-        with patch("octa.execution.inference_bridge._find_raw_parquet_direct", return_value=Path(str(pq_dir / "SYM.parquet"))):
-            with patch("octa.execution.inference_bridge._load_parquet", return_value=pd.DataFrame()):
-                ir = build_inference_proposal(
-                    symbol="SYM",
-                    asset_class="equities",
-                    artifact_dir=tmp_path / "PKL",
-                    raw_data_dir=tmp_path / "raw",
-                    timeframe="1D",
-                )
+    with patch("octa.execution.inference_bridge._validate_price_series", return_value=_VALIDATION_OK):
+        with patch("octa.execution.inference_bridge._build_features", return_value=mock_feats):
+            with patch("octa.execution.inference_bridge._find_raw_parquet_direct", return_value=Path(str(pq_dir / "SYM.parquet"))):
+                with patch("octa.execution.inference_bridge._load_parquet", return_value=pd.DataFrame()):
+                    ir = build_inference_proposal(
+                        symbol="SYM",
+                        asset_class="equities",
+                        artifact_dir=tmp_path / "PKL",
+                        raw_data_dir=tmp_path / "raw",
+                        timeframe="1D",
+                    )
 
     # Missing features → SafeInference returns diagnostics.error → approved=False
     assert ir.approved is False
@@ -228,16 +233,17 @@ def test_build_inference_proposal_signal_1(tmp_path: Path) -> None:
         index=pd.date_range("2025-01-01", periods=1, freq="B", tz="UTC"),
     )
 
-    with patch("octa.execution.inference_bridge._build_features", return_value=mock_feats):
-        with patch("octa.execution.inference_bridge._find_raw_parquet_direct", return_value=Path("dummy.parquet")):
-            with patch("octa.execution.inference_bridge._load_parquet", return_value=pd.DataFrame()):
-                ir = build_inference_proposal(
-                    symbol="LONG",
-                    asset_class="equities",
-                    artifact_dir=tmp_path / "PKL",
-                    raw_data_dir=tmp_path / "raw",
-                    timeframe="1D",
-                )
+    with patch("octa.execution.inference_bridge._validate_price_series", return_value=_VALIDATION_OK):
+        with patch("octa.execution.inference_bridge._build_features", return_value=mock_feats):
+            with patch("octa.execution.inference_bridge._find_raw_parquet_direct", return_value=Path("dummy.parquet")):
+                with patch("octa.execution.inference_bridge._load_parquet", return_value=pd.DataFrame()):
+                    ir = build_inference_proposal(
+                        symbol="LONG",
+                        asset_class="equities",
+                        artifact_dir=tmp_path / "PKL",
+                        raw_data_dir=tmp_path / "raw",
+                        timeframe="1D",
+                    )
 
     assert ir.approved is True
     assert ir.signal == 1
@@ -258,16 +264,17 @@ def test_build_inference_proposal_signal_0(tmp_path: Path) -> None:
         index=pd.date_range("2025-01-01", periods=1, freq="B", tz="UTC"),
     )
 
-    with patch("octa.execution.inference_bridge._build_features", return_value=mock_feats):
-        with patch("octa.execution.inference_bridge._find_raw_parquet_direct", return_value=Path("dummy.parquet")):
-            with patch("octa.execution.inference_bridge._load_parquet", return_value=pd.DataFrame()):
-                ir = build_inference_proposal(
-                    symbol="FLAT",
-                    asset_class="equities",
-                    artifact_dir=tmp_path / "PKL",
-                    raw_data_dir=tmp_path / "raw",
-                    timeframe="1D",
-                )
+    with patch("octa.execution.inference_bridge._validate_price_series", return_value=_VALIDATION_OK):
+        with patch("octa.execution.inference_bridge._build_features", return_value=mock_feats):
+            with patch("octa.execution.inference_bridge._find_raw_parquet_direct", return_value=Path("dummy.parquet")):
+                with patch("octa.execution.inference_bridge._load_parquet", return_value=pd.DataFrame()):
+                    ir = build_inference_proposal(
+                        symbol="FLAT",
+                        asset_class="equities",
+                        artifact_dir=tmp_path / "PKL",
+                        raw_data_dir=tmp_path / "raw",
+                        timeframe="1D",
+                    )
 
     assert ir.approved is True
     assert ir.signal == 0
@@ -285,16 +292,17 @@ def test_build_inference_proposal_signal_minus1(tmp_path: Path) -> None:
         index=pd.date_range("2025-01-01", periods=1, freq="B", tz="UTC"),
     )
 
-    with patch("octa.execution.inference_bridge._build_features", return_value=mock_feats):
-        with patch("octa.execution.inference_bridge._find_raw_parquet_direct", return_value=Path("dummy.parquet")):
-            with patch("octa.execution.inference_bridge._load_parquet", return_value=pd.DataFrame()):
-                ir = build_inference_proposal(
-                    symbol="SHORT",
-                    asset_class="equities",
-                    artifact_dir=tmp_path / "PKL",
-                    raw_data_dir=tmp_path / "raw",
-                    timeframe="1D",
-                )
+    with patch("octa.execution.inference_bridge._validate_price_series", return_value=_VALIDATION_OK):
+        with patch("octa.execution.inference_bridge._build_features", return_value=mock_feats):
+            with patch("octa.execution.inference_bridge._find_raw_parquet_direct", return_value=Path("dummy.parquet")):
+                with patch("octa.execution.inference_bridge._load_parquet", return_value=pd.DataFrame()):
+                    ir = build_inference_proposal(
+                        symbol="SHORT",
+                        asset_class="equities",
+                        artifact_dir=tmp_path / "PKL",
+                        raw_data_dir=tmp_path / "raw",
+                        timeframe="1D",
+                    )
 
     assert ir.approved is True
     assert ir.signal == -1
