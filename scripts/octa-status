@@ -1,0 +1,20 @@
+#!/bin/bash
+# OCTA status CLI — wraps daily_status.py
+# Usage:
+#   ./scripts/octa-status          compact one-liner
+#   ./scripts/octa-status -v       full report
+#   ./scripts/octa-status -t       full + Telegram
+
+cd "$(dirname "$0")/.."
+
+case "$1" in
+  -v|--verbose)
+    python3 scripts/daily_status.py
+    ;;
+  -t|--telegram)
+    python3 scripts/daily_status.py --telegram
+    ;;
+  *)
+    python3 scripts/daily_status.py --compact
+    ;;
+esac
