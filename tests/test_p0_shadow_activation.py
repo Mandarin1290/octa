@@ -268,8 +268,17 @@ def test_cli_shadow_paper_ready_dir_flag(tmp_path: Path) -> None:
     assert captured["paper_ready_dir"] == paper_dir
 
 
-def test_paper_mode_blocked_by_scope_enforcement() -> None:
-    """P0-5: Paper execution remains blocked — _enforce_foundation_scope() raises SystemExit."""
+def test_paper_mode_runs_without_live_flags() -> None:
+    """Paper mode (no live flags) completes successfully with default config.
+
+    Phase 0 blocked paper mode via a stale drift registry entry (ABC_1D) which has
+    now been cleaned up.  Paper mode is fully operational for Monday launch — the
+    correct gate is TWS probe + NAV reconciliation + circuit breakers, not a blanket
+    scope block.  Live mode (mode='live' OR enable_live=True) remains blocked by
+    _enforce_foundation_scope().
+    """
+    import os
+    os.environ.setdefault("OCTA_TELEGRAM_ENABLED", "false")
     from octa.execution.runner import ExecutionConfig, run_execution
 
     cfg = ExecutionConfig(
@@ -278,5 +287,7 @@ def test_paper_mode_blocked_by_scope_enforcement() -> None:
         i_understand_live_risk=False,
     )
 
-    with pytest.raises((SystemExit, RuntimeError)):
-        run_execution(cfg)
+    # Paper mode with sandbox broker and no eligible symbols completes — no raise.
+    result = run_execution(cfg)
+    assert isinstance(result, dict)
+    assert result["mode"] == "paper"

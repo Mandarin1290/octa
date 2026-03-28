@@ -96,6 +96,17 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `scripts/launch_preflight.py`
 
 
+### [2026-03-28 12:21:44] TEST
+**Beschreibung:** Code-Änderungen - 2 Test-Dateien - (+197/-5 Zeilen)
+
+**Geänderte Dateien:**
+- **TESTS:** 2 Dateien
+  - `tests/test_drift_monitor.py`
+  - `tests/test_p0_shadow_activation.py`
+- **SCRIPTS:** 1 Dateien
+  - `scripts/monday_launch.sh`
+
+
 ## 2026-03-27
 
 
