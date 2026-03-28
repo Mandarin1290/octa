@@ -12,7 +12,7 @@ import pandas as pd
 from octa.core.data.quality.series_validator import validate_price_series
 from octa_training.core.io_parquet import load_parquet
 from octa_training.core.config import load_config
-from octa_training.core.pipeline import train_evaluate_package
+from octa_training.core.pipeline import train_evaluate_adaptive, train_evaluate_package
 from octa_training.core.state import StateRegistry
 
 from .types import GateDecision, normalize_timeframe
@@ -488,7 +488,7 @@ def run_cascade_training(
                 gate_overrides = None
             train_start = time.monotonic()
             _trace_emit(trace_dir, {"ts": time.time(), "step": "train_evaluate_package", "event": "start", "elapsed_s": float(time.monotonic() - root_timer), "timeframe": str(tf)})
-            res = train_evaluate_package(
+            res = train_evaluate_adaptive(
                 symbol=symbol,
                 cfg=cfg_layer,
                 state=stage_state if stage_state is not None else StateRegistry(base_state_root / "state.db"),

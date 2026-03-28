@@ -60,7 +60,7 @@ from octa_training.core.live_release_matrix import (
 )
 from octa_training.core.models import train_models
 from octa_training.core.notify import send_telegram
-from octa_training.core.pipeline import train_evaluate_package
+from octa_training.core.pipeline import train_evaluate_adaptive, train_evaluate_package
 from octa_training.core.splits import SplitFold, walk_forward_splits
 from octa_training.core.state import StateRegistry
 
@@ -912,7 +912,7 @@ def run_sequence(
         # Pass the discovered parquet path explicitly. This avoids relying on internal
         # symbol->filename reconstruction (which can fail on case-sensitive filesystems
         # when source files are lowercased like *_full_1day.parquet).
-        res = train_evaluate_package(
+        res = train_evaluate_adaptive(
             sym,
             cfg_layer,
             state,

@@ -108,7 +108,7 @@ class TestPromotionRequiresRealPass:
                 pack_result=None,
             )
 
-        monkeypatch.setattr(ct, "train_evaluate_package", mock_train)
+        monkeypatch.setattr(ct, "train_evaluate_adaptive", mock_train)
 
         # Mock _walkforward_eligibility to always return eligible
         monkeypatch.setattr(ct, "_walkforward_eligibility", lambda *, parquet_path, cfg, asset_class: {

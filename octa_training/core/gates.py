@@ -83,6 +83,11 @@ class GateSpec(BaseModel):
     regime_pf_min: float = 1.1
     regime_pf_min_worst: float = 1.0
     regime_sharpe_collapse_ratio: float = 0.35
+    # When True: skip pf/dd check for the low-volatility regime and exclude it
+    # from the cross-regime sharpe-collapse calculation.  Use for assets that are
+    # structurally regime-selective (e.g. REITs, carry trades) where low-vol
+    # underperformance is expected and not a signal of model failure.
+    regime_stability_skip_low: bool = False
 
     # Mandatory cost-stress gate
     stress_pf_min: float = 1.05

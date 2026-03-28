@@ -300,13 +300,16 @@ def evaluate_regime_stability(
     worst_pf_min = float(getattr(gate, "regime_pf_min_worst", 1.0) or 1.0)
     base_pf_min = float(getattr(gate, "regime_pf_min", 1.1) or 1.1)
     collapse_ratio = float(getattr(gate, "regime_sharpe_collapse_ratio", 0.35) or 0.35)
+    skip_low = bool(getattr(gate, "regime_stability_skip_low", False))
 
     for regime in ("low", "mid", "high"):
         seg = oos_df.loc[oos_df["regime"] == regime]
         if seg.empty:
             continue
         m = _segment_metrics(seg, np.arange(len(seg), dtype=int))
-        sharpe_vals[regime] = float(m.get("sharpe", 0.0) or 0.0)
+        # Only include low regime in collapse calculation when not skipped
+        if not (skip_low and regime == "low"):
+            sharpe_vals[regime] = float(m.get("sharpe", 0.0) or 0.0)
         pf_min = worst_pf_min if regime == "high" else base_pf_min
         regime_pass = bool(
             np.isfinite(m.get("max_drawdown", float("nan")))
@@ -319,7 +322,7 @@ def evaluate_regime_stability(
             "pf_min": round(pf_min, 10),
             "regime_pass": bool(regime_pass),
         }
-        if not regime_pass:
+        if not regime_pass and not (skip_low and regime == "low"):
             reasons.append(f"regime_{regime}_failed")
 
     if not regime_metrics:
@@ -346,6 +349,7 @@ def evaluate_regime_stability(
             "regime_pf_min": round(base_pf_min, 10),
             "regime_pf_min_worst": round(worst_pf_min, 10),
             "regime_sharpe_collapse_ratio": round(collapse_ratio, 10),
+            "regime_stability_skip_low": skip_low,
             "regime_metrics": regime_metrics,
         },
     }

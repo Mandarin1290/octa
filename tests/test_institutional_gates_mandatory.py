@@ -142,6 +142,93 @@ def test_cross_tf_consistency_fails_on_contradiction() -> None:
     assert out["reason"] == "cross_tf_inconsistent"
 
 
+# ---------------------------------------------------------------------------
+# regime_stability_skip_low
+# ---------------------------------------------------------------------------
+
+
+def _mk_reit_backtest(n: int = 700, seed: int = 42) -> pd.DataFrame:
+    """Build a backtest where low-vol regime is bad (pf<1) but mid/high are strong.
+
+    Simulates a REIT-like strategy: good in volatile markets, weak in calm ones.
+    """
+    idx = pd.date_range("2020-01-01", periods=n, freq="D", tz="UTC")
+    rng = np.random.default_rng(seed)
+    ret = np.empty(n)
+    strat = np.empty(n)
+    # Interleave low-vol and high-vol blocks so all three regimes are present
+    block = n // 3
+    # low-vol block: small returns, bad strategy
+    ret[:block] = rng.normal(0.0001, 0.003, size=block)
+    strat[:block] = rng.normal(-0.001, 0.003, size=block)
+    # mid-vol block: moderate returns, good strategy
+    ret[block : 2 * block] = rng.normal(0.0005, 0.010, size=block)
+    strat[block : 2 * block] = rng.normal(0.003, 0.006, size=block)
+    # high-vol block: large returns, strong strategy
+    ret[2 * block :] = rng.normal(0.0008, 0.020, size=n - 2 * block)
+    strat[2 * block :] = rng.normal(0.006, 0.012, size=n - 2 * block)
+    price = 100.0 * np.exp(np.cumsum(ret))
+    return pd.DataFrame(
+        {"price": price, "ret": ret, "strat_ret": strat, "turnover": np.ones(n)},
+        index=idx,
+    )
+
+
+def test_regime_skip_low_false_fails_low_vol() -> None:
+    """Without skip_low, REIT-like backtest fails regime gate due to low-vol segment."""
+    df = _mk_reit_backtest()
+    gate = _gate(regime_pf_min=1.1, regime_sharpe_collapse_ratio=0.10)
+    out = evaluate_regime_stability(df, gate, timeframe="1D")
+    assert out["passed"] is False
+    assert any("low" in r or "collapse" in r for r in out.get("reasons", []))
+
+
+def test_regime_skip_low_true_passes_when_mid_high_strong() -> None:
+    """With skip_low=True, REIT-like backtest passes if mid/high regimes are healthy."""
+    df = _mk_reit_backtest()
+    gate = _gate(
+        regime_pf_min=1.1,
+        regime_sharpe_collapse_ratio=0.10,
+        regime_stability_skip_low=True,
+    )
+    out = evaluate_regime_stability(df, gate, timeframe="1D")
+    assert out["passed"] is True, f"Expected pass, reasons={out.get('reasons')}"
+
+
+def test_regime_skip_low_still_fails_on_mid_failure() -> None:
+    """skip_low=True must NOT suppress mid/high failures."""
+    df = _mk_reit_backtest()
+    # Require extremely high PF — even mid/high can't meet this
+    gate = _gate(
+        regime_pf_min=10.0,
+        regime_pf_min_worst=10.0,
+        regime_sharpe_collapse_ratio=0.10,
+        regime_stability_skip_low=True,
+    )
+    out = evaluate_regime_stability(df, gate, timeframe="1D")
+    assert out["passed"] is False
+    assert any("mid" in r or "high" in r for r in out.get("reasons", []))
+
+
+def test_regime_skip_low_meta_flag_present() -> None:
+    """regime_meta must expose the skip_low flag for audit traceability."""
+    df = _mk_reit_backtest()
+    gate = _gate(regime_stability_skip_low=True)
+    out = evaluate_regime_stability(df, gate, timeframe="1D")
+    assert out["regime_meta"].get("regime_stability_skip_low") is True
+
+
+def test_regime_skip_low_default_false_unchanged_behaviour() -> None:
+    """GateSpec without regime_stability_skip_low behaves exactly as before."""
+    df = _mk_reit_backtest()
+    gate_old = _gate()  # no regime_stability_skip_low key → defaults to False
+    gate_new = _gate(regime_stability_skip_low=False)
+    out_old = evaluate_regime_stability(df, gate_old, timeframe="1D")
+    out_new = evaluate_regime_stability(df, gate_new, timeframe="1D")
+    assert out_old["passed"] == out_new["passed"]
+    assert out_old.get("reasons") == out_new.get("reasons")
+
+
 def test_cross_tf_consistency_passes_when_aligned() -> None:
     stages = [
         _stage("1D", cagr=0.12, dd=0.05),

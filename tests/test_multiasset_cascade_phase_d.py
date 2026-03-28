@@ -112,7 +112,7 @@ def _setup_cascade_mocks(
     monkeypatch.setattr(ct, "_walkforward_eligibility", lambda **_kw: {"eligible": True})
     monkeypatch.setattr(
         ct,
-        "train_evaluate_package",
+        "train_evaluate_adaptive",
         lambda **_kw: _make_train_result(
             passed=passed,
             structural_fail=structural_fail,
@@ -240,7 +240,7 @@ class TestCascadeIntegration:
         monkeypatch.setattr(ct, "load_config", lambda _p, **_kw: cfg)
         monkeypatch.setattr(ct, "StateRegistry", lambda _p: types.SimpleNamespace())
         monkeypatch.setattr(ct, "_walkforward_eligibility", lambda **_kw: {"eligible": True})
-        monkeypatch.setattr(ct, "train_evaluate_package", _fake_train)
+        monkeypatch.setattr(ct, "train_evaluate_adaptive", _fake_train)
 
         pq = tmp_path / "Y.parquet"
         _write_price_parquet(pq)
@@ -274,7 +274,7 @@ class TestCascadeIntegration:
         monkeypatch.setattr(ct, "load_config", lambda _p, **_kw: cfg)
         monkeypatch.setattr(ct, "StateRegistry", lambda _p: types.SimpleNamespace())
         monkeypatch.setattr(ct, "_walkforward_eligibility", lambda **_kw: {"eligible": True})
-        monkeypatch.setattr(ct, "train_evaluate_package", _spy_train)
+        monkeypatch.setattr(ct, "train_evaluate_adaptive", _spy_train)
 
         pq = tmp_path / "Z.parquet"
         _write_price_parquet(pq)
@@ -493,7 +493,7 @@ class TestFuturesRollFlagIntegration:
         cfg = _FakeCfg(tmp_path)
         monkeypatch.setattr(ct, "load_config", lambda _p, **_kw: cfg)
         monkeypatch.setattr(ct, "StateRegistry", lambda _p: types.SimpleNamespace())
-        monkeypatch.setattr(ct, "train_evaluate_package", lambda **_kw: _make_train_result())
+        monkeypatch.setattr(ct, "train_evaluate_adaptive", lambda **_kw: _make_train_result())
 
         pq = tmp_path / "ES_no_roll.parquet"
         _write_price_parquet(pq, n=500, include_roll_flag=False)  # NO roll_flag
@@ -522,7 +522,7 @@ class TestFuturesRollFlagIntegration:
         cfg = _FakeCfg(tmp_path)
         monkeypatch.setattr(ct, "load_config", lambda _p, **_kw: cfg)
         monkeypatch.setattr(ct, "StateRegistry", lambda _p: types.SimpleNamespace())
-        monkeypatch.setattr(ct, "train_evaluate_package", lambda **_kw: _make_train_result())
+        monkeypatch.setattr(ct, "train_evaluate_adaptive", lambda **_kw: _make_train_result())
 
         pq = tmp_path / "ES_with_roll.parquet"
         _write_price_parquet(pq, n=500, include_roll_flag=True)
@@ -546,7 +546,7 @@ class TestFuturesRollFlagIntegration:
         cfg = _FakeCfg(tmp_path)
         monkeypatch.setattr(ct, "load_config", lambda _p, **_kw: cfg)
         monkeypatch.setattr(ct, "StateRegistry", lambda _p: types.SimpleNamespace())
-        monkeypatch.setattr(ct, "train_evaluate_package", lambda **_kw: _make_train_result())
+        monkeypatch.setattr(ct, "train_evaluate_adaptive", lambda **_kw: _make_train_result())
 
         pq = tmp_path / "AAPL_no_roll.parquet"
         _write_price_parquet(pq, n=500, include_roll_flag=False)

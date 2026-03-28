@@ -3,6 +3,38 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-03-28 22:01:50] FEATURE
+Neue Funktionalität hinzugefügt - 6 Code-Dateien - 10 Test-Dateien - (+789/-22 Zeilen)
+
+**Statistics:**
+- Files Changed: 18
+- Lines Added: +789
+- Lines Deleted: -22
+- Net Change: +767
+
+**File-Level Changes:**
+```
++   28 -    0  configs/p03_research.yaml
++  125 -    0  octa/core/features/selector.py
++    2 -    2  octa_ops/autopilot/cascade_train.py
++   12 -    0  octa_training/core/config.py
++    5 -    0  octa_training/core/gates.py
++    6 -    2  octa_training/core/institutional_gates.py
++   97 -    0  octa_training/core/pipeline.py
++    2 -    2  scripts/train_multiframe_symbol.py
++  245 -    0  tests/test_adaptive_feature_selection.py
++    2 -    2  tests/test_autopilot_cascade_pkl_per_timeframe.py
++    1 -    1  tests/test_cascade_invariants.py
++    2 -    2  tests/test_cascade_structural_vs_performance.py
++    2 -    2  tests/test_cascade_train_proof_mode.py
++  164 -    0  tests/test_feature_selector.py
++   87 -    0  tests/test_institutional_gates_mandatory.py
++    6 -    6  tests/test_multiasset_cascade_phase_d.py
++    1 -    1  tests/test_multiasset_cascade_phase_e.py
++    2 -    2  tests/test_strict_cascade_multitf.py
+```
+
+
 ## [2026-03-28 12:21:44] TEST
 Code-Änderungen - 2 Test-Dateien - (+197/-5 Zeilen)
 

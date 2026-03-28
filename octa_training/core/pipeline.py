@@ -769,6 +769,39 @@ def train_evaluate_package(
                 )
             diagnose_reasons.append('leakage_detected')
 
+        # Feature selection — reduce correlated/redundant features before training.
+        # Controlled by cfg.feature_selection.enabled (default False → no-op).
+        # Wrapped in try/except so any failure falls back to the original feature set.
+        try:
+            _fs_cfg = getattr(cfg, 'feature_selection', None)
+            if _fs_cfg is not None and bool(getattr(_fs_cfg, 'enabled', False)):
+                from octa.core.features.selector import select_features as _select_features
+                _fs_corr_thresh = float(getattr(_fs_cfg, 'corr_threshold', 0.95))
+                _fs_max_feats = int(getattr(_fs_cfg, 'max_features', 35))
+                # Primary target for ranking: prefer y_cls_1, fallback y_reg_1
+                _fs_y = features_res.y_dict.get('y_cls_1')
+                if _fs_y is None:
+                    _fs_y = features_res.y_dict.get('y_reg_1')
+                _fs_before = len(features_res.X.columns)
+                _fs_selected = _select_features(
+                    features_res.X,
+                    y=_fs_y,
+                    corr_threshold=_fs_corr_thresh,
+                    max_features=_fs_max_feats,
+                )
+                if _fs_selected:
+                    features_res.X = features_res.X[_fs_selected]
+                    features_res.meta['features_selected'] = _fs_selected
+                    features_res.meta['features_dropped_count'] = _fs_before - len(_fs_selected)
+                    if logger:
+                        logger.info(
+                            "[%s] feature selection: %d → %d features",
+                            symbol, _fs_before, len(_fs_selected),
+                        )
+        except Exception as _fs_exc:
+            if logger:
+                logger.warning("[%s] feature selection failed (%s), using all features", symbol, _fs_exc)
+
         # IBKR-only conservative cost model: prefer cfg.broker over cfg.signal
         broker = getattr(cfg, 'broker', None)
         cost_bps = getattr(broker, 'cost_bps', None) if broker is not None else None
@@ -2135,6 +2168,70 @@ def train_evaluate_package(
         except Exception:
             pass
         return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error=str(e) + "\n" + traceback.format_exc())
+
+
+def train_evaluate_adaptive(
+    symbol: str,
+    cfg: Any,
+    state: Any,
+    run_id: str,
+    *,
+    fs_retry_ois_threshold: float = 0.10,
+    **kwargs: Any,
+) -> "PipelineResult":
+    """Two-pass feature-selection fallback.
+
+    Pass 1: run with cfg's current feature_selection setting (default: disabled).
+    Pass 2: if Pass 1 fails AND sharpe_oos_over_is < fs_retry_ois_threshold,
+            retry with feature_selection.enabled=True.
+
+    The threshold guards against false retries:
+      - Severe overfit (e.g. AAPL OOS/IS=0.0) → triggers Pass 2
+      - Normal failure (e.g. ADC OOS/IS=0.63 that fails a different gate) → no retry
+      - Already-enabled fs → single pass (no retry needed)
+
+    Annotates pack_result with:
+      fs_adaptive_pass: 1 (Pass 1 accepted) or 2 (Pass 2 used)
+      fs_retry_ois_p1: OOS/IS value that triggered retry (Pass 2 only)
+    """
+    import copy as _copy
+
+    # Pass 1 ------------------------------------------------------------------
+    res1 = train_evaluate_package(symbol, cfg, state, run_id, **kwargs)
+
+    _fs_already_on = bool(
+        getattr(getattr(cfg, "feature_selection", None), "enabled", False)
+    )
+
+    if res1.passed or _fs_already_on:
+        _pipeline_annotate_pack(res1, fs_adaptive_pass=1)
+        return res1
+
+    # Inspect OOS/IS to decide whether a retry is warranted
+    _ois = getattr(res1.metrics, "sharpe_oos_over_is", None)
+    if _ois is None or float(_ois) >= fs_retry_ois_threshold:
+        _pipeline_annotate_pack(res1, fs_adaptive_pass=1)
+        return res1
+
+    # Pass 2: enable feature selection ----------------------------------------
+    try:
+        cfg_p2 = _copy.deepcopy(cfg)
+        cfg_p2.feature_selection.enabled = True
+    except Exception:
+        _pipeline_annotate_pack(res1, fs_adaptive_pass=1)
+        return res1
+
+    run_id_p2 = f"{run_id}_fsretry"
+    res2 = train_evaluate_package(symbol, cfg_p2, state, run_id_p2, **kwargs)
+    _pipeline_annotate_pack(res2, fs_adaptive_pass=2, fs_retry_ois_p1=float(_ois))
+    return res2
+
+
+def _pipeline_annotate_pack(res: "PipelineResult", **extra: Any) -> None:
+    """Inject metadata into PipelineResult.pack_result (in-place, safe)."""
+    if res.pack_result is None:
+        res.pack_result = {}
+    res.pack_result.update(extra)
 
 
 def evaluate_fx_g0_risk_overlay_1d(

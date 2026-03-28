@@ -310,6 +310,17 @@ class TrainingConfig(BaseModel):
     cat_params: Dict[str, Any] = Field(default_factory=lambda: {"loss_function": "Logloss"})
     early_stopping_rounds: int = 50
     num_boost_round: int = 1000
+
+    # Feature selection — disabled by default; enable per-config to reduce redundancy.
+    class FeatureSelectionConfig(BaseModel):
+        enabled: bool = False
+        # Drop features with |Pearson corr| > this with any already-accepted feature.
+        corr_threshold: float = 0.95
+        # Final cap: keep at most this many features (ranked by target corr when y available).
+        max_features: int = 35
+
+    feature_selection: FeatureSelectionConfig = Field(default_factory=FeatureSelectionConfig)
+
     retrain: RetrainConfig = Field(default_factory=RetrainConfig)
     costs: CostConfig = Field(default_factory=CostConfig)
     training_command: str = ""
@@ -382,6 +393,7 @@ try:  # pragma: no cover
         PackagingPolicy=TrainingConfig.PackagingPolicy,
         AssuranceConfig=TrainingConfig.AssuranceConfig,
         RobustnessDefaults=TrainingConfig.RobustnessDefaults,
+        FeatureSelectionConfig=TrainingConfig.FeatureSelectionConfig,
     )
 except Exception:
     pass

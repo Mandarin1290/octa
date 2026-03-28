@@ -62,7 +62,7 @@ def test_run_cascade_training_enables_proof_mode_fast_path(monkeypatch, tmp_path
             pack_result={"model_artifacts": ["/tmp/fake.pkl"], "features_used": [], "altdata_sources_used": [], "altdata_enabled": False},
         )
 
-    monkeypatch.setattr("octa_ops.autopilot.cascade_train.train_evaluate_package", fake_train_evaluate_package)
+    monkeypatch.setattr("octa_ops.autopilot.cascade_train.train_evaluate_adaptive", fake_train_evaluate_package)
     decisions, _ = run_cascade_training(
         run_id="r1",
         config_path=str(cfg_path),
@@ -101,7 +101,7 @@ def test_run_cascade_training_keeps_default_full_path_without_proof_mode(monkeyp
             pack_result={"model_artifacts": ["/tmp/fake.pkl"], "features_used": [], "altdata_sources_used": [], "altdata_enabled": False},
         )
 
-    monkeypatch.setattr("octa_ops.autopilot.cascade_train.train_evaluate_package", fake_train_evaluate_package)
+    monkeypatch.setattr("octa_ops.autopilot.cascade_train.train_evaluate_adaptive", fake_train_evaluate_package)
     decisions, _ = run_cascade_training(
         run_id="r1",
         config_path=str(cfg_path),

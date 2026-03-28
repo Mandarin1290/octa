@@ -45,7 +45,7 @@ def test_autopilot_cascade_stages_pkl_per_timeframe(tmp_path, monkeypatch):
         )
         return res
 
-    monkeypatch.setattr(ct, "train_evaluate_package", _fake_train_evaluate_package)
+    monkeypatch.setattr(ct, "train_evaluate_adaptive", _fake_train_evaluate_package)
 
     decisions, metrics = ct.run_cascade_training(
         run_id="r1",
@@ -99,7 +99,7 @@ def test_autopilot_cascade_gate_fail_not_train_error(tmp_path, monkeypatch):
             error="walkforward_failed",
         )
 
-    monkeypatch.setattr(ct, "train_evaluate_package", _fake_train_evaluate_package)
+    monkeypatch.setattr(ct, "train_evaluate_adaptive", _fake_train_evaluate_package)
 
     decisions, _ = ct.run_cascade_training(
         run_id="r1",

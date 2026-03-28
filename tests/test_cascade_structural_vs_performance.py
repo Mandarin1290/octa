@@ -33,7 +33,7 @@ def test_performance_fail_blocks_downstream(monkeypatch, tmp_path):
             error="",
         )
 
-    monkeypatch.setattr(ct, "train_evaluate_package", _fake_train)
+    monkeypatch.setattr(ct, "train_evaluate_adaptive", _fake_train)
 
     decisions, _metrics = ct.run_cascade_training(
         run_id="r1",
@@ -73,7 +73,7 @@ def test_downstream_skips_when_upstream_structural_fails(monkeypatch, tmp_path):
             )
         raise AssertionError("1H should not run")
 
-    monkeypatch.setattr(ct, "train_evaluate_package", _fake_train)
+    monkeypatch.setattr(ct, "train_evaluate_adaptive", _fake_train)
 
     decisions, _metrics = ct.run_cascade_training(
         run_id="r2",

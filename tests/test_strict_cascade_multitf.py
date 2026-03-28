@@ -76,7 +76,7 @@ def test_cascade_stop_after_1d_fail(monkeypatch, tmp_path):
             gate_result=DummyGate(passed=False, reasons=["folds pass ratio too low"]),
         )
 
-    monkeypatch.setattr(mod, "train_evaluate_package", fake_train)
+    monkeypatch.setattr(mod, "train_evaluate_adaptive", fake_train)
 
     mod.run_sequence("SYM", cfg, state, run_id="t1", mode="live", config_raw={})
 
@@ -108,7 +108,7 @@ def test_cascade_stop_after_1h_fail(monkeypatch, tmp_path):
             return DummyRes(passed=True, error=None, gate_result=DummyGate(passed=True, reasons=[]))
         return DummyRes(passed=False, error=None, gate_result=DummyGate(passed=False, reasons=["subwindow_stability_failed"]))
 
-    monkeypatch.setattr(mod, "train_evaluate_package", fake_train)
+    monkeypatch.setattr(mod, "train_evaluate_adaptive", fake_train)
 
     mod.run_sequence("SYM", cfg, state, run_id="t2", mode="live", config_raw={})
 

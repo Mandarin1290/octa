@@ -449,7 +449,7 @@ def _setup_cascade_mocks(monkeypatch: Any, tmp_path: Path) -> None:
     monkeypatch.setattr(ct, "StateRegistry", lambda _p: types.SimpleNamespace())
     monkeypatch.setattr(ct, "_walkforward_eligibility", lambda **_kw: {"eligible": True})
     monkeypatch.setattr(
-        ct, "train_evaluate_package",
+        ct, "train_evaluate_adaptive",
         lambda **_kw: types.SimpleNamespace(
             passed=True,
             gate_result=types.SimpleNamespace(model_dump=lambda: {}, dict=lambda: {}),

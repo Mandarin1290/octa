@@ -107,6 +107,26 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `scripts/monday_launch.sh`
 
 
+### [2026-03-28 22:01:50] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 6 Code-Dateien - 10 Test-Dateien - (+789/-22 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 6 Dateien
+  - `octa/core/features/selector.py`
+  - `octa_ops/autopilot/cascade_train.py`
+  - `octa_training/core/config.py`
+  - ... und 3 weitere
+- **TESTS:** 10 Dateien
+  - `tests/test_adaptive_feature_selection.py`
+  - `tests/test_autopilot_cascade_pkl_per_timeframe.py`
+  - `tests/test_cascade_invariants.py`
+  - ... und 7 weitere
+- **CONFIG:** 1 Dateien
+  - `configs/p03_research.yaml`
+- **SCRIPTS:** 1 Dateien
+  - `scripts/train_multiframe_symbol.py`
+
+
 ## 2026-03-27
 
 
