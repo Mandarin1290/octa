@@ -31,6 +31,7 @@ from .tws_probe import tws_probe
 from octa_core.risk_institutional.risk_aggregator import RiskSnapshot, aggregate_risk
 from octa.core.governance.kill_switch import KillSwitchConfig, KillSwitchState, evaluate_kill_switch
 from octa.core.portfolio.engine import PortfolioEngineConfig
+from octa.execution.fill_tracker import FillEvent, FillTracker
 
 
 # PRODUCTION SHADOW = mode "dry-run" or "shadow".
@@ -83,6 +84,8 @@ def _extract_nav(snapshot: Dict[str, Any]) -> tuple[float | None, str]:
 
 
 _NAV_HWM_FILENAME = "nav_hwm.json"
+_NAV_DAY_OPEN_FILENAME = "nav_day_open.json"
+_LOSS_STREAK_FILENAME = "loss_streak.json"
 
 
 def _load_nav_hwm(state_dir: Path) -> float:
@@ -100,6 +103,45 @@ def _save_nav_hwm(state_dir: Path, hwm_nav: float) -> None:
     state_dir.mkdir(parents=True, exist_ok=True)
     (state_dir / _NAV_HWM_FILENAME).write_text(
         json.dumps({"hwm_nav": hwm_nav}, indent=2),
+        encoding="utf-8",
+    )
+
+
+def _load_nav_day_open(state_dir: Path) -> tuple[float, str]:
+    """Return (nav_open, date_str) from persisted day-open state, or (0.0, '')."""
+    path = state_dir / _NAV_DAY_OPEN_FILENAME
+    if path.exists():
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            return float(data.get("nav", 0.0)), str(data.get("date", ""))
+        except Exception:
+            pass
+    return 0.0, ""
+
+
+def _save_nav_day_open(state_dir: Path, nav: float, date_str: str) -> None:
+    state_dir.mkdir(parents=True, exist_ok=True)
+    (state_dir / _NAV_DAY_OPEN_FILENAME).write_text(
+        json.dumps({"nav": nav, "date": date_str}, indent=2),
+        encoding="utf-8",
+    )
+
+
+def _load_loss_streak(state_dir: Path) -> int:
+    path = state_dir / _LOSS_STREAK_FILENAME
+    if path.exists():
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            return int(data.get("streak", 0))
+        except Exception:
+            pass
+    return 0
+
+
+def _save_loss_streak(state_dir: Path, streak: int) -> None:
+    state_dir.mkdir(parents=True, exist_ok=True)
+    (state_dir / _LOSS_STREAK_FILENAME).write_text(
+        json.dumps({"streak": streak, "updated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}, indent=2),
         encoding="utf-8",
     )
 
@@ -550,6 +592,15 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
             },
         )
 
+    # Module 3: Daily NAV loss limit — wires the kill-switch daily_loss stub
+    _today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    _nav_open, _nav_open_date = _load_nav_day_open(cfg.state_dir)
+    if nav > 0 and (_nav_open <= 0 or _nav_open_date != _today_str):
+        # New day (or first run): set today's open
+        _nav_open = nav
+        _save_nav_day_open(cfg.state_dir, nav, _today_str)
+    _daily_loss_frac = max(0.0, (_nav_open - nav) / _nav_open) if _nav_open > 0 else 0.0
+
     drift_breaches = _detect_drift_breaches(cfg.drift_registry_dir)
     if drift_breaches:
         incident = {
@@ -672,17 +723,18 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
         return True
 
     _ks_config = KillSwitchConfig()
+    fill_tracker = FillTracker(cfg.state_dir)
 
     for cycle_idx in range(1, cycle_count + 1):
         cycle_dir = run_log_dir / f"cycle_{cycle_idx:03d}"
         cycle_dir.mkdir(parents=True, exist_ok=True)
 
-        # Kill switch: check accumulated execution failures before each cycle.
-        # Slippage and daily_loss are not yet tracked (Module 4); wired to 0.0 until then.
+        # Kill switch: check per-cycle state.
+        # daily_loss is now live (from day-open NAV tracking); slippage pending Module 4 fills.
         _ks_state = KillSwitchState(
             execution_failures=len(blocks),
             slippage=0.0,
-            daily_loss=0.0,
+            daily_loss=_daily_loss_frac,
             system_health=1.0,
         )
         _ks_decision = evaluate_kill_switch(_ks_state, _ks_config)
@@ -694,6 +746,9 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
                     "timestamp_utc": _utc_now_iso(),
                     "reason": _ks_decision.reason,
                     "execution_failures": len(blocks),
+                    "daily_loss_pct": round(_daily_loss_frac * 100, 4),
+                    "nav_day_open": _nav_open,
+                    "nav_current": float(nav),
                 },
             )
             gov_audit.emit(
@@ -851,6 +906,18 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
             if not _enforce_portfolio_preflight(cycle=cycle_idx, strategy="ml", symbol=symbol, qty=qty):
                 continue
             result = broker.place_order(strategy="ml", order=order)
+            fill_tracker.record(FillEvent(
+                order_id=str(order["order_id"]),
+                symbol=symbol,
+                strategy="ml",
+                side=side,
+                qty=float(qty),
+                status=str(result.get("status", "UNKNOWN")),
+                cycle=cycle_idx,
+                timestamp_utc=_utc_now_iso(),
+                asset_class=str(row.get("asset_class", "equities")).lower(),
+                raw_result=result,
+            ))
             ml_current_gross += ml_decision.final_size / max(1.0, float(nav))
             ml_orders.append(
                 {
@@ -994,6 +1061,18 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
                     ):
                         continue
                     result = broker.place_order(strategy="carry", order=order)
+                    fill_tracker.record(FillEvent(
+                        order_id=str(order["order_id"]),
+                        symbol=str(intent.instrument),
+                        strategy="carry",
+                        side=side,
+                        qty=float(qty),
+                        status=str(result.get("status", "UNKNOWN")),
+                        cycle=cycle_idx,
+                        timestamp_utc=_utc_now_iso(),
+                        asset_class=str(intent.asset_class or "fx_carry").lower(),
+                        raw_result=result,
+                    ))
                     carry_orders.append(
                         {
                             "cycle": cycle_idx,
@@ -1083,6 +1162,7 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
     _write_json(cfg.evidence_dir / "ml_orders.json", ml_orders)
     _write_json(cfg.evidence_dir / "carry_orders.json", carry_orders)
     _write_json(cfg.evidence_dir / "risk_blocks.json", blocks)
+    _write_json(cfg.evidence_dir / "fill_summary.json", fill_tracker.summary_for_date(_today_str))
 
     notifier.emit(
         "execution_shutdown",
@@ -1101,5 +1181,22 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
         timestamp_utc=_utc_now_iso(),
         source=nav_source,
     ).save(cfg.state_dir)
+
+    # Module 3: update consecutive daily-loss streak (day-over-day decline counter)
+    _prev_streak = _load_loss_streak(cfg.state_dir)
+    _new_streak = (_prev_streak + 1) if _daily_loss_frac > 0 else 0
+    _save_loss_streak(cfg.state_dir, _new_streak)
+    if _new_streak > 0:
+        _write_json(
+            cfg.evidence_dir / "loss_streak.json",
+            {
+                "streak": _new_streak,
+                "daily_loss_pct": round(_daily_loss_frac * 100, 4),
+                "nav_day_open": _nav_open,
+                "nav_current": float(nav),
+                "mode": mode_label,
+                "timestamp_utc": _utc_now_iso(),
+            },
+        )
 
     return summary
