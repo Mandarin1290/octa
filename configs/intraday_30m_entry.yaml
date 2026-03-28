@@ -1,0 +1,91 @@
+mode: DEV
+env: dev
+service_name: octa-intraday-30m-dev
+
+# 30M-entry cascade: entry at 30M (skips 1H entirely).
+# Tests whether shorter-bar alpha exists where 1H fails.
+cascade_timeframes:
+  - 30M
+  - 5M
+  - 1M
+
+broker:
+  requires_secret: false
+  cost_bps: 2.0
+  spread_bps: 1.0
+
+# Session filter: identical to breakout/MR configs.
+session:
+  enabled: true
+  timezone: America/New_York
+  open: "09:35"
+  close: "15:50"
+  weekdays: [0, 1, 2, 3, 4]
+
+features:
+  window_short: 5
+  window_med: 10
+  window_long: 20
+  vol_window: 10
+  horizons: [1, 3]
+  intraday_breakout:
+    range_expansion_window: 10
+    rel_volume_window: 10
+    range_rank_window: 20
+    vwap_z_clip: 3.0
+    range_ratio_clip: 4.0
+    rel_volume_clip: 5.0
+    momentum_consistency_lookback: 3
+
+signal:
+  mode: cls
+  upper_q: 0.85
+  lower_q: 0.15
+  causal_quantiles: true
+  quantile_window: 500
+  vol_target: 0.02
+  leverage_cap: 1.0
+  # HIGH-VOL REGIME GATE (Mission 8 — shadow validation 2026-03-20)
+  # Blocks signal generation in mid/low volatility regimes.
+  # quality_score is capped at 1.0; setting floor > 1.0 makes the gate unreachable.
+  # HIGH_VOL label: vol_z >= high_vol_z_min (z-score of rolling vol).
+  # No gate weakening — all production thresholds unchanged.
+  regime_policy:
+    enabled: true
+    vol_window: 26           # match TimeWindowPolicy.vol_window for 30M
+    regime_window: 500       # rolling window for vol z-score (≈38 trading days at 30M)
+    high_vol_z_min: 0.35     # z-score threshold: HIGH_VOL classification
+    low_vol_z_max: -0.20     # z-score threshold: LOW_VOL classification
+    # Block mid/low vol by setting quality floor above max possible quality score (1.0)
+    low_vol_quality_floor: 2.0    # BLOCKED — quality_score never reaches 2.0
+    mid_vol_quality_floor: 2.0    # BLOCKED — quality_score never reaches 2.0
+    high_vol_quality_floor: 0.45  # ALLOWED — standard quality gate for high-vol
+    base_quality_floor: 0.45      # overall floor (below regime-specific floors)
+    # Additional signal-strength gate for low-vol (belt-and-suspenders)
+    low_vol_signal_strength_min: 2.0  # BLOCKED — signal_strength capped at 1.0
+
+# Per-timeframe walk-forward split overrides.
+# 30M entry: rolling IS window of 10000 bars (~3 years at 30M) — focuses on recent microstructure.
+# At 30M: 1 trading session = 13 bars (6.5h × 2). purge=26=2 sessions, embargo=13=1 session.
+# test_window=500 ≈ 38.5 trading days ≈ ~1.9 months OOS per fold.
+splits_by_timeframe:
+  30M:
+    test_window: 500
+    step: 500
+    n_folds: -5
+    train_window: 10000
+    expanding: false
+    purge: 26
+    embargo: 13
+  5M:
+    test_window: 2000
+    step: 2000
+    n_folds: -5
+    purge: 78
+    embargo: 39
+  1M:
+    test_window: 6500
+    step: 6500
+    n_folds: -5
+    purge: 390
+    embargo: 195

@@ -67,3 +67,20 @@ data/altdat/
 **/altdat/features_*.json
 **/features_*_altdat_*.json
 run_tws_autologin.sh
+
+# --- Discovery/training analysis artifacts (root-level output files) ---
+# These are run-output artifacts, not source code. Docs live in docs/
+/*.md
+/*.json
+/2.5
+/data/features/
+/data/processed/
+
+# --- Research environment diagnostic probes (local only) ---
+research_env_*.txt
+vectorbt_*.txt
+.env.local.template
+
+# --- Training admission runtime state (not source, only commit policy YAML) ---
+configs/training_admission_approvals.json
+configs/training_admission_prior_decisions.json

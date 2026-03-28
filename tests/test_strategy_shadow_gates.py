@@ -7,7 +7,6 @@ from octa_strategy.state_machine import LifecycleState
 
 def test_deviation_blocks_promotion():
     lifecycle = StrategyLifecycle("S_SHADOW")
-    lifecycle.transition_to(LifecycleState.PAPER, doc="paper doc")
     lifecycle.transition_to(LifecycleState.SHADOW, doc="shadow doc")
     sg = ShadowGates()
     metrics = {
@@ -23,9 +22,8 @@ def test_deviation_blocks_promotion():
     assert lifecycle.current_state == LifecycleState.SHADOW
 
 
-def test_stable_shadow_allows_live():
+def test_stable_shadow_allows_paper():
     lifecycle = StrategyLifecycle("S_SHADOW_OK")
-    lifecycle.transition_to(LifecycleState.PAPER, doc="paper doc")
     lifecycle.transition_to(LifecycleState.SHADOW, doc="shadow doc")
     sg = ShadowGates()
     metrics = {
@@ -36,5 +34,5 @@ def test_stable_shadow_allows_live():
         "incidents": 0,
         "risk_budget_utilization": 0.8,
     }
-    sg.promote_if_pass(lifecycle, metrics, doc="go live")
-    assert lifecycle.current_state == LifecycleState.LIVE
+    sg.promote_if_pass(lifecycle, metrics, doc="promote to paper")
+    assert lifecycle.current_state == LifecycleState.PAPER

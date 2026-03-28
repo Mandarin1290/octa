@@ -157,6 +157,33 @@ def test_stock_parquet_alias_maps_to_equities(tmp_path: Path) -> None:
     assert row["asset_class"] == "equities"
 
 
+def test_non_equity_parquet_roots_map_to_canonical_asset_classes(tmp_path: Path) -> None:
+    roots = {
+        "ETF_Parquet": ("AAA", "etfs"),
+        "FX_parquet": ("EURUSD", "fx"),
+        "Futures_Parquet": ("ES", "futures"),
+    }
+
+    for dirname, (symbol, _) in roots.items():
+        root = tmp_path / "raw" / dirname
+        for tf in DEFAULT_REQUIRED_TFS:
+            _write_parquet(root / f"{symbol}_{tf}.parquet")
+
+    result = scan_inventory(tmp_path / "raw", DEFAULT_REQUIRED_TFS, strict=True)
+    paths = write_outputs(result, tmp_path / "out_non_equity_aliases")
+
+    rows = [json.loads(line) for line in Path(paths["inventory"]).read_text(encoding="utf-8").splitlines() if line.strip()]
+    by_symbol = {str(r["symbol"]): r for r in rows}
+    assert by_symbol["AAA"]["asset_class"] == "etfs"
+    assert by_symbol["EURUSD"]["asset_class"] == "fx"
+    assert by_symbol["ES"]["asset_class"] == "futures"
+
+    trainable = Path(paths["trainable_symbols"]).read_text(encoding="utf-8").splitlines()
+    assert "AAA" in trainable
+    assert "EURUSD" in trainable
+    assert "ES" in trainable
+
+
 def test_mixed_asset_class_excluded(tmp_path: Path) -> None:
     _write_symbol_tree(tmp_path, "equities", "MIX")
     _write_symbol_tree(tmp_path, "futures", "MIX")
@@ -187,3 +214,37 @@ def test_preflight_excludes_non_temporal_time_named_columns(tmp_path: Path) -> N
     excluded_rows = [json.loads(line) for line in Path(paths["excluded"]).read_text(encoding="utf-8").splitlines() if line.strip()]
     row = next(r for r in excluded_rows if r["symbol"] == "A6")
     assert row["reason"] == "missing_time_column"
+
+
+def test_preflight_ignores_corrupt_shadow_roots_for_asset_class_detection(tmp_path: Path) -> None:
+    fut_root = tmp_path / "raw" / "Futures_Parquet"
+    corrupt_root = tmp_path / "raw" / "Futures_Parquet_corrupt"
+    for tf in DEFAULT_REQUIRED_TFS:
+        _write_parquet(fut_root / f"ES_{tf}.parquet")
+        _write_parquet(corrupt_root / f"ES_{tf}.parquet")
+
+    result = scan_inventory(tmp_path / "raw", DEFAULT_REQUIRED_TFS, strict=True)
+    paths = write_outputs(result, tmp_path / "out_ignore_corrupt")
+
+    trainable = Path(paths["trainable_symbols"]).read_text(encoding="utf-8").splitlines()
+    assert "ES" in trainable
+
+    rows = [json.loads(line) for line in Path(paths["inventory"]).read_text(encoding="utf-8").splitlines() if line.strip()]
+    row = next(r for r in rows if r["symbol"] == "ES")
+    assert row["asset_class"] == "futures"
+
+
+def test_unknown_asset_root_remains_rejected(tmp_path: Path) -> None:
+    unknown_root = tmp_path / "raw" / "Mystery_parquet"
+    for tf in DEFAULT_REQUIRED_TFS:
+        _write_parquet(unknown_root / f"MYST_{tf}.parquet")
+
+    result = scan_inventory(tmp_path / "raw", DEFAULT_REQUIRED_TFS, strict=True)
+    paths = write_outputs(result, tmp_path / "out_unknown_asset")
+
+    trainable = Path(paths["trainable_symbols"]).read_text(encoding="utf-8").splitlines()
+    assert "MYST" not in trainable
+
+    excluded_rows = [json.loads(line) for line in Path(paths["excluded"]).read_text(encoding="utf-8").splitlines() if line.strip()]
+    row = next(r for r in excluded_rows if r["symbol"] == "MYST")
+    assert row["reason"] == "undetermined_asset_class"

@@ -1,0 +1,138 @@
+proof_mode: true
+
+paths:
+  raw_dir: "/home/n-b/Octa/raw"
+  pkl_dir: "/home/n-b/Octa/raw/PKL"
+  logs_dir: "/home/n-b/Octa/logs"
+  state_dir: "/home/n-b/Octa/state"
+  reports_dir: "/home/n-b/Octa/reports"
+
+gating:
+  norm_mse_threshold: 0.02
+  abs_mse_threshold: .nan
+  min_train_samples: 1000
+  min_backtest_samples: 2000
+  max_cv_rel_std: 0.2
+  max_cv_backtest_delta: 0.15
+  min_sharpe: -50.0
+  max_drawdown: 0.1
+
+tuning:
+  enabled: false
+  optuna_trials: 1
+  cv_folds: 1
+  early_stopping_rounds: 20
+  timeout_sec: 120
+  models_order: ["logreg"]
+
+signal:
+  mode: "cls"
+  upper_q: 0.8
+  lower_q: 0.2
+  causal_quantiles: true
+  quantile_window: 252
+  adaptive_density_quantiles: true
+  density_target: 0.12
+  density_window: 63
+  density_relax_max: 0.15
+  leverage_cap: 1.0
+  vol_target: 0.05
+  realized_vol_window: 20
+  cost_bps: 0.1
+  spread_bps: 0.05
+  stress_cost_multiplier: 3.0
+
+broker:
+  name: ibkr
+  cost_bps: 2.0
+  spread_bps: 1.0
+  stress_cost_multiplier: 3.0
+
+liquidity:
+  enabled: false
+  adv_lookback_days: 20
+  min_adv_usd: .nan
+  min_adv_shares: .nan
+  min_history_days: 10
+
+portfolio_gate:
+  enabled: false
+  max_turnover_ann: .nan
+  max_avg_gross_exposure: .nan
+
+notifications:
+  telegram:
+    enabled: false
+    token_env: OCTA_TELEGRAM_BOT_TOKEN
+    chat_id_env: OCTA_TELEGRAM_CHAT_ID
+
+training_command: "python3 -m scripts.train_and_save --parquet {parquet} --version {symbol} --backtest --cv-folds {cv_folds} --hyperopt"
+
+asset_class_overrides:
+  direct_map:
+    BTC: crypto
+    ETH: crypto
+    EURUSD: forex
+    DJR: index
+  regex_rules:
+    - pattern: "^ES\\d+"
+      asset_class: future
+      priority: 10
+    - pattern: "_ETF$"
+      asset_class: etf
+      priority: 5
+    - pattern: "\\bFX\\b|_FX_"
+      asset_class: forex
+      priority: 8
+    - pattern: "BTC|ETH|SOL|CRYPTO"
+      asset_class: crypto
+      priority: 9
+
+symbol_overrides: {}
+max_workers: 1
+min_ram_mb: 2048
+prefer_gpu: false
+
+gates:
+  global:
+    sharpe_min: 0.65
+    max_drawdown_max: 0.06
+    profit_factor_min: 1.20
+    min_trades: 20
+    required_folds_pass_ratio: 0.7
+  global_by_timeframe:
+    1D:
+      sharpe_min: 0.65
+      max_drawdown_max: 0.06
+      profit_factor_min: 1.20
+      min_trades: 20
+      min_bars: 130
+
+splits:
+  n_folds: 1
+  train_window: 500
+  test_window: 80
+  step: 80
+  purge_size: 10
+  embargo_size: 5
+  min_train_size: 500
+  min_test_size: 80
+  min_folds_required: 1
+  expanding: true
+
+cascade_timeframes: ["1D"]
+
+models_order: ["logreg"]
+
+logreg_params:
+  C: 0.05
+  penalty: "l2"
+  solver: "liblinear"
+  max_iter: 1000
+
+features:
+  window_short: 5
+  window_med: 20
+  window_long: 60
+  vol_window: 20
+  horizons: [1]

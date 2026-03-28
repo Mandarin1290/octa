@@ -98,7 +98,7 @@ class TestPromotionRequiresRealPass:
         # Mock train_evaluate_package
         call_log = []
 
-        def mock_train(*, symbol, cfg, state, run_id, safe_mode, smoke_test, parquet_path, dataset, asset_class, gate_overrides):
+        def mock_train(*, symbol, cfg, state, run_id, safe_mode, smoke_test, parquet_path, dataset, asset_class, gate_overrides, fast=False, robustness_profile="full"):
             call_log.append({"symbol": symbol, "parquet_path": parquet_path})
             return types.SimpleNamespace(
                 passed=first_tf_passes,

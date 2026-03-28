@@ -7,6 +7,7 @@ from octa_strategy.state_machine import LifecycleState
 
 def test_failing_metric_blocks_promotion():
     lifecycle = StrategyLifecycle("S_PAPER")
+    lifecycle.transition_to(LifecycleState.SHADOW, doc="shadow doc")
     lifecycle.transition_to(LifecycleState.PAPER, doc="paper doc")
     pg = PaperGates()
     # failing because incidents > 0
@@ -26,6 +27,7 @@ def test_failing_metric_blocks_promotion():
 
 def test_passing_metrics_allow_transition():
     lifecycle = StrategyLifecycle("S_PAPER_OK")
+    lifecycle.transition_to(LifecycleState.SHADOW, doc="shadow doc")
     lifecycle.transition_to(LifecycleState.PAPER, doc="paper doc")
     pg = PaperGates()
     metrics = {
@@ -37,5 +39,5 @@ def test_passing_metrics_allow_transition():
         "incidents": 0,
         "max_corr": 0.3,
     }
-    pg.promote_if_pass(lifecycle, metrics, doc="shadow promotion doc")
-    assert lifecycle.current_state == LifecycleState.SHADOW
+    pg.promote_if_pass(lifecycle, metrics, doc="live promotion doc")
+    assert lifecycle.current_state == LifecycleState.LIVE

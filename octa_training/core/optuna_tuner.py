@@ -25,6 +25,88 @@ except Exception:
 from octa_training.core.splits import SplitFold
 
 
+def _package_version(mod: Any) -> str:
+    return str(getattr(mod, "__version__", "unknown"))
+
+
+def _raise_unsupported_model_params(*, model_family: str, call_site: str, params: Dict[str, Any], exc: Exception, version: str) -> None:
+    offending = sorted(str(k) for k in (params or {}).keys())
+    raise RuntimeError(
+        f"unsupported_{model_family}_params:"
+        f"call_site={call_site}:version={version}:"
+        f"params={offending}:"
+        f"error={type(exc).__name__}:{exc}"
+    ) from exc
+
+
+def _lightgbm_callbacks_compat(lgb_module: Any, *, early_stopping_rounds: int) -> List[Any]:
+    callbacks: List[Any] = []
+    if int(early_stopping_rounds) > 0:
+        callbacks.append(lgb_module.early_stopping(int(early_stopping_rounds), verbose=False))
+    return callbacks
+
+
+def _lightgbm_train_compat(
+    lgb_module: Any,
+    *,
+    params: Dict[str, Any],
+    dtrain: Any,
+    dval: Any,
+    early_stopping_rounds: int,
+    call_site: str,
+) -> Any:
+    try:
+        return lgb_module.train(
+            params,
+            dtrain,
+            num_boost_round=200,
+            valid_sets=[dval],
+            callbacks=_lightgbm_callbacks_compat(
+                lgb_module,
+                early_stopping_rounds=int(early_stopping_rounds),
+            ),
+        )
+    except TypeError as exc:
+        _raise_unsupported_model_params(
+            model_family="lightgbm",
+            call_site=call_site,
+            params=params,
+            exc=exc,
+            version=_package_version(lgb_module),
+        )
+
+
+def _catboost_estimator_compat(
+    *,
+    task: str,
+    params: Dict[str, Any],
+    iterations: int,
+    verbose: bool,
+    call_site: str,
+    catboost_module: Any | None = None,
+) -> Any:
+    try:
+        if catboost_module is None:
+            from catboost import CatBoostClassifier, CatBoostRegressor
+        else:
+            CatBoostClassifier = catboost_module.CatBoostClassifier
+            CatBoostRegressor = catboost_module.CatBoostRegressor
+        ctor_params = dict(params)
+        ctor_params.setdefault("iterations", int(iterations))
+        ctor_params.setdefault("verbose", bool(verbose))
+        if task == "cls":
+            return CatBoostClassifier(**ctor_params)
+        return CatBoostRegressor(**ctor_params)
+    except TypeError as exc:
+        _raise_unsupported_model_params(
+            model_family="catboost",
+            call_site=call_site,
+            params={**dict(params), "iterations": int(iterations), "verbose": bool(verbose)},
+            exc=exc,
+            version=_package_version(catboost_module) if catboost_module is not None else "unknown",
+        )
+
+
 def _lgbm_space(trial: Any) -> Dict[str, Any]:
     return {
         "learning_rate": trial.suggest_loguniform("learning_rate", 1e-3, 0.3),
@@ -166,7 +248,14 @@ def tune_model(
                     p.setdefault('verbosity', -1)
                     dtrain = lgb.Dataset(X_tr, label=y_tr)
                     dval = lgb.Dataset(X_val, label=y_val, reference=dtrain)
-                    bst = lgb.train(p, dtrain, num_boost_round=200, valid_sets=[dval], early_stopping_rounds=cfg.tuning.early_stop_rounds)
+                    bst = _lightgbm_train_compat(
+                        lgb,
+                        params=p,
+                        dtrain=dtrain,
+                        dval=dval,
+                        early_stopping_rounds=int(cfg.tuning.early_stop_rounds),
+                        call_site="octa_training.core.optuna_tuner:lightgbm",
+                    )
                     pred = bst.predict(X_val)
                     if set(y.unique()) <= {0,1}:
                         score = float(-log_loss(y_val, pred)) if direction=='maximize' else float(mean_squared_error(y_val, pred))
@@ -185,9 +274,14 @@ def tune_model(
                     else:
                         score = float(-mean_squared_error(y_val, pred)) if direction=='maximize' else float(mean_squared_error(y_val, pred))
                 elif model_name == 'catboost':
-                    from catboost import CatBoost
                     p = params.copy()
-                    cb = CatBoost(**{**p, 'iterations':200, 'verbose':False})
+                    cb = _catboost_estimator_compat(
+                        task='cls' if set(y.unique()) <= {0, 1} else 'reg',
+                        params=p,
+                        iterations=200,
+                        verbose=False,
+                        call_site="octa_training.core.optuna_tuner:catboost",
+                    )
                     cb.fit(X_tr, y_tr, eval_set=(X_val, y_val), early_stopping_rounds=cfg.tuning.early_stop_rounds, verbose=False)
                     pred = cb.predict(X_val)
                     if set(y.unique()) <= {0, 1} and log_loss is not None:

@@ -426,6 +426,11 @@ def _parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    raise SystemExit(
+        "deprecated_v000_paper_ready_entrypoint:octa.support.ops.v000_finish_paper_ready_local_only:"
+        "paper_readiness_is_not_part_of_foundation_orchestration_claims"
+    )
+
     args = _parse_args()
     try:
         result = run(args)

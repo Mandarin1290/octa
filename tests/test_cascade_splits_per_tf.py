@@ -69,11 +69,12 @@ def test_training_config_splits_by_timeframe_defaults_empty():
 # ---------------------------------------------------------------------------
 
 def test_dev_yaml_splits_by_timeframe_present():
-    """dev.yaml must contain splits_by_timeframe with 1H entry."""
+    """dev.yaml must contain splits_by_timeframe entries for Foundation cascade timeframes."""
     from octa_training.core.config import load_config
 
     cfg = load_config("configs/dev.yaml")
     assert isinstance(cfg.splits_by_timeframe, dict), "splits_by_timeframe must be a dict"
+    assert "1D" in cfg.splits_by_timeframe, "1D must have a Foundation-specific splits_by_timeframe entry"
     assert "1H" in cfg.splits_by_timeframe, "1H must have a splits_by_timeframe entry"
     assert "30M" in cfg.splits_by_timeframe, "30M must have a splits_by_timeframe entry"
 
@@ -115,18 +116,48 @@ def test_dev_yaml_30m_oof_sufficient_for_institutional_gate():
     )
 
 
-def test_dev_yaml_1d_unchanged():
-    """1D must NOT have a splits_by_timeframe override (uses global splits which is already OK)."""
+def test_dev_yaml_1d_oof_sufficient_for_institutional_gate():
+    """Foundation 1D override must produce enough OOF bars for min_2 walk-forward."""
     from octa_training.core.config import load_config
 
     cfg = load_config("configs/dev.yaml")
-    # 1D not in splits_by_timeframe means the global splits apply: OOF=1000 >= min_2=378 ✓
-    assert "1D" not in cfg.splits_by_timeframe, (
-        "1D should not have a splits_by_timeframe override; default OOF=1000 >= min_2=378."
-    )
-    oof_1d_default = cfg.splits.get("n_folds", 5) * cfg.splits.get("test_window", 200)
+    base = cfg.splits
+    tf_override = cfg.splits_by_timeframe.get("1D", {})
+    effective = {**base, **tf_override}
+    n_folds = abs(effective.get("n_folds", 5))
+    test_window = effective.get("test_window", 200)
+    oof_1d_default = n_folds * test_window
     institutional_min_2_1d = 252 + 2 * 63  # = 378
     assert oof_1d_default >= institutional_min_2_1d
+
+
+def test_dev_yaml_1d_override_generates_strict_folds_for_foundation_sized_dataset():
+    """The Foundation 1D profile must create strict folds for a ~660-row dataset."""
+    from octa_training.core.config import load_config
+    from octa_training.core.splits import walk_forward_splits
+
+    cfg = load_config("configs/dev.yaml")
+    base = cfg.splits
+    tf_override = cfg.splits_by_timeframe.get("1D", {})
+    effective = {**base, **tf_override}
+
+    idx = _make_daily_index(660)
+    folds = walk_forward_splits(
+        idx,
+        n_folds=int(effective["n_folds"]),
+        train_window=int(effective["train_window"]),
+        test_window=int(effective["test_window"]),
+        step=int(effective["step"]),
+        purge_size=int(effective.get("purge_size", 10)),
+        embargo_size=int(effective.get("embargo_size", 5)),
+        min_train_size=int(effective["min_train_size"]),
+        min_test_size=int(effective["min_test_size"]),
+        expanding=bool(effective.get("expanding", True)),
+        min_folds_required=int(effective.get("min_folds_required", 1)),
+    )
+
+    assert len(folds) == 3
+    assert sum(int(f.val_idx.size) for f in folds) == 378
 
 
 # ---------------------------------------------------------------------------

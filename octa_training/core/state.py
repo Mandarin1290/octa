@@ -110,6 +110,11 @@ class StateRegistry:
                 cur.execute("ALTER TABLE symbol_state ADD COLUMN asset_config_overlay_path TEXT")
             except Exception:
                 pass
+            # gate-aware idempotence: track which gate config produced the last pass
+            try:
+                cur.execute("ALTER TABLE symbol_state ADD COLUMN last_gate_config_id TEXT")
+            except Exception:
+                pass
 
     def _connect(self):
         conn = sqlite3.connect(str(self.db_path), timeout=30, isolation_level=None)
@@ -235,6 +240,8 @@ class StateRegistry:
             "delisted",
             "delisting_date",
             "delisted_reason",
+            # gate-aware idempotence: policy version that produced the last pass
+            "last_gate_config_id",
         }
         to_write = {k: v for k, v in kwargs.items() if k in allowed}
         if "last_metrics_summary" in to_write and to_write["last_metrics_summary"] is not None:

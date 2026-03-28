@@ -9,6 +9,8 @@ try:
 except Exception:  # pragma: no cover - optional dependency
     pass
 
+_FOUNDATION_SCOPE_BLOCK_REASON = "real_order_blocked_in_v0_0_0_foundation_scope"
+
 
 @dataclass
 class IBKRClientConfig:
@@ -24,28 +26,16 @@ class IBKRClient:
         self._ib = _IBClass() if _IBClass is not None else None
 
     def connect(self) -> None:
-        if self._ib is None:
-            raise RuntimeError("ib_insync not available")
-        if not self._config.paper_only:
-            raise RuntimeError("live trading disabled; paper_only required")
-        self._ib.connect(self._config.host, self._config.port, clientId=self._config.client_id)
+        raise RuntimeError(_FOUNDATION_SCOPE_BLOCK_REASON)
 
     def place_order(self, order: Any) -> Any:
-        if self._ib is None:
-            raise RuntimeError("ib_insync not available")
-        return self._ib.placeOrder(order.contract, order.order)
+        raise RuntimeError(_FOUNDATION_SCOPE_BLOCK_REASON)
 
     def cancel_order(self, order: Any) -> None:
-        if self._ib is None:
-            raise RuntimeError("ib_insync not available")
-        self._ib.cancelOrder(order)
+        raise RuntimeError(_FOUNDATION_SCOPE_BLOCK_REASON)
 
     def get_open_orders(self) -> List[Any]:
-        if self._ib is None:
-            raise RuntimeError("ib_insync not available")
-        return list(self._ib.openOrders())
+        raise RuntimeError(_FOUNDATION_SCOPE_BLOCK_REASON)
 
     def get_fills(self) -> List[Any]:
-        if self._ib is None:
-            raise RuntimeError("ib_insync not available")
-        return list(self._ib.fills())
+        raise RuntimeError(_FOUNDATION_SCOPE_BLOCK_REASON)

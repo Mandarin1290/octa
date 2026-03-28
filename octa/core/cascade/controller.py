@@ -91,11 +91,14 @@ class CascadeController:
             if gate.name == "signal" and self._allrad_engine is not None:
                 allrad_symbols: list[str] = []
                 for symbol in eligible:
+                    signal_payload = _resolve_symbol_artifact(ctx.artifacts.get("signal", {}), symbol)
+                    signal_overlay = signal_payload.get("altdata_overlay", {}) if isinstance(signal_payload, Mapping) else {}
                     decision = self._allrad_engine.evaluate(
                         ctx,
                         portfolio_state,
                         {**market_state, "symbol": symbol},
                     )
+                    decision = _apply_signal_altdata_risk_overlay(decision, signal_overlay)
                     ctx.artifacts.setdefault("allrad", {})[symbol] = {
                         "decision": decision.allow_trade,
                         "max_exposure": decision.max_exposure,
@@ -118,10 +121,17 @@ class CascadeController:
                     execution_payload = _resolve_symbol_artifact(ctx.artifacts.get("execution", {}), symbol)
                     if not execution_payload:
                         continue
+                    signal_payload = _resolve_symbol_artifact(ctx.artifacts.get("signal", {}), symbol)
+                    signal_overlay = signal_payload.get("altdata_overlay", {}) if isinstance(signal_payload, Mapping) else {}
                     allrad_payload = _resolve_symbol_artifact(ctx.artifacts.get("allrad", {}), symbol)
                     allrad_decision = _risk_decision_from_payload(allrad_payload)
+                    execution_plan = dict(execution_payload.get("execution_plan", {}))
+                    if isinstance(signal_overlay, Mapping):
+                        for key in ("position_size_multiplier", "risk_multiplier"):
+                            if key in signal_overlay:
+                                execution_plan[key] = signal_overlay[key]
                     capital_decision = self._capital_engine.allocate(
-                        execution_payload.get("execution_plan", {}),
+                        execution_plan,
                         allrad_decision,
                         capital_state,
                         {**market_state, "symbol": symbol},
@@ -189,4 +199,35 @@ def _risk_decision_from_payload(payload: Mapping[str, Any]) -> RiskDecision:
         execution_override=payload.get("execution_override"),
         risk_flags=dict(payload.get("risk_flags", {})),
         reason=str(payload.get("reason", "OK")),
+    )
+
+
+def _apply_signal_altdata_risk_overlay(
+    decision: RiskDecision,
+    overlay: Mapping[str, Any],
+) -> RiskDecision:
+    if not isinstance(overlay, Mapping) or not overlay:
+        return decision
+    if bool(overlay.get("block_new_entries")):
+        risk_flags = dict(decision.risk_flags)
+        risk_flags["altdata_overlay"] = dict(overlay)
+        return RiskDecision(
+            allow_trade=False,
+            max_exposure=0.0,
+            execution_override=decision.execution_override,
+            risk_flags=risk_flags,
+            reason=str(overlay.get("reason", "ALTDATA_BLOCK")),
+        )
+
+    max_exposure_scale = float(overlay.get("max_exposure_scale", 1.0) or 1.0)
+    if max_exposure_scale >= 1.0:
+        return decision
+    risk_flags = dict(decision.risk_flags)
+    risk_flags["altdata_overlay"] = dict(overlay)
+    return RiskDecision(
+        allow_trade=decision.allow_trade,
+        max_exposure=float(decision.max_exposure) * max_exposure_scale,
+        execution_override=decision.execution_override,
+        risk_flags=risk_flags,
+        reason=decision.reason,
     )

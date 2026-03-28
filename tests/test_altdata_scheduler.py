@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 
 import octa.support.scheduler.daily_altdata_job as job
 from octa.support.scheduler import scheduler
+from octa.core.data.sources.altdata.orchestrator import build_altdata_stack
 
 
 def test_next_run_utc() -> None:
@@ -77,3 +78,51 @@ def test_scheduler_oneshot(monkeypatch) -> None:
 
     assert calls["runs"] == 1
     assert calls["sleeps"]
+
+
+def test_build_altdata_stack_writes_event_evidence(tmp_path, monkeypatch) -> None:
+    cfg_path = tmp_path / "altdata.yaml"
+    cfg_path.write_text(
+        """
+cache_dir: "{root}"
+sources:
+  scheduled_events:
+    enabled: true
+    window_days: 2
+    events:
+      - event_id: fed_fomc
+        title: FOMC rate decision
+        source_id: fed_schedule
+        source_name: Federal Reserve Schedule
+        source_tier: 1
+        event_type: rates
+        severity_floor: high
+        category: scheduled_macro
+        jurisdiction: US
+        asset_classes: ["all"]
+        official: true
+        scheduled_at: "2024-03-20T18:00:00+00:00"
+        known_at: "2024-01-01T00:00:00+00:00"
+        pre_window_hours: 24
+        post_window_hours: 2
+""".format(root=str(tmp_path / "cache")),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("OCTA_DAILY_REFRESH", "1")
+    monkeypatch.delenv("OCTA_CONTEXT", raising=False)
+
+    summary = build_altdata_stack(
+        run_id="altdata_daily_2024-03-20",
+        symbols=[],
+        asof=datetime(2024, 3, 20, tzinfo=timezone.utc).date(),
+        allow_net=True,
+        config_path=str(cfg_path),
+    )
+
+    evidence_dir = tmp_path / "cache" / "evidence" / "2024-03-20"
+    assert summary["sources"]["scheduled_events"]["status"] == "ok"
+    assert (evidence_dir / "recency_model.json").exists()
+    assert (evidence_dir / "severity_rules.json").exists()
+    assert (evidence_dir / "scheduled_event_summary.json").exists()
+    assert (evidence_dir / "scheduled_event_windows.json").exists()
+    assert (evidence_dir / "updated_run_manifest.json").exists()

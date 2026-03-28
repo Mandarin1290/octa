@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from octa.core.orchestration.runner import run_cascade
+from octa.foundation.control_plane import run_foundation_training
 
 
 def main() -> None:
-    run_cascade(universe_limit=2)
+    run_foundation_training(max_symbols=2, dry_run=True)
 
 
 if __name__ == "__main__":
     main()
-

@@ -124,7 +124,13 @@ def test_probe_blocks_paper_execution_when_unhealthy(tmp_path: Path) -> None:
 
 
 def test_probe_blocks_live_execution_when_unhealthy(tmp_path: Path) -> None:
-    """Live mode + unhealthy probe → RuntimeError('TWS_PROBE_FAILED')."""
+    """Live mode is blocked by foundation scope enforcement or TWS probe failure.
+
+    With the v0.0.0 foundation scope guard active, live mode is blocked before
+    the TWS probe is reached (message: live_execution_blocked_in_v0_0_0_foundation_scope).
+    Without the scope guard, an unhealthy TWS probe blocks with TWS_PROBE_FAILED.
+    Both are correct governance outcomes for live mode.
+    """
     from octa.execution.runner import run_execution
 
     cfg = _make_cfg(tmp_path, mode="live")
@@ -135,7 +141,7 @@ def test_probe_blocks_live_execution_when_unhealthy(tmp_path: Path) -> None:
         patch("octa.execution.runner.tws_probe", return_value=False),
     ):
         MockRouter.return_value = _stub_broker(nav=120_000.0)
-        with pytest.raises(RuntimeError, match="TWS_PROBE_FAILED"):
+        with pytest.raises(RuntimeError, match="live_execution_blocked_in_v0_0_0_foundation_scope|TWS_PROBE_FAILED"):
             run_execution(cfg)
 
 

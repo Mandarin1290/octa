@@ -499,6 +499,8 @@ def run_cascade_training(
                 dataset=asset_class,
                 asset_class=asset_class,
                 gate_overrides=gate_overrides,
+                fast=bool(getattr(cfg_layer, "proof_mode", False)),
+                robustness_profile="risk_overlay" if bool(getattr(cfg_layer, "proof_mode", False)) else "full",
             )
             durations[f"{tf}.train_evaluate_package"] = float(time.monotonic() - train_start)
             _trace_emit(

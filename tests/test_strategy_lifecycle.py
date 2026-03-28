@@ -15,22 +15,22 @@ def test_illegal_transition_blocked():
 
 def test_lifecycle_enforced_before_execution():
     s = StrategyLifecycle("S2")
-    # IDEA -> PAPER
-    s.transition_to(LifecycleState.PAPER, doc="Paper testing plan")
-    assert s.current_state == LifecycleState.PAPER
+    # IDEA -> SHADOW (shadow before paper — governance requirement)
+    s.transition_to(LifecycleState.SHADOW, doc="Shadow run parameters")
+    assert s.current_state == LifecycleState.SHADOW
     with pytest.raises(TransitionError):
         s.assert_can_execute()
 
-    # proceed through normal flow
-    s.transition_to(LifecycleState.SHADOW, doc="Shadow run parameters")
+    # proceed through normal flow: SHADOW -> PAPER -> LIVE
+    s.transition_to(LifecycleState.PAPER, doc="Paper testing plan")
     s.transition_to(LifecycleState.LIVE, doc="Go live approval")
     assert s.can_execute() is True
 
 
 def test_time_in_state_and_docs():
     s = StrategyLifecycle("S3")
-    s.transition_to(LifecycleState.PAPER, doc="Doc1")
+    s.transition_to(LifecycleState.SHADOW, doc="Doc1")
     # time in state should be a small timedelta
     ti = s.time_in_state()
     assert isinstance(ti, timedelta)
-    assert s.require_documentation(LifecycleState.PAPER) == "Doc1"
+    assert s.require_documentation(LifecycleState.SHADOW) == "Doc1"

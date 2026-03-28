@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 from datetime import date, datetime, time, timezone
 from pathlib import Path
@@ -23,6 +24,9 @@ from octa.core.data.sources.altdata.wikipedia import WikipediaSource
 from octa.core.data.sources.altdata.reddit import RedditSource
 from octa.core.data.sources.altdata.stooq import StooqSource
 from octa.core.data.sources.altdata.fmp import FmpSource
+from octa.core.data.sources.altdata.news import NewsEventsSource
+from octa.core.data.sources.altdata.news.feed_classifier import recency_model_spec, severity_rules_spec
+from octa.core.data.sources.altdata.scheduled_events import ScheduledEventsSource
 from octa.core.features.altdata.builders import build_features
 from octa.core.features.altdata.registry import FeatureRegistry
 from octa.core.features.transforms.feature_builder import (
@@ -257,6 +261,13 @@ def build_altdata_stack(
             asof_ts=asof_ts,
         )
 
+    _write_event_evidence(
+        cache_root=cache_root,
+        asof=asof,
+        summary=summary,
+        payloads=payloads_market,
+    )
+
     return summary
 
 
@@ -275,6 +286,8 @@ def _source_instances(sources_cfg: Dict[str, Any]) -> list[Any]:
         RedditSource(sources_cfg.get("reddit") or {}),
         StooqSource(sources_cfg.get("stooq") or {}),
         FmpSource(sources_cfg.get("fmp") or {}),
+        NewsEventsSource(sources_cfg.get("news_events") or {}),
+        ScheduledEventsSource(sources_cfg.get("scheduled_events") or {}),
     ]
 
 
@@ -325,3 +338,54 @@ def _payload_rows(payload: Any) -> int:
         if "rows" in payload and isinstance(payload["rows"], list):
             return len(payload["rows"])
     return 0
+
+
+def _write_event_evidence(
+    *,
+    cache_root: str | None,
+    asof: date,
+    summary: Dict[str, Any],
+    payloads: Dict[str, Any],
+) -> None:
+    root = Path(cache_root) if cache_root else Path("octa") / "var" / "altdata"
+    out_dir = root / "evidence" / asof.isoformat()
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    scheduled_payload = payloads.get("scheduled_events", {}) if isinstance(payloads, dict) else {}
+    scheduled_rows = scheduled_payload.get("rows", []) if isinstance(scheduled_payload, dict) else []
+    scheduled_summary = {
+        "status": scheduled_payload.get("status", "missing_cache") if isinstance(scheduled_payload, dict) else "missing_cache",
+        "event_count": len(scheduled_rows),
+        "events": [
+            {
+                "event_id": row.get("event_id"),
+                "scheduled_at": row.get("scheduled_at"),
+                "event_type": row.get("event_type"),
+                "source_id": row.get("source_id"),
+                "source_tier": row.get("source_tier"),
+            }
+            for row in scheduled_rows
+        ],
+    }
+    scheduled_windows = {
+        "events": [
+            {
+                "event_id": row.get("event_id"),
+                "scheduled_at": row.get("scheduled_at"),
+                "pre_window_hours": row.get("pre_window_hours"),
+                "post_window_hours": row.get("post_window_hours"),
+            }
+            for row in scheduled_rows
+        ]
+    }
+    manifest = {
+        "asof": asof.isoformat(),
+        "sources": summary.get("sources", {}),
+        "event_layer_sources": ["gdelt", "news_events", "scheduled_events"],
+    }
+
+    (out_dir / "recency_model.json").write_text(json.dumps(recency_model_spec(), ensure_ascii=False, indent=2), encoding="utf-8")
+    (out_dir / "severity_rules.json").write_text(json.dumps(severity_rules_spec(), ensure_ascii=False, indent=2), encoding="utf-8")
+    (out_dir / "scheduled_event_summary.json").write_text(json.dumps(scheduled_summary, ensure_ascii=False, indent=2), encoding="utf-8")
+    (out_dir / "scheduled_event_windows.json").write_text(json.dumps(scheduled_windows, ensure_ascii=False, indent=2), encoding="utf-8")
+    (out_dir / "updated_run_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")

@@ -26,6 +26,17 @@ class RobustnessResult(BaseModel):
     limited_reasons: List[str] = Field(default_factory=list)
 
 
+def _proof_mode_has_total_history(source_df: Optional[pd.DataFrame], required_bars: Optional[int]) -> bool:
+    if required_bars is None:
+        return False
+    if not isinstance(source_df, pd.DataFrame):
+        return False
+    try:
+        return int(len(source_df)) >= int(required_bars)
+    except Exception:
+        return False
+
+
 def _profit_factor_from_returns(r: np.ndarray) -> float:
     if r.size == 0:
         return float("nan")
@@ -185,6 +196,7 @@ def run_risk_overlay_tests(
     source_df: Optional[pd.DataFrame] = None,
     asset_class: Optional[str] = None,
     timeframe: Optional[str] = None,
+    proof_mode: bool = False,
 ) -> RobustnessResult:
     """FX 1D Risk/Regime overlay robustness subset.
 
@@ -194,12 +206,21 @@ def run_risk_overlay_tests(
 
     reasons: List[str] = []
     details: Dict[str, Any] = {}
+    limited_reasons: List[str] = []
 
     # Mandatory walk-forward (HARD)
     try:
         wf = evaluate_walk_forward_oos(df_backtest, gate, timeframe=timeframe)
         details["walk_forward"] = wf
-        if not wf.get("passed", False):
+        wf_reason = str(wf.get("reason") or "")
+        wf_required = None
+        try:
+            wf_required = int(((wf.get("walkforward_meta") or {}).get("required_bars_for_2")))
+        except Exception:
+            wf_required = None
+        if proof_mode and wf_reason == "insufficient_history_for_walkforward" and _proof_mode_has_total_history(source_df, wf_required):
+            limited_reasons.append("proof_mode:walkforward_insufficient_oos_history")
+        elif not wf.get("passed", False):
             reasons.append(wf.get("reason") or "walkforward_failed")
     except Exception as e:
         details["walk_forward"] = {"enabled": True, "passed": False, "reason": "walkforward_exception", "error": str(e)}
@@ -214,7 +235,15 @@ def run_risk_overlay_tests(
             walkforward_meta=(details.get("walk_forward") or {}).get("walkforward_meta"),
         )
         details["regime_stability"] = rg
-        if not rg.get("passed", False):
+        rg_reason = str(rg.get("reason") or "")
+        rg_required = None
+        try:
+            rg_required = int(((rg.get("regime_meta") or {}).get("min_bars")))
+        except Exception:
+            rg_required = None
+        if proof_mode and rg_reason == "regime_split_insufficient_bars" and _proof_mode_has_total_history(source_df, rg_required):
+            limited_reasons.append("proof_mode:regime_insufficient_oos_history")
+        elif not rg.get("passed", False):
             reasons.append(rg.get("reason") or "regime_stability_failed")
     except Exception as e:
         details["regime_stability"] = {"enabled": True, "passed": False, "reason": "regime_stability_exception", "error": str(e)}
@@ -261,7 +290,7 @@ def run_risk_overlay_tests(
         passed=(len(reasons) == 0),
         reasons=reasons,
         details=details,
-        limited_reasons=[],
+        limited_reasons=limited_reasons,
     )
 
 

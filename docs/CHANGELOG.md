@@ -2,6 +2,43 @@
 
 Automatisch generiert. Alle Änderungen werden hier dokumentiert.
 
+## 2026-03-28
+
+
+### [2026-03-28 09:10:55] BUGFIX
+**Beschreibung:** Fehlerbehebung - 123 Code-Dateien - 40 Test-Dateien - 6 Dokumentations-Dateien - (+20503/-1058 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 123 Dateien
+  - `octa/cli.py`
+  - `octa/core/broker_paper/__init__.py`
+  - `octa/core/broker_paper/broker_paper_adapter.py`
+  - ... und 120 weitere
+- **TESTS:** 40 Dateien
+  - `octa/core/capital/tests/test_capital_engine.py`
+  - `tests/test_altdata_context.py`
+  - `tests/test_altdata_scheduler.py`
+  - ... und 37 weitere
+- **DOCS:** 6 Dateien
+  - `data/PHASE2_DATA_CONTRACT.md`
+  - `docs/OCTA_INSTITUTIONAL_ANALYSIS.md`
+  - `docs/README_TRAINING.md`
+  - ... und 3 weitere
+- **CONFIG:** 16 Dateien
+  - `config/altdat.yaml`
+  - `config/altdata.yaml`
+  - `config/altdata_live.yaml`
+  - ... und 13 weitere
+- **SCRIPTS:** 15 Dateien
+  - `scripts/generate_4h_parquets.py`
+  - `scripts/monday_launch_prep.py`
+  - `scripts/octa_autopilot.py`
+  - ... und 12 weitere
+- **OTHER:** 2 Dateien
+  - `.gitignore`
+  - `raw_equities_only/equities`
+
+
 ## 2026-03-27
 
 

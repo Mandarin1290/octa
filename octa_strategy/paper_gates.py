@@ -12,7 +12,14 @@ class GateFailure(Exception):
 
 
 class PaperGates:
-    """Quantitative gates for promoting a strategy from PAPER -> SHADOW.
+    """Quantitative gates for promoting a strategy from PAPER -> LIVE.
+
+    Lifecycle order: IDEA -> SHADOW -> PAPER -> LIVE (shadow before paper).
+    PaperGates applies when a strategy has completed paper trading and is
+    being evaluated for promotion to LIVE production.
+
+    Previous docstring incorrectly stated PAPER -> SHADOW (old wrong lifecycle order
+    was fixed 2026-03-21).
 
     Metrics input (dict) must include the following keys (all deterministic):
       - runtime_days: float
@@ -233,8 +240,8 @@ class PaperGates:
             self.audit_fn("paper_gates.failed", {"failed": failed})
             raise GateFailure(f"Paper gates failed: {list(failed.keys())}")
 
-        # all gates passed: perform documented transition to SHADOW
-        lifecycle.transition_to(LifecycleState.SHADOW, doc=doc)
+        # all gates passed: perform documented transition to LIVE
+        lifecycle.transition_to(LifecycleState.LIVE, doc=doc)
         self.audit_fn(
             "paper_gates.promoted", {"strategy_id": lifecycle.strategy_id, "doc": doc}
         )

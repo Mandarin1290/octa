@@ -44,6 +44,8 @@ sources:
     series: ["FEDFUNDS", "DGS10", "DGS2", "UNRATE"]
   edgar:
     enabled: false  # PILOT: disabled (no sec_edgar_downloader)
+  news_events:
+    enabled: false  # Reads from cache only (offline_only=true); enable after first refresh
     forms: ["10-K", "10-Q", "8-K"]
   earnings:
     enabled: false  # PILOT: disabled (no cache)

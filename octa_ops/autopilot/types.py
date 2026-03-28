@@ -69,6 +69,8 @@ def timeframe_seconds(tf: str) -> Optional[int]:
     tf = normalize_timeframe(tf)
     if tf == "1D":
         return 86400
+    if tf == "4H":
+        return 14400
     if tf == "1H":
         return 3600
     if tf in {"30M", "30m".upper()}:

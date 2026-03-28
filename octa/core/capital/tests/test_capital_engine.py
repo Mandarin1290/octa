@@ -73,3 +73,40 @@ def test_capital_engine_blocks_on_execution_plan() -> None:
 
     assert decision.allow_trade is False
     assert decision.sizing_reason == "NO_ENTRY"
+
+
+def test_capital_engine_reduces_size_for_central_bank_window_overlay() -> None:
+    engine = CapitalEngine()
+    base = engine.allocate(
+        execution_plan={"action": "ENTER", "stop_loss": 80.0},
+        allrad_decision=RiskDecision(
+            allow_trade=True,
+            max_exposure=1.0,
+            execution_override=None,
+            risk_flags={},
+            reason="OK",
+        ),
+        capital_state=_capital_state(),
+        market_state={"price": 100.0, "volatility": 0.02},
+    )
+    adjusted = engine.allocate(
+        execution_plan={
+            "action": "ENTER",
+            "stop_loss": 80.0,
+            "position_size_multiplier": 0.5,
+            "risk_multiplier": 1.25,
+        },
+        allrad_decision=RiskDecision(
+            allow_trade=True,
+            max_exposure=1.0,
+            execution_override=None,
+            risk_flags={},
+            reason="OK",
+        ),
+        capital_state=_capital_state(),
+        market_state={"price": 100.0, "volatility": 0.02},
+    )
+
+    assert adjusted.allow_trade is True
+    assert adjusted.position_size == base.position_size * 0.5
+    assert adjusted.risk_flags["risk_multiplier"] == 1.25

@@ -59,6 +59,7 @@ class CapitalEngine:
 
         sizing = _sizing_strategy(self._config)
         sizing_result = sizing(entry_price, stop_loss, capital_state.total_equity, market_state)
+        sizing_result = _apply_altdata_position_overlay(sizing_result, execution_plan, entry_price)
         if sizing_result.position_size <= 0:
             return _reject("ZERO_SIZE", capital_state.net_exposure)
 
@@ -81,6 +82,7 @@ class CapitalEngine:
             "allrad_reason": allrad_decision.reason,
             "max_exposure": allrad_decision.max_exposure,
             "exposure_after": exposure_decision.exposure_after,
+            "risk_multiplier": float(execution_plan.get("risk_multiplier", 1.0) or 1.0),
         }
 
         return CapitalDecision(
@@ -121,3 +123,20 @@ def _sizing_strategy(
 
     fixed_engine = FixedFractionalSizing(risk_pct=config.max_risk_pct)
     return lambda entry, stop, equity, _: fixed_engine.size(entry, stop, equity)
+
+
+def _apply_altdata_position_overlay(
+    sizing_result: SizingResult,
+    execution_plan: Mapping[str, Any],
+    entry_price: float,
+) -> SizingResult:
+    multiplier = float(execution_plan.get("position_size_multiplier", 1.0) or 1.0)
+    multiplier = max(0.0, min(1.0, multiplier))
+    if multiplier >= 1.0:
+        return sizing_result
+    position_size = sizing_result.position_size * multiplier
+    return SizingResult(
+        position_size=position_size,
+        capital_required=position_size * entry_price,
+        expected_sl_loss=sizing_result.expected_sl_loss * multiplier,
+    )

@@ -1,0 +1,153 @@
+# EXPERIMENTAL CONFIG — NOT FOR PRODUCTION USE
+# Created: 2026-03-19 for 4H cascade exploration
+# Status: EXPERIMENTAL / ARCHIVED
+# gates.version: foundation_validation_4h_2026-03-19_v1
+# DO NOT use for canonical training — use hf_defaults.yaml or dev.yaml
+mode: FOUNDATION_VALIDATION
+env: foundation_validation
+service_name: octa-foundation-validation
+regime: foundation_validation
+broker:
+  requires_secret: false
+
+signal:
+  regime_policy:
+    enabled: true
+    per_timeframe:
+      "1H":
+        vol_window: 24
+        regime_window: 120
+        atr_window: 14
+        trend_window: 20
+        liquidity_window: 120
+        quality_window: 240
+        quality_keep_quantile: 0.70
+        low_vol_quality_keep_quantile: 0.72
+        mid_vol_quality_keep_quantile: 0.55
+        high_vol_quality_keep_quantile: 0.45
+        quality_quantile_relax_scale: 0.30
+        low_vol_z_max: -0.20
+        low_vol_atr_pct_max: 0.45
+        high_vol_z_min: 0.35
+        high_vol_atr_pct_min: 0.70
+        low_vol_signal_strength_min: 0.55
+        low_vol_require_trend_alignment: true
+        low_vol_quality_floor: 0.80
+        mid_vol_quality_floor: 0.65
+        high_vol_quality_floor: 0.55
+        low_vol_size_mult: 0.35
+        low_vol_size_mult_soft: 0.55
+        mid_vol_size_mult: 1.00
+        mid_vol_size_mult_low: 0.90
+        mid_vol_size_mult_high: 1.10
+        high_vol_size_mult: 1.15
+        high_vol_size_mult_low: 1.10
+        high_vol_size_mult_high: 1.25
+        cost_edge_buffer: 1.10
+        density_floor_cost_buffer_min: 1.00
+        density_window: 240
+        min_signal_density: 0.015
+        density_floor_relax: 0.12
+        hour_min_observations: 8
+        hour_coverage_relax: 0.03
+        quality_size_floor: 0.50
+        ensemble:
+          enabled: true
+          model_weight: 0.55
+          ensemble_weight: 0.45
+          active_score_min: 0.10
+          diversity_min: 2
+          ensemble_only_min_score: 0.40
+          low_vol_allow_ensemble_only: false
+          sleeves:
+            momentum:
+              weight: 1.00
+            breakout:
+              weight: 0.90
+              range_window: 24
+              atr_pct_min: 0.55
+            mean_reversion:
+              weight: 0.80
+              z_window: 24
+              z_clip: 2.5
+              atr_pct_max: 0.65
+            volume_flow:
+              weight: 0.70
+              obv_window: 12
+              rel_vol_min: 0.90
+            intraday_structure:
+              weight: 0.50
+            range_release:
+              weight: 0.80
+              compression_window: 20
+              compression_pct_max: 0.40
+
+# Same canonical split family as Foundation dev, but 1D uses a larger OOF envelope
+# so regime-stability can evaluate on real larger candidates.
+cascade_timeframes:
+  - "1D"
+  - "4H"
+  - "1H"
+  - "30M"
+  - "5M"
+  - "1M"
+
+splits_by_timeframe:
+  1D:
+    n_folds: -4
+    train_window: 262
+    test_window: 111
+    step: 111
+    min_train_size: 252
+    min_test_size: 111
+  4H:
+    test_window: 240
+    step: 240
+  1H:
+    test_window: 960
+    step: 960
+  30M:
+    test_window: 500
+    step: 500
+  5M:
+    test_window: 2000
+    step: 2000
+  1M:
+    test_window: 6500
+    step: 6500
+
+gates:
+  version: "foundation_validation_4h_2026-03-19_v1"
+  global_by_timeframe:
+    "1D":
+      sharpe_min: 0.65
+      sortino_min: 0.90
+      profit_factor_min: 1.20
+      max_drawdown_max: 0.06
+      min_trades: 20
+      sharpe_wf_std_max: 0.75
+      sharpe_oos_over_is_min: 0.35
+      net_to_gross_min: 0.60
+      turnover_per_day_max: 0.20
+      avg_net_trade_return_min: 0.0003
+      cvar_95_over_daily_vol_max: 4.0
+      monte_carlo_maxdd_mult: 4.0
+      walkforward_min_fold_pass_ratio: 0.6666666666
+      regime_sharpe_collapse_ratio: 0.10
+      liquidity_percentile_min: 35.0
+    "4H":
+      sharpe_min: 0.65
+      sortino_min: 0.95
+      profit_factor_min: 1.18
+      max_drawdown_max: 0.055
+      min_trades: 30
+      sharpe_wf_std_max: 0.72
+      sharpe_oos_over_is_min: 0.38
+      net_to_gross_min: 0.60
+      turnover_per_day_max: 0.20
+      avg_net_trade_return_min: 0.0003
+      cvar_95_over_daily_vol_max: 3.5
+      monte_carlo_maxdd_mult: 4.0
+      walkforward_min_fold_pass_ratio: 0.6666666666
+      regime_sharpe_collapse_ratio: 0.12
+      liquidity_percentile_min: 35.0

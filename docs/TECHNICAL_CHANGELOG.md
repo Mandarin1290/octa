@@ -3,6 +3,41 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-03-28 09:10:55] BUGFIX
+Fehlerbehebung - 123 Code-Dateien - 40 Test-Dateien - 6 Dokumentations-Dateien - (+20503/-1058 Zeilen)
+
+**Statistics:**
+- Files Changed: 202
+- Lines Added: +20503
+- Lines Deleted: -1058
+- Net Change: +19445
+
+**File-Level Changes:**
+```
++   17 -    0  .gitignore
++    2 -    0  config/altdat.yaml
++   67 -    0  config/altdata.yaml
++   16 -    0  config/altdata_live.yaml
++    1 -    0  config/requirements.txt
++  151 -    0  configs/aaon_targeted_discovery.yaml
++    2 -    2  configs/autonomous_paper.yaml
++    1 -    1  configs/autopilot_daily.yaml
++    9 -    1  configs/dev.yaml
++  153 -    0  configs/foundation_validation.yaml
++   91 -    0  configs/intraday_30m_entry.yaml
++   77 -    0  configs/intraday_breakout.yaml
++   80 -    0  configs/intraday_mean_reversion.yaml
++   42 -    0  configs/parquet_recycling_policy.yaml
++   87 -    0  configs/shadow_trading_adc_tws.yaml
++   41 -    0  configs/training_admission_policy.yaml
++   10 -    0  data/PHASE2_DATA_CONTRACT.md
++  225 -    0  docs/OCTA_INSTITUTIONAL_ANALYSIS.md
++   37 -    0  docs/README_TRAINING.md
++  108 -    0  docs/TRAINING_ADMISSION_LAYER.md
+... and 182 more files
+```
+
+
 ## [2026-03-27 08:24:05] TEST
 Code-Änderungen - 2 Code-Dateien - 1 Test-Dateien - (+407/-17 Zeilen)
 

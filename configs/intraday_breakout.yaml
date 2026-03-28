@@ -1,0 +1,77 @@
+mode: DEV
+env: dev
+service_name: octa-intraday-breakout-dev
+
+# Intraday breakout cascade: entry at 1H, not 1D.
+cascade_timeframes:
+  - 1H
+  - 30M
+  - 5M
+  - 1M
+
+broker:
+  requires_secret: false
+  cost_bps: 2.0
+  spread_bps: 1.0
+
+# Session filter: US equities, 09:35–15:50 ET (skip open auction + end-of-day distortion).
+session:
+  enabled: true
+  timezone: America/New_York
+  open: "09:35"
+  close: "15:50"
+  weekdays: [0, 1, 2, 3, 4]
+
+features:
+  window_short: 5
+  window_med: 10
+  window_long: 20
+  vol_window: 10
+  horizons: [1, 3]
+  intraday_breakout:
+    range_expansion_window: 10
+    rel_volume_window: 10
+    range_rank_window: 20
+    vwap_z_clip: 3.0
+    range_ratio_clip: 4.0
+    rel_volume_clip: 5.0
+    momentum_consistency_lookback: 3
+
+signal:
+  mode: cls
+  upper_q: 0.85
+  lower_q: 0.15
+  causal_quantiles: true
+  quantile_window: 500
+  vol_target: 0.02
+  leverage_cap: 1.0
+
+# Per-timeframe walk-forward split overrides.
+# Inherits institutional-gate sizing from dev.yaml reference values.
+# n_folds=-5 → last 5 folds (most recent data, expanding IS).
+# purge/embargo in bars: 2-session gap at each timeframe.
+splits_by_timeframe:
+  1H:
+    test_window: 960
+    step: 960
+    n_folds: -5
+    purge: 12
+    embargo: 6
+  30M:
+    test_window: 500
+    step: 500
+    n_folds: -5
+    purge: 26
+    embargo: 13
+  5M:
+    test_window: 2000
+    step: 2000
+    n_folds: -5
+    purge: 78
+    embargo: 39
+  1M:
+    test_window: 6500
+    step: 6500
+    n_folds: -5
+    purge: 390
+    embargo: 195

@@ -1,5 +1,6 @@
 # Core developer tools (keep compatible with Python 3.13)
 pytest>=8.0
+feedparser>=6.0  # RSS/Atom parsing for news_events source
 ruff>=0.1.270
 mypy>=1.6.1
 black>=24.3.0

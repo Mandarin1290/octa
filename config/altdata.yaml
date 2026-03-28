@@ -17,6 +17,7 @@ rate_limits:
   reddit: 1
   stooq: 1
   fmp: 1
+  news_events: 1
 
 sources:
   fred:
@@ -88,6 +89,72 @@ sources:
       oil: ["cl.f", "wti", "brent"]
   fmp:
     enabled: false
+  # ── News/Event RSS layer ──────────────────────────────────────────────────────
+  # Tier 1: Federal Reserve, ECB, EIA (official institutions — public domain / free)
+  # Tier 3: CNBC, MarketWatch (official RSS endpoints — secondary context only)
+  # Used only during daily refresh (allow_net=True); offline_only=true path skips network.
+  # Risk/context layer; never generates trade signals directly.
+  news_events:
+    enabled: true
+    timeout_s: 20
+    # Per-feed enable overrides (omit = use registry default)
+    feeds:
+      fed_press:      {enabled: true}
+      fed_speeches:   {enabled: true}
+      ecb_press:      {enabled: true}
+      eia_releases:   {enabled: true}
+      cnbc_top:       {enabled: true}
+      cnbc_markets:   {enabled: true}
+      marketwatch_top: {enabled: true}
+  scheduled_events:
+    enabled: false
+    window_days: 3
+    events:
+      - event_id: fed_fomc_2024_03_20
+        title: FOMC rate decision
+        source_id: fed_schedule
+        source_name: Federal Reserve Schedule
+        source_tier: 1
+        event_type: rates
+        severity_floor: high
+        category: scheduled_macro
+        jurisdiction: US
+        asset_classes: ["all"]
+        official: true
+        scheduled_at: "2024-03-20T18:00:00+00:00"
+        known_at: "2024-01-01T00:00:00+00:00"
+        pre_window_hours: 24
+        post_window_hours: 3
+      - event_id: ecb_policy_2024_06_06
+        title: ECB monetary policy decision
+        source_id: ecb_schedule
+        source_name: ECB Schedule
+        source_tier: 1
+        event_type: central_bank
+        severity_floor: high
+        category: scheduled_macro
+        jurisdiction: EU
+        asset_classes: ["all"]
+        official: true
+        scheduled_at: "2024-06-06T12:15:00+00:00"
+        known_at: "2024-01-01T00:00:00+00:00"
+        pre_window_hours: 24
+        post_window_hours: 3
+      - event_id: eia_wpsr_2024_03_20
+        title: EIA weekly petroleum status report
+        source_id: eia_schedule
+        source_name: EIA Schedule
+        source_tier: 1
+        event_type: energy
+        severity_floor: medium
+        category: scheduled_energy
+        jurisdiction: US
+        asset_classes: ["futures", "etf", "equity"]
+        official: true
+        scheduled_at: "2024-03-20T14:30:00+00:00"
+        known_at: "2024-01-01T00:00:00+00:00"
+        pre_window_hours: 12
+        post_window_hours: 2
 
 features_by_gate:
   global_1d:

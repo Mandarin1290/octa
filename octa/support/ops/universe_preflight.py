@@ -51,6 +51,11 @@ def _detect_root() -> Path:
     raise FileNotFoundError("No parquet root found (set --root or OCTA_PARQUET_ROOT)")
 
 
+def _is_excluded_scan_dir(path: Path) -> bool:
+    name = path.name.strip().lower()
+    return name.endswith("_corrupt") or name == "corrupt"
+
+
 def _parse_symbol_tf(path: Path, required: Sequence[str]) -> Optional[Tuple[str, str]]:
     if path.suffix.lower() != ".parquet":
         return None
@@ -80,7 +85,7 @@ def scan_inventory(
 
     # Always scan recursively; strict controls grouping/acceptance, not discovery.
     for dirpath, dirnames, filenames in os.walk(root, followlinks=bool(follow_symlinks)):
-        dirnames.sort()
+        dirnames[:] = [d for d in sorted(dirnames) if not _is_excluded_scan_dir(Path(dirpath) / d)]
         for filename in sorted(filenames):
             if not str(filename).lower().endswith(".parquet"):
                 continue
@@ -150,10 +155,27 @@ ASSET_CLASS_ALIASES: Dict[str, str] = {
     "stock": "equities",
     "stocks": "equities",
     "stock_parquet": "equities",
+    "stockparquet": "equities",
     "future": "futures",
+    "future_parquet": "futures",
+    "futureparquet": "futures",
+    "futures_parquet": "futures",
+    "futuresparquet": "futures",
     "forex": "fx",
+    "fx_parquet": "fx",
+    "fxparquet": "fx",
     "etf": "etfs",
+    "etf_parquet": "etfs",
+    "etfparquet": "etfs",
+    "etfs_parquet": "etfs",
+    "etfsparquet": "etfs",
     "index": "indices",
+    "indices_parquet": "indices",
+    "indicesparquet": "indices",
+    "index_parquet": "indices",
+    "indexparquet": "indices",
+    "crypto_parquet": "crypto",
+    "cryptoparquet": "crypto",
 }
 
 
@@ -161,6 +183,10 @@ def _derive_asset_class_from_path(path: Path) -> Optional[str]:
     parts = [str(p).strip().lower() for p in path.parts if str(p).strip()]
     for part in parts:
         alias = ASSET_CLASS_ALIASES.get(part)
+        if alias:
+            return alias
+        normalized = "".join(ch for ch in part if ch.isalnum())
+        alias = ASSET_CLASS_ALIASES.get(normalized)
         if alias:
             return alias
         if part in KNOWN_ASSET_CLASSES:
@@ -260,9 +286,12 @@ def write_outputs(result: PreflightResult, outdir: Path) -> Dict[str, object]:
         observed = result.inventory.get(sym, {})
         asset_info = asset_info_by_symbol.get(sym, {})
         first_asset = asset_info.get("first_asset")
-        unique_assets = list(asset_info.get("unique_assets") or [])
-        unknown_paths = list(asset_info.get("unknown_paths") or [])
-        offending_paths = list(asset_info.get("offending_paths") or [])
+        unique_assets_raw = asset_info.get("unique_assets")
+        unknown_paths_raw = asset_info.get("unknown_paths")
+        offending_paths_raw = asset_info.get("offending_paths")
+        unique_assets = list(unique_assets_raw) if isinstance(unique_assets_raw, list) else []
+        unknown_paths = list(unknown_paths_raw) if isinstance(unknown_paths_raw, list) else []
+        offending_paths = list(offending_paths_raw) if isinstance(offending_paths_raw, list) else []
         first_path = asset_info.get("first_path")
         observed_tfs = sorted(observed.keys())
         missing = [tf for tf in required if tf not in observed]

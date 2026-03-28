@@ -62,7 +62,7 @@ def _redact_env(env: dict[str, str]) -> dict[str, str]:
     for key in sorted(env.keys()):
         val = str(env[key])
         upper = key.upper()
-        if any(tok in upper for tok in ("PASS", "SECRET", "TOKEN", "KEY", "USER")):
+        if any(tok in upper for tok in ("PASS", "SECRET", "TOKEN", "KEY", "USER", "ACCOUNT", "AUTH")):
             out[key] = "<REDACTED>"
         else:
             out[key] = val

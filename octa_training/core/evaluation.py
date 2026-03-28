@@ -21,6 +21,10 @@ class EvalSettings:
     lower_q: float = 0.1
     causal_quantiles: bool = False
     quantile_window: Optional[int] = 252
+    adaptive_density_quantiles: bool = False
+    density_target: float = 0.10
+    density_window: Optional[int] = 63
+    density_relax_max: float = 0.0
     leverage_cap: float = 3.0
     vol_target: float = 0.1  # annual target vol (10% by default)
     realized_vol_window: int = 20
@@ -35,6 +39,70 @@ class EvalSettings:
     session_open: str = "00:00"  # HH:MM
     session_close: str = "23:59"  # HH:MM
     session_weekdays: Optional[list[int]] = None  # 0=Mon .. 6=Sun
+    timeframe: Optional[str] = None
+    regime_policy: Optional[Dict[str, Any]] = None
+
+
+def _safe_num(value: Any, default: float = 0.0) -> float:
+    try:
+        out = float(value)
+    except Exception:
+        return float(default)
+    if not np.isfinite(out):
+        return float(default)
+    return float(out)
+
+
+def _rolling_percentile_rank(series: pd.Series, window: int, min_periods: int) -> pd.Series:
+    def _pct_last(values: pd.Series) -> float:
+        try:
+            return float(values.rank(pct=True).iloc[-1])
+        except Exception:
+            return float("nan")
+
+    return series.rolling(window=window, min_periods=min_periods).apply(_pct_last, raw=False)
+
+
+def _blend(low: float, high: float, weight: pd.Series | float) -> pd.Series:
+    weight_s = pd.to_numeric(weight, errors='coerce')
+    if not isinstance(weight_s, pd.Series):
+        weight_s = pd.Series([weight_s], dtype=float)
+    weight_s = weight_s.fillna(0.0).clip(0.0, 1.0)
+    return low + (high - low) * weight_s
+
+
+def _resolve_regime_policy(settings: EvalSettings) -> Dict[str, Any]:
+    raw = settings.regime_policy if isinstance(settings.regime_policy, dict) else {}
+    if not raw or not bool(raw.get("enabled", False)):
+        return {}
+    per_tf = raw.get("per_timeframe", {}) if isinstance(raw.get("per_timeframe"), dict) else {}
+    tf = str(getattr(settings, "timeframe", "") or "").strip()
+    tf_spec = {}
+    if tf:
+        tf_spec = per_tf.get(tf) or per_tf.get(tf.upper()) or per_tf.get(tf.lower()) or {}
+    merged = dict(raw)
+    merged.pop("per_timeframe", None)
+    if isinstance(tf_spec, dict):
+        merged.update(tf_spec)
+    return merged
+
+
+def _normalize_market_frame(market_df: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:
+    if not isinstance(market_df, pd.DataFrame) or market_df.empty:
+        return None
+    out = market_df.copy()
+    if not isinstance(out.index, pd.DatetimeIndex):
+        for cand in ("timestamp", "datetime", "date", "time"):
+            if cand in out.columns:
+                try:
+                    out[cand] = pd.to_datetime(out[cand], utc=True, errors="coerce")
+                    out = out.set_index(cand)
+                    break
+                except Exception:
+                    continue
+    if not isinstance(out.index, pd.DatetimeIndex):
+        return None
+    return out.sort_index()
 
 
 def _rolling_quantile_thresholds(
@@ -65,6 +133,37 @@ def _rolling_quantile_thresholds(
     return u, lo
 
 
+def _adapt_thresholds_for_density(
+    pred: pd.Series,
+    upper: pd.Series,
+    lower: pd.Series,
+    *,
+    density_window: Optional[int],
+    density_target: float,
+    density_relax_max: float,
+) -> tuple[pd.Series, pd.Series, pd.Series]:
+    target = max(float(density_target), 1e-6)
+    relax_max = min(max(float(density_relax_max), 0.0), 1.0)
+    if relax_max <= 0.0:
+        zero = pd.Series(0.0, index=pred.index, dtype=float)
+        return upper, lower, zero
+
+    active = ((pred > upper) | (pred < lower)).astype(float)
+    try:
+        dwin = int(density_window) if density_window is not None else 63
+    except Exception:
+        dwin = 63
+    dwin = max(dwin, 10)
+    density = active.rolling(window=dwin, min_periods=min(20, dwin)).mean().shift(1)
+    density = density.fillna(active.expanding(min_periods=10).mean().shift(1)).fillna(0.0)
+    pressure = ((target - density) / target).clip(lower=0.0, upper=1.0)
+
+    mid = ((upper + lower) / 2.0).astype(float)
+    upper_adj = upper - (upper - mid).clip(lower=0.0) * pressure * relax_max
+    lower_adj = lower + (mid - lower).clip(lower=0.0) * pressure * relax_max
+    return upper_adj, lower_adj, pressure
+
+
 def infer_frequency(index: pd.Index) -> float:
     if len(index) < 2:
         return 252.0
@@ -90,7 +189,12 @@ def realized_vol(returns: pd.Series, window: int, annualization: float) -> pd.Se
     return rv
 
 
-def compute_equity_and_metrics(prices: pd.Series, preds: pd.Series, settings: EvalSettings) -> Dict[str, Any]:
+def compute_equity_and_metrics(
+    prices: pd.Series,
+    preds: pd.Series,
+    settings: EvalSettings,
+    market_df: Optional[pd.DataFrame] = None,
+) -> Dict[str, Any]:
     # coerce preds to Series and align indices with prices where possible
     if not isinstance(preds, pd.Series):
         try:
@@ -170,6 +274,16 @@ def compute_equity_and_metrics(prices: pd.Series, preds: pd.Series, settings: Ev
         pd_sample_price_idx = list(map(str, list(prices.index[:10]))) if len(prices) > 0 else []
         raise ValueError(f'No overlapping price/prediction data; preds_len={len(preds)}, prices_len={len(prices)}, sample_pred_idx={pd_sample_pred_idx}, sample_price_idx={pd_sample_price_idx}')
 
+    market = _normalize_market_frame(market_df)
+    if isinstance(market, pd.DataFrame):
+        extra_cols = [c for c in ("open", "high", "low", "close", "volume") if c in market.columns]
+        if extra_cols:
+            extra = market[extra_cols].copy()
+            extra = extra[~extra.index.duplicated(keep="last")]
+            df = df.join(extra, how="left")
+    if "close" not in df.columns:
+        df["close"] = df["price"]
+
     # compute returns
     # use close-to-close log returns; guard against non-positive prices
     price = pd.to_numeric(df['price'], errors='coerce').astype(float)
@@ -190,9 +304,20 @@ def compute_equity_and_metrics(prices: pd.Series, preds: pd.Series, settings: Ev
                 lower_q=float(settings.lower_q),
                 window=getattr(settings, 'quantile_window', None),
             )
+            density_pressure = pd.Series(0.0, index=df.index, dtype=float)
+            if bool(getattr(settings, 'adaptive_density_quantiles', False)):
+                u_s, l_s, density_pressure = _adapt_thresholds_for_density(
+                    df['pred'],
+                    u_s,
+                    l_s,
+                    density_window=getattr(settings, 'density_window', None),
+                    density_target=float(getattr(settings, 'density_target', 0.10) or 0.10),
+                    density_relax_max=float(getattr(settings, 'density_relax_max', 0.0) or 0.0),
+                )
         else:
             u = df['pred'].quantile(settings.upper_q)
             lo = df['pred'].quantile(settings.lower_q)
+            density_pressure = pd.Series(0.0, index=df.index, dtype=float)
         raw = pd.Series(0.0, index=df.index)
         # Classification target y_cls_* is 1 for positive forward return.
         # Therefore higher predicted probability should map to LONG, lower to SHORT.
@@ -212,9 +337,20 @@ def compute_equity_and_metrics(prices: pd.Series, preds: pd.Series, settings: Ev
                 lower_q=float(settings.lower_q),
                 window=getattr(settings, 'quantile_window', None),
             )
+            density_pressure = pd.Series(0.0, index=df.index, dtype=float)
+            if bool(getattr(settings, 'adaptive_density_quantiles', False)):
+                up_s, low_s, density_pressure = _adapt_thresholds_for_density(
+                    df['pred'],
+                    up_s,
+                    low_s,
+                    density_window=getattr(settings, 'density_window', None),
+                    density_target=float(getattr(settings, 'density_target', 0.10) or 0.10),
+                    density_relax_max=float(getattr(settings, 'density_relax_max', 0.0) or 0.0),
+                )
         else:
             up = df['pred'].quantile(settings.upper_q)
             low = df['pred'].quantile(settings.lower_q)
+            density_pressure = pd.Series(0.0, index=df.index, dtype=float)
         raw = np.sign(df['pred'] - median)
         raw = pd.Series(raw, index=df.index)
         if bool(getattr(settings, 'causal_quantiles', False)):
@@ -225,6 +361,7 @@ def compute_equity_and_metrics(prices: pd.Series, preds: pd.Series, settings: Ev
             raw[df['pred'] < low] = -1.0
 
     df['raw_signal'] = raw
+    df['adaptive_density_pressure'] = density_pressure
 
     # Session filter (if enabled): prevent signals/positions outside trading hours.
     # IMPORTANT: only apply to intraday bars. Applying to daily bars can zero all
@@ -274,10 +411,424 @@ def compute_equity_and_metrics(prices: pd.Series, preds: pd.Series, settings: Ev
     rv = realized_vol(df['ret'], settings.realized_vol_window, ann)
     df['rv'] = rv.replace(0, np.nan).bfill().ffill()
 
+    policy = _resolve_regime_policy(settings)
+    if bool(policy):
+        if settings.mode == 'cls':
+            if bool(getattr(settings, 'causal_quantiles', False)):
+                band = (u_s - l_s).abs().replace(0, np.nan)
+                long_strength = ((df['pred'] - u_s) / band).clip(lower=0.0)
+                short_strength = ((l_s - df['pred']) / band).clip(lower=0.0)
+            else:
+                band = max(float(u - lo), 1e-9)
+                long_strength = ((df['pred'] - float(u)) / band).clip(lower=0.0)
+                short_strength = ((float(lo) - df['pred']) / band).clip(lower=0.0)
+        else:
+            if bool(getattr(settings, 'causal_quantiles', False)):
+                band = (up_s - low_s).abs().replace(0, np.nan)
+                long_strength = ((df['pred'] - up_s) / band).clip(lower=0.0)
+                short_strength = ((low_s - df['pred']) / band).clip(lower=0.0)
+            else:
+                band = max(float(up - low), 1e-9)
+                long_strength = ((df['pred'] - float(up)) / band).clip(lower=0.0)
+                short_strength = ((float(low) - df['pred']) / band).clip(lower=0.0)
+
+        df['signal_strength_raw'] = np.where(
+            df['raw_signal'] > 0,
+            long_strength,
+            np.where(df['raw_signal'] < 0, short_strength, 0.0),
+        )
+        df['signal_strength_raw'] = pd.to_numeric(df['signal_strength_raw'], errors='coerce').fillna(0.0)
+        df['signal_strength'] = (df['signal_strength_raw'] / (1.0 + df['signal_strength_raw'])).clip(0.0, 1.0)
+
+        regime_window = max(int(policy.get('regime_window', 120) or 120), 20)
+        atr_window = max(int(policy.get('atr_window', 14) or 14), 5)
+        trend_window = max(int(policy.get('trend_window', 20) or 20), 5)
+        quality_window = max(int(policy.get('quality_window', 240) or 240), 20)
+        quality_keep_quantile = min(max(_safe_num(policy.get('quality_keep_quantile', 0.70), 0.70), 0.0), 0.99)
+
+        vol_bar = df['ret'].rolling(window=max(int(policy.get('vol_window', 24) or 24), 5), min_periods=5).std(ddof=0)
+        vol_mean = vol_bar.rolling(window=regime_window, min_periods=min(30, regime_window)).mean()
+        vol_std = vol_bar.rolling(window=regime_window, min_periods=min(30, regime_window)).std(ddof=0)
+        df['vol_regime_z_eval'] = ((vol_bar - vol_mean) / vol_std.replace(0, np.nan)).replace([np.inf, -np.inf], np.nan).fillna(0.0)
+
+        prev_close = df['close'].shift(1)
+        if 'high' in df.columns and 'low' in df.columns:
+            high = pd.to_numeric(df['high'], errors='coerce').astype(float)
+            low_col = pd.to_numeric(df['low'], errors='coerce').astype(float)
+            tr = pd.concat(
+                [
+                    (high - low_col).abs(),
+                    (high - prev_close).abs(),
+                    (low_col - prev_close).abs(),
+                ],
+                axis=1,
+            ).max(axis=1)
+        else:
+            tr = df['ret'].abs() * df['close']
+        atr_ratio = (tr.rolling(window=atr_window, min_periods=max(5, atr_window // 2)).mean() / df['close']).replace([np.inf, -np.inf], np.nan)
+        df['atr_ratio_eval'] = atr_ratio.fillna(0.0)
+        df['atr_percentile_eval'] = _rolling_percentile_rank(
+            df['atr_ratio_eval'].fillna(0.0),
+            window=regime_window,
+            min_periods=min(30, regime_window),
+        ).fillna(0.5)
+
+        log_price = np.log(df['close'].replace(0, np.nan)).ffill().bfill()
+        trend_move = log_price.diff(trend_window)
+        trend_noise = df['ret'].rolling(window=trend_window, min_periods=max(5, trend_window // 2)).std(ddof=0) * math.sqrt(float(trend_window))
+        df['trend_strength_eval'] = (trend_move.abs() / trend_noise.replace(0, np.nan)).replace([np.inf, -np.inf], np.nan).fillna(0.0)
+        df['trend_strength_norm'] = (df['trend_strength_eval'] / (1.0 + df['trend_strength_eval'])).clip(0.0, 1.0)
+        df['trend_align_eval'] = np.where(
+            df['raw_signal'] == 0.0,
+            0.0,
+            (np.sign(trend_move.fillna(0.0)) == np.sign(df['raw_signal'])).astype(float),
+        )
+        df['signal_persistence_eval'] = (
+            df['raw_signal'].replace(0.0, np.nan).rolling(window=3, min_periods=1).mean().abs().fillna(0.0).clip(0.0, 1.0)
+        )
+        df['feature_consensus_proxy'] = (0.6 * df['trend_align_eval'] + 0.4 * df['signal_persistence_eval']).clip(0.0, 1.0)
+
+        if 'volume' in df.columns:
+            volume = pd.to_numeric(df['volume'], errors='coerce').astype(float).fillna(0.0)
+            rel_vol = volume / volume.rolling(window=max(int(policy.get('liquidity_window', 120) or 120), 20), min_periods=20).median().replace(0, np.nan)
+            df['liquidity_score_eval'] = rel_vol.clip(lower=0.5, upper=1.5).fillna(1.0)
+        else:
+            df['liquidity_score_eval'] = 1.0
+
+        low_vol = (
+            (df['vol_regime_z_eval'] <= _safe_num(policy.get('low_vol_z_max', -0.20), -0.20))
+            & (df['atr_percentile_eval'] <= _safe_num(policy.get('low_vol_atr_pct_max', 0.45), 0.45))
+        )
+        high_vol = (
+            (df['vol_regime_z_eval'] >= _safe_num(policy.get('high_vol_z_min', 0.35), 0.35))
+            | (df['atr_percentile_eval'] >= _safe_num(policy.get('high_vol_atr_pct_min', 0.70), 0.70))
+        )
+        df['vol_regime_label'] = np.select([low_vol, high_vol], ['LOW_VOL', 'HIGH_VOL'], default='MID_VOL')
+        z_span = max(
+            _safe_num(policy.get('high_vol_z_min', 0.35), 0.35) - _safe_num(policy.get('low_vol_z_max', -0.20), -0.20),
+            1e-6,
+        )
+        atr_span = max(
+            _safe_num(policy.get('high_vol_atr_pct_min', 0.70), 0.70) - _safe_num(policy.get('low_vol_atr_pct_max', 0.45), 0.45),
+            1e-6,
+        )
+        regime_heat_z = (
+            (df['vol_regime_z_eval'] - _safe_num(policy.get('low_vol_z_max', -0.20), -0.20)) / z_span
+        ).clip(0.0, 1.0)
+        regime_heat_atr = (
+            (df['atr_percentile_eval'] - _safe_num(policy.get('low_vol_atr_pct_max', 0.45), 0.45)) / atr_span
+        ).clip(0.0, 1.0)
+        df['regime_heat_eval'] = (0.5 * regime_heat_z + 0.5 * regime_heat_atr).clip(0.0, 1.0)
+
+        regime_score = np.select(
+            [df['vol_regime_label'] == 'LOW_VOL', df['vol_regime_label'] == 'HIGH_VOL'],
+            [
+                _safe_num(policy.get('low_vol_quality_score', 0.25), 0.25),
+                _safe_num(policy.get('high_vol_quality_score', 1.0), 1.0),
+            ],
+            default=_safe_num(policy.get('mid_vol_quality_score', 0.75), 0.75),
+        )
+        df['quality_score'] = (
+            0.40 * df['signal_strength']
+            + 0.20 * regime_score
+            + 0.20 * df['feature_consensus_proxy']
+            + 0.20 * df['trend_strength_norm']
+        ).clip(0.0, 1.0)
+
+        ensemble_cfg = policy.get('ensemble', {}) if isinstance(policy.get('ensemble'), dict) else {}
+        if bool(ensemble_cfg.get('enabled', False)):
+            sleeves_cfg = ensemble_cfg.get('sleeves', {}) if isinstance(ensemble_cfg.get('sleeves'), dict) else {}
+            active_floor = _safe_num(ensemble_cfg.get('active_score_min', 0.10), 0.10)
+            diversity_min = max(int(ensemble_cfg.get('diversity_min', 2) or 2), 1)
+            model_weight = _safe_num(ensemble_cfg.get('model_weight', 0.60), 0.60)
+            ensemble_weight = _safe_num(ensemble_cfg.get('ensemble_weight', 0.40), 0.40)
+            ensemble_only_min_score = _safe_num(ensemble_cfg.get('ensemble_only_min_score', 0.45), 0.45)
+            low_vol_ensemble_only = bool(ensemble_cfg.get('low_vol_allow_ensemble_only', False))
+
+            def _sleeve_weight(name: str, default: float) -> float:
+                cfg = sleeves_cfg.get(name, {}) if isinstance(sleeves_cfg.get(name), dict) else {}
+                return _safe_num(cfg.get('weight', default), default)
+
+            def _sleeve_enabled(name: str, default: bool = True) -> bool:
+                cfg = sleeves_cfg.get(name, {}) if isinstance(sleeves_cfg.get(name), dict) else {}
+                return bool(cfg.get('enabled', default))
+
+            sleeve_scores: Dict[str, pd.Series] = {}
+
+            if _sleeve_enabled('momentum'):
+                sleeve_scores['momentum'] = (
+                    np.sign(trend_move.fillna(0.0)) * (0.65 * df['trend_strength_norm'] + 0.35 * df['signal_strength'])
+                ).clip(-1.0, 1.0)
+
+            if _sleeve_enabled('breakout'):
+                breakout_window = max(int((sleeves_cfg.get('breakout', {}) or {}).get('range_window', 24) or 24), 8)
+                rolling_high = pd.to_numeric(df['close'], errors='coerce').rolling(window=breakout_window, min_periods=max(5, breakout_window // 2)).max()
+                rolling_low = pd.to_numeric(df['close'], errors='coerce').rolling(window=breakout_window, min_periods=max(5, breakout_window // 2)).min()
+                breakout_pos = ((df['close'] - rolling_low) / (rolling_high - rolling_low).replace(0, np.nan)).fillna(0.5)
+                breakout_score = ((breakout_pos - 0.5) * 2.0).clip(-1.0, 1.0)
+                breakout_gate = (df['atr_percentile_eval'] >= _safe_num((sleeves_cfg.get('breakout', {}) or {}).get('atr_pct_min', 0.55), 0.55)).astype(float)
+                sleeve_scores['breakout'] = (breakout_score * breakout_gate).clip(-1.0, 1.0)
+
+            if _sleeve_enabled('mean_reversion'):
+                mr_window = max(int((sleeves_cfg.get('mean_reversion', {}) or {}).get('z_window', 24) or 24), 8)
+                close_mean = df['close'].rolling(window=mr_window, min_periods=max(5, mr_window // 2)).mean()
+                close_std = df['close'].rolling(window=mr_window, min_periods=max(5, mr_window // 2)).std(ddof=0).replace(0, np.nan)
+                close_z = ((df['close'] - close_mean) / close_std).replace([np.inf, -np.inf], np.nan).fillna(0.0)
+                mr_clip = _safe_num((sleeves_cfg.get('mean_reversion', {}) or {}).get('z_clip', 2.5), 2.5)
+                mr_score = (-close_z / max(mr_clip, 1e-6)).clip(-1.0, 1.0)
+                mr_gate = (df['atr_percentile_eval'] <= _safe_num((sleeves_cfg.get('mean_reversion', {}) or {}).get('atr_pct_max', 0.65), 0.65)).astype(float)
+                sleeve_scores['mean_reversion'] = (mr_score * mr_gate).clip(-1.0, 1.0)
+
+            if _sleeve_enabled('volume_flow'):
+                if 'volume' in df.columns:
+                    volume_s = pd.to_numeric(df['volume'], errors='coerce').fillna(0.0)
+                else:
+                    volume_s = pd.Series(0.0, index=df.index, dtype=float)
+                signed_volume = np.sign(df['ret'].fillna(0.0)) * volume_s
+                obv = signed_volume.cumsum()
+                obv_window = max(int((sleeves_cfg.get('volume_flow', {}) or {}).get('obv_window', 12) or 12), 4)
+                obv_delta = obv.diff(obv_window)
+                obv_scale = obv.abs().rolling(window=max(12, obv_window * 2), min_periods=max(6, obv_window)).median().replace(0, np.nan)
+                obv_score = (obv_delta / obv_scale).replace([np.inf, -np.inf], np.nan).fillna(0.0).clip(-1.0, 1.0)
+                rel_vol_gate = (df['liquidity_score_eval'] >= _safe_num((sleeves_cfg.get('volume_flow', {}) or {}).get('rel_vol_min', 0.9), 0.9)).astype(float)
+                sleeve_scores['volume_flow'] = (obv_score * rel_vol_gate).clip(-1.0, 1.0)
+
+            if _sleeve_enabled('intraday_structure') and isinstance(df.index, pd.DatetimeIndex):
+                hour_bucket = pd.Series(df.index.hour, index=df.index)
+                hour_ret = df['ret'].fillna(0.0).groupby(hour_bucket)
+                hour_cum = hour_ret.cumsum().shift(1)
+                hour_cnt = hour_ret.cumcount()
+                hour_mean = (hour_cum / hour_cnt.replace(0, np.nan)).replace([np.inf, -np.inf], np.nan).fillna(0.0)
+                hour_scale = df['ret'].rolling(window=48, min_periods=12).std(ddof=0).replace(0, np.nan)
+                hour_score = (hour_mean / hour_scale).replace([np.inf, -np.inf], np.nan).fillna(0.0).clip(-1.0, 1.0)
+                sleeve_scores['intraday_structure'] = hour_score
+
+            if _sleeve_enabled('range_release'):
+                comp_window = max(int((sleeves_cfg.get('range_release', {}) or {}).get('compression_window', 20) or 20), 8)
+                tr_mean = tr.rolling(window=comp_window, min_periods=max(5, comp_window // 2)).mean()
+                range_pct = _rolling_percentile_rank((tr_mean / df['close']).fillna(0.0), window=regime_window, min_periods=min(30, regime_window)).fillna(0.5)
+                compression_gate = (range_pct <= _safe_num((sleeves_cfg.get('range_release', {}) or {}).get('compression_pct_max', 0.40), 0.40)).astype(float)
+                release_score = ((df['atr_percentile_eval'] - range_pct) * 2.0).clip(-1.0, 1.0)
+                sleeve_scores['range_release'] = (np.sign(trend_move.fillna(0.0)) * release_score * compression_gate).clip(-1.0, 1.0)
+
+            weight_map = {
+                name: _sleeve_weight(
+                    name,
+                    {
+                        'momentum': 1.0,
+                        'breakout': 0.9,
+                        'mean_reversion': 0.8,
+                        'volume_flow': 0.7,
+                        'intraday_structure': 0.5,
+                        'range_release': 0.8,
+                    }.get(name, 1.0),
+                )
+                for name in sleeve_scores
+            }
+            abs_weight_sum = pd.Series(0.0, index=df.index, dtype=float)
+            weighted_score_sum = pd.Series(0.0, index=df.index, dtype=float)
+            pos_support = pd.Series(0.0, index=df.index, dtype=float)
+            neg_support = pd.Series(0.0, index=df.index, dtype=float)
+            active_support = pd.Series(0.0, index=df.index, dtype=float)
+            diversity_count = pd.Series(0.0, index=df.index, dtype=float)
+
+            for name, score in sleeve_scores.items():
+                s = pd.to_numeric(score, errors='coerce').fillna(0.0).clip(-1.0, 1.0)
+                w = float(weight_map[name])
+                active = (s.abs() >= active_floor).astype(float)
+                df[f'ensemble_{name}_score'] = s
+                df[f'ensemble_{name}_active'] = active.astype(bool)
+                abs_weight_sum = abs_weight_sum + active * w
+                weighted_score_sum = weighted_score_sum + s * w
+                pos_support = pos_support + np.where(s > 0, s * w, 0.0)
+                neg_support = neg_support + np.where(s < 0, (-s) * w, 0.0)
+                active_support = active_support + active * w
+                diversity_count = diversity_count + np.where(s.abs() >= active_floor, 1.0, 0.0)
+
+            ensemble_score = (weighted_score_sum / abs_weight_sum.replace(0.0, np.nan)).replace([np.inf, -np.inf], np.nan).fillna(0.0).clip(-1.0, 1.0)
+            ensemble_conf = (np.maximum(pos_support, neg_support) / active_support.replace(0.0, np.nan)).replace([np.inf, -np.inf], np.nan).fillna(0.0).clip(0.0, 1.0)
+            diversity_norm = (diversity_count / max(len(sleeve_scores), 1)).clip(0.0, 1.0)
+            model_signal_score = np.sign(df['raw_signal']).astype(float) * df['signal_strength']
+            blended_score = (
+                model_weight * model_signal_score
+                + ensemble_weight * ensemble_score * np.maximum(ensemble_conf, diversity_norm)
+            ).clip(-1.0, 1.0)
+            blended_sign = np.sign(blended_score).astype(float)
+            ensemble_only_allowed = (
+                (df['raw_signal'] == 0.0)
+                & (ensemble_conf >= ensemble_only_min_score)
+                & (diversity_count >= float(diversity_min))
+                & np.where(df['vol_regime_label'] == 'LOW_VOL', low_vol_ensemble_only, True)
+            )
+            df['ensemble_score'] = ensemble_score
+            df['ensemble_confidence'] = ensemble_conf
+            df['ensemble_diversity_count'] = diversity_count
+            df['ensemble_diversity_norm'] = diversity_norm
+            df['ensemble_only_allowed'] = ensemble_only_allowed.astype(bool)
+            df['raw_signal'] = np.where(
+                ensemble_only_allowed & (blended_sign != 0.0),
+                blended_sign,
+                df['raw_signal'],
+            )
+            df['signal_strength'] = np.where(
+                ensemble_only_allowed,
+                np.maximum(df['signal_strength'], np.abs(blended_score)),
+                df['signal_strength'],
+            )
+            df['quality_score'] = (
+                0.30 * df['signal_strength']
+                + 0.15 * regime_score
+                + 0.15 * df['feature_consensus_proxy']
+                + 0.15 * df['trend_strength_norm']
+                + 0.15 * df['ensemble_confidence']
+                + 0.10 * df['ensemble_diversity_norm']
+            ).clip(0.0, 1.0)
+        else:
+            df['ensemble_score'] = 0.0
+            df['ensemble_confidence'] = 0.0
+            df['ensemble_diversity_count'] = 0.0
+            df['ensemble_diversity_norm'] = 0.0
+            df['ensemble_only_allowed'] = False
+
+        hist_quality = df['quality_score'].where(df['raw_signal'] != 0.0)
+        quality_threshold = hist_quality.rolling(window=quality_window, min_periods=min(30, quality_window)).quantile(quality_keep_quantile).shift(1)
+        quality_threshold = quality_threshold.fillna(hist_quality.expanding(min_periods=20).quantile(quality_keep_quantile).shift(1))
+        quality_threshold = quality_threshold.fillna(_safe_num(policy.get('base_quality_floor', 0.55), 0.55))
+        low_floor = _safe_num(policy.get('low_vol_quality_floor', 0.80), 0.80)
+        mid_floor = _safe_num(policy.get('mid_vol_quality_floor', 0.65), 0.65)
+        high_floor = _safe_num(policy.get('high_vol_quality_floor', 0.55), 0.55)
+        regime_floor = np.select(
+            [df['vol_regime_label'] == 'LOW_VOL', df['vol_regime_label'] == 'HIGH_VOL'],
+            [low_floor, high_floor],
+            default=mid_floor,
+        )
+        low_keep = _safe_num(policy.get('low_vol_quality_keep_quantile', quality_keep_quantile), quality_keep_quantile)
+        mid_keep = _safe_num(policy.get('mid_vol_quality_keep_quantile', min(quality_keep_quantile, 0.60)), min(quality_keep_quantile, 0.60))
+        high_keep = _safe_num(policy.get('high_vol_quality_keep_quantile', min(mid_keep, 0.50)), min(mid_keep, 0.50))
+        regime_quantile_relax = np.select(
+            [df['vol_regime_label'] == 'LOW_VOL', df['vol_regime_label'] == 'HIGH_VOL'],
+            [max(quality_keep_quantile - low_keep, 0.0), max(quality_keep_quantile - high_keep, 0.0)],
+            default=max(quality_keep_quantile - mid_keep, 0.0),
+        )
+        quality_threshold = (
+            quality_threshold - regime_quantile_relax * _safe_num(policy.get('quality_quantile_relax_scale', 0.30), 0.30)
+        ).clip(lower=0.0)
+
+        density_window = max(int(policy.get('density_window', quality_window) or quality_window), 20)
+        raw_density = (df['raw_signal'] != 0.0).astype(float).rolling(window=density_window, min_periods=min(20, density_window)).mean().shift(1)
+        raw_density = raw_density.fillna((df['raw_signal'] != 0.0).astype(float).expanding(min_periods=10).mean().shift(1)).fillna(0.0)
+
+        base_cost_edge = float((_safe_num(settings.cost_bps) + _safe_num(settings.spread_bps)) / 10000.0)
+        prelim_signal = (df['raw_signal'] != 0.0)
+        prelim_signal &= (df['quality_score'] >= np.maximum(quality_threshold, regime_floor))
+        prelim_signal &= (df['signal_strength'] * (df['rv'] / math.sqrt(float(ann))).replace([np.inf, -np.inf], np.nan).fillna(0.0) * df['liquidity_score_eval'] >= base_cost_edge)
+        prelim_signal &= np.where(
+            df['vol_regime_label'] == 'LOW_VOL',
+            df['signal_strength'] >= _safe_num(policy.get('low_vol_signal_strength_min', 0.55), 0.55),
+            True,
+        )
+        if bool(policy.get('low_vol_require_trend_alignment', True)):
+            prelim_signal &= np.where(
+                df['vol_regime_label'] == 'LOW_VOL',
+                df['trend_align_eval'] >= 1.0,
+                True,
+            )
+        accepted_density = prelim_signal.astype(float).rolling(window=density_window, min_periods=min(20, density_window)).mean().shift(1)
+        accepted_density = accepted_density.fillna(prelim_signal.astype(float).expanding(min_periods=10).mean().shift(1)).fillna(0.0)
+        density_target = _safe_num(policy.get('min_signal_density', 0.015), 0.015)
+        density_pressure = ((density_target - accepted_density) / max(density_target, 1e-6)).clip(lower=0.0, upper=1.0)
+        density_relax = density_pressure * _safe_num(policy.get('density_floor_relax', 0.12), 0.12)
+        df['density_pressure_eval'] = density_pressure
+        df['signal_rejection_ratio_eval'] = np.where(raw_density > 0.0, 1.0 - (accepted_density / raw_density.clip(lower=1e-6)), 0.0)
+
+        if isinstance(df.index, pd.DatetimeIndex):
+            hour_bucket = pd.Series(df.index.hour, index=df.index)
+            raw_opps = (df['raw_signal'] != 0.0).astype(float)
+            raw_hour_obs = raw_opps.groupby(hour_bucket).cumsum().shift(1).fillna(0.0)
+            accepted_hour_obs = prelim_signal.astype(float).groupby(hour_bucket).cumsum().shift(1).fillna(0.0)
+            hour_accept_ratio = ((accepted_hour_obs + 1.0) / (raw_hour_obs + 2.0)).clip(0.0, 1.0)
+            global_accept_ratio = ((accepted_density + 1e-6) / raw_density.clip(lower=1e-6)).clip(0.0, 1.0)
+            hour_density_pressure = ((global_accept_ratio - hour_accept_ratio) / global_accept_ratio.clip(lower=0.1)).clip(lower=0.0, upper=1.0)
+            hour_density_pressure = np.where(raw_hour_obs >= _safe_num(policy.get('hour_min_observations', 8), 8), hour_density_pressure, 0.0)
+            df['hour_density_pressure_eval'] = pd.Series(hour_density_pressure, index=df.index, dtype=float).fillna(0.0)
+        else:
+            df['hour_density_pressure_eval'] = 0.0
+
+        df['quality_threshold'] = (
+            np.maximum(quality_threshold, regime_floor)
+            - density_relax
+            - df['hour_density_pressure_eval'] * _safe_num(policy.get('hour_coverage_relax', 0.03), 0.03)
+        ).clip(lower=_safe_num(policy.get('base_quality_floor', 0.55), 0.55))
+
+        per_bar_vol = (df['rv'] / math.sqrt(float(ann))).replace([np.inf, -np.inf], np.nan).fillna(0.0)
+        df['expected_edge'] = (df['signal_strength'] * per_bar_vol * df['liquidity_score_eval']).fillna(0.0)
+        base_buffer = _safe_num(policy.get('cost_edge_buffer', 1.10), 1.10)
+        min_buffer = max(_safe_num(policy.get('density_floor_cost_buffer_min', 1.0), 1.0), 1.0)
+        dynamic_cost_buffer = base_buffer - density_pressure * max(base_buffer - min_buffer, 0.0)
+        df['estimated_cost_edge'] = base_cost_edge * dynamic_cost_buffer
+
+        allow_signal = (df['raw_signal'] != 0.0)
+        allow_signal &= (df['quality_score'] >= df['quality_threshold'])
+        allow_signal &= (df['expected_edge'] >= df['estimated_cost_edge'])
+        allow_signal &= np.where(
+            df['vol_regime_label'] == 'LOW_VOL',
+            df['signal_strength'] >= _safe_num(policy.get('low_vol_signal_strength_min', 0.55), 0.55),
+            True,
+        )
+        if bool(policy.get('low_vol_require_trend_alignment', True)):
+            allow_signal &= np.where(
+                df['vol_regime_label'] == 'LOW_VOL',
+                df['trend_align_eval'] >= 1.0,
+                True,
+            )
+        df['policy_allowed'] = allow_signal.astype(bool)
+        df['raw_signal'] = np.where(df['policy_allowed'], df['raw_signal'], 0.0)
+    else:
+        df['signal_strength_raw'] = 0.0
+        df['signal_strength'] = 0.0
+        df['vol_regime_z_eval'] = 0.0
+        df['atr_ratio_eval'] = 0.0
+        df['atr_percentile_eval'] = 0.5
+        df['trend_strength_eval'] = 0.0
+        df['trend_strength_norm'] = 0.0
+        df['trend_align_eval'] = 0.0
+        df['signal_persistence_eval'] = 0.0
+        df['feature_consensus_proxy'] = 0.0
+        df['liquidity_score_eval'] = 1.0
+        df['vol_regime_label'] = 'MID_VOL'
+        df['quality_score'] = 0.0
+        df['quality_threshold'] = 0.0
+        df['expected_edge'] = 0.0
+        df['estimated_cost_edge'] = 0.0
+        df['policy_allowed'] = df['raw_signal'] != 0.0
+        df['regime_heat_eval'] = 0.5
+        df['density_pressure_eval'] = 0.0
+        df['signal_rejection_ratio_eval'] = 0.0
+        df['hour_density_pressure_eval'] = 0.0
+
     # position sizing: vol scaling
     vol_scale = settings.vol_target / df['rv']
     vol_scale = vol_scale.clip(upper=settings.leverage_cap)
-    df['pos'] = df['raw_signal'] * vol_scale
+    if bool(policy):
+        heat = df['regime_heat_eval'].clip(0.0, 1.0)
+        low_anchor = _safe_num(policy.get('low_vol_size_mult', 0.35), 0.35)
+        mid_low = _safe_num(policy.get('mid_vol_size_mult_low', 0.90), 0.90)
+        mid_high = _safe_num(policy.get('mid_vol_size_mult_high', 1.10), 1.10)
+        high_low = _safe_num(policy.get('high_vol_size_mult_low', 1.10), 1.10)
+        size_mult = np.where(
+            heat <= 0.5,
+            _blend(low_anchor, mid_high, heat / 0.5),
+            _blend(mid_low, high_low, (heat - 0.5) / 0.5),
+        )
+        size_mult = pd.Series(size_mult, index=df.index, dtype=float).fillna(_safe_num(policy.get('mid_vol_size_mult', 1.0), 1.0))
+        quality_size_floor = _safe_num(policy.get('quality_size_floor', 0.50), 0.50)
+        df['size_multiplier_eval'] = pd.to_numeric(
+            size_mult * (quality_size_floor + (1.0 - quality_size_floor) * df['quality_score']),
+            errors='coerce',
+        ).fillna(0.0)
+    else:
+        df['size_multiplier_eval'] = 1.0
+    df['pos'] = (df['raw_signal'] * vol_scale * df['size_multiplier_eval']).clip(lower=-settings.leverage_cap, upper=settings.leverage_cap)
 
     # compute turnover and costs
     df['pos_prev'] = df['pos'].shift(1).fillna(0.0)

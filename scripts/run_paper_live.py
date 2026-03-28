@@ -1,30 +1,14 @@
 #!/usr/bin/env python3
-"""Scheduled paper-execution entry point.
-
-Invoked by octa-paper-runner.timer (every 30 min).
-Pre-execution gate (TWS readiness + broker handshake) runs automatically
-inside run_paper() when OCTA_BROKER_MODE=ib_insync.
-"""
+"""Blocked paper entrypoint for Foundation scope."""
 from __future__ import annotations
 
-import json
-import os
-import sys
-import uuid
-from datetime import datetime, timezone
+from octa.foundation.control_plane import block_non_canonical_entry
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from octa_ops.autopilot.paper_runner import run_paper
+def main() -> int:
+    block_non_canonical_entry("scripts/run_paper_live.py")
+    return 1
 
-run_id = "paper_live_" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "_" + uuid.uuid4().hex[:8]
 
-result = run_paper(
-    run_id=run_id,
-    config_path="configs/autonomous_paper.yaml",
-    broker_cfg_path="configs/execution_ibkr.yaml",
-    level="paper",
-    live_enable=False,
-)
-
-print(json.dumps(result, indent=2, default=str))
+if __name__ == "__main__":
+    raise SystemExit(main())

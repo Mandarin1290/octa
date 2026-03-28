@@ -11,10 +11,12 @@ from typing import Any, Dict, List, Optional
 from octa.core.governance.governance_audit import (
     EVENT_EXECUTION_PREFLIGHT,
     EVENT_GOVERNANCE_ENFORCED,
+    EVENT_INFERENCE_CYCLE,
     EVENT_PORTFOLIO_PREFLIGHT,
     EVENT_RISK_AGGREGATION,
     GovernanceAudit,
 )
+from .inference_bridge import InferenceResult, run_inference_cycle
 from octa.execution.capital_state import CapitalState, NAV_DISCREPANCY_THRESHOLD
 from octa.core.portfolio.preflight import run_preflight
 
@@ -27,6 +29,15 @@ from .risk_fail_closed import incident_to_dict, safe_decide
 from .risk_engine import RiskDecision, RiskEngine, RiskEngineConfig
 from .tws_probe import tws_probe
 from octa_core.risk_institutional.risk_aggregator import RiskSnapshot, aggregate_risk
+
+
+# PRODUCTION SHADOW = mode "dry-run" or "shadow".
+# This is the production shadow: BrokerRouter runs in sandbox/read-only mode (no real orders),
+# NAV uses broker read + fallback, and the full governance audit chain fires.
+# This is distinct from the research shadow in octa/core/shadow/shadow_engine.py which is
+# a pure vector backtest (no broker, no governance, historical signals only).
+PUBLIC_FOUNDATION_EXECUTION_MODES = frozenset({"dry-run", "shadow"})
+INTERNAL_ONLY_EXECUTION_MODES = frozenset({"paper", "live"})
 
 
 def _utc_now_iso() -> str:
@@ -116,6 +127,15 @@ class ExecutionConfig:
     broker_cfg_path: Optional[Path] = None
     pre_execution_enabled: Optional[bool] = None
     tws_probe_timeout_sec: int = 10
+    ml_inference_enabled: bool = False
+    artifact_dir: Path = Path("raw") / "PKL"
+    raw_data_dir: Path = Path("raw")
+    inference_timeframe: str = "1D"
+    # P0-3/P0-5: Secondary artifact source for inference (training promotion output).
+    # When set, paper_ready/<SYMBOL>/<TF>/<SYMBOL>_<TF>.pkl is checked as fallback.
+    # Default: octa/var/models/paper_ready/ (canonical training output dir).
+    # Set to None to disable the secondary lookup.
+    paper_ready_dir: Optional[Path] = Path("octa") / "var" / "models" / "paper_ready"
 
 
 _ASSET_CLASS_META: Dict[str, Dict[str, str]] = {
@@ -266,12 +286,44 @@ def _intent_order_id(prefix: str, symbol: str, cycle: int) -> str:
     return f"{prefix}_{symbol}_{cycle}"
 
 
+def _enforce_foundation_scope(cfg: ExecutionConfig, mode_norm: str) -> None:
+    live_flags = {
+        "enable_live": bool(cfg.enable_live),
+        "i_understand_live_risk": bool(cfg.i_understand_live_risk),
+        "enable_carry_live": bool(cfg.enable_carry_live),
+        "i_understand_carry_risk": bool(cfg.i_understand_carry_risk),
+    }
+    if mode_norm != "live" and not any(live_flags.values()):
+        return
+    payload = {
+        "timestamp_utc": _utc_now_iso(),
+        "mode": mode_norm,
+        "blocked": True,
+        "reason": "foundation_scope_blocks_real_execution",
+        "release_scope": "offline_training_and_shadow_smoke_only",
+        "live_flags": live_flags,
+    }
+    _write_json(cfg.evidence_dir / "scope_enforcement.json", payload)
+    raise RuntimeError("live_execution_blocked_in_v0_0_0_foundation_scope")
+
+
 def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
     cfg.evidence_dir.mkdir(parents=True, exist_ok=True)
     run_log_dir = cfg.evidence_dir
     notifier = ExecutionNotifier(cfg.evidence_dir)
     risk_engine = RiskEngine(RiskEngineConfig())
     mode_norm = str(cfg.mode).strip().lower()
+    _enforce_foundation_scope(cfg, mode_norm)
+    if mode_norm in INTERNAL_ONLY_EXECUTION_MODES:
+        _write_json(
+            cfg.evidence_dir / "internal_only_mode_notice.json",
+            {
+                "mode": mode_norm,
+                "internal_only": True,
+                "public_foundation_control_plane_reachable": False,
+                "approved_public_modes": sorted(PUBLIC_FOUNDATION_EXECUTION_MODES),
+            },
+        )
     pre_exec_cfg_path = cfg.broker_cfg_path if cfg.broker_cfg_path is not None else None
     if pre_exec_cfg_path is not None:
         try:
@@ -574,6 +626,37 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
         if not eligible_rows:
             blocks.append({"cycle": cycle_idx, "strategy": "ml", "reason": "no_symbols_entry_eligible"})
 
+        # --- ML Inference Pre-Gate (optional, fail-closed) ---
+        # When enabled: approved=True, signal<=0 → block before risk engine.
+        # When disabled (default) or on any error: fall through unchanged.
+        _inference_map: dict = {}
+        if cfg.ml_inference_enabled and eligible_rows:
+            try:
+                _inference_map = run_inference_cycle(
+                    eligible_rows=eligible_rows,
+                    artifact_dir=cfg.artifact_dir,
+                    raw_data_dir=cfg.raw_data_dir,
+                    timeframe=cfg.inference_timeframe,
+                    evidence_dir=cfg.evidence_dir,
+                    cycle_idx=cycle_idx,
+                    paper_ready_dir=cfg.paper_ready_dir,
+                )
+                _n_approved = sum(1 for ir in _inference_map.values() if ir.approved)
+                _n_blocked = sum(1 for ir in _inference_map.values() if ir.approved and ir.signal <= 0)
+                gov_audit.emit(
+                    EVENT_INFERENCE_CYCLE,
+                    {
+                        "cycle": cycle_idx,
+                        "total_symbols": len(_inference_map),
+                        "approved_inference": _n_approved,
+                        "blocked_by_signal": _n_blocked,
+                        "inference_errors": len(_inference_map) - _n_approved,
+                    },
+                )
+            except Exception as _inf_exc:
+                # Evidence-write errors must never block execution
+                _inference_map = {}
+
         # --- Risk Aggregation (fail-closed, pre-trade) ---
         _agg_snapshot = _run_aggregate_risk_fail_closed(
             eligible_rows=eligible_rows,
@@ -601,6 +684,25 @@ def run_execution(cfg: ExecutionConfig) -> Dict[str, Any]:
                     },
                 )
             last_scaling[symbol] = scaling_level
+
+            # --- Inference pre-gate (signal filter before risk engine) ---
+            # Only gates when inference is enabled AND inference succeeded.
+            # approved=False (no artifact, feature error, etc.) → pass through.
+            _infer: InferenceResult = _inference_map.get(symbol)  # type: ignore[assignment]
+            if _infer is not None and _infer.approved and _infer.signal <= 0:
+                _gate_reason = f"inference_pre_gate:signal={_infer.signal}:tf={_infer.timeframe}"
+                blocks.append({"cycle": cycle_idx, "strategy": "ml", "symbol": symbol, "reason": _gate_reason})
+                notifier.emit(
+                    "inference_pre_gate_block",
+                    {
+                        "symbol": symbol,
+                        "signal": _infer.signal,
+                        "confidence": _infer.confidence,
+                        "timeframe": _infer.timeframe,
+                        "reason": _infer.reason,
+                    },
+                )
+                continue
 
             blocked, ml_decision_obj, incident = safe_decide(
                 decide_fn=risk_engine.decide_ml,

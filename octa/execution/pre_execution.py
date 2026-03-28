@@ -71,7 +71,7 @@ class PreExecutionSettings:
 # ---------------------------------------------------------------------------
 
 _SECRET_PAT: re.Pattern[str] = re.compile(
-    r"(?i)(password|passwd|secret|token|api[_\-]?key|credential|private[_\-]?key|auth)"
+    r"(?i)(password|passwd|secret|token|api[_\-]?key|credential|private[_\-]?key|auth|username|account|user)"
 )
 
 

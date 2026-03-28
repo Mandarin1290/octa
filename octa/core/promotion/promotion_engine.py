@@ -28,6 +28,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 from .promotion_criteria import PromotionCriteria, evaluate
+from .promotion_policy import PromotionPolicy
+from .promotion_validation import validate_shadow_evidence
 
 
 # ---------------------------------------------------------------------------
@@ -348,7 +350,7 @@ class PromotionResult:
     decision_path: str = ""
 
 
-def evaluate_promotion(
+def _evaluate_live_promotion(
     symbol: str,
     *,
     run_dir: Optional[Path] = None,
@@ -464,4 +466,107 @@ def evaluate_promotion(
         details=decision,
         decision_sha256=sha,
         decision_path=dpath,
+    )
+
+
+def _evaluate_shadow_promotion(
+    shadow_evidence_dir: str | Path,
+    policy: PromotionPolicy | Mapping[str, Any],
+) -> dict[str, Any]:
+    resolved_policy = (
+        policy if isinstance(policy, PromotionPolicy) else PromotionPolicy.from_mapping(policy)
+    )
+    validation = validate_shadow_evidence(
+        shadow_evidence_dir,
+        require_hash_integrity=resolved_policy.require_hash_integrity,
+        require_validation_ok=resolved_policy.require_validation_ok,
+    )
+    if not validation["is_valid"]:
+        return {
+            "status": "PROMOTE_BLOCKED",
+            "checks": validation["checks"],
+            "summary": {
+                "blocked_by_validation": True,
+                "reason": validation["reason"],
+                "shadow_evidence_dir": str(Path(shadow_evidence_dir).resolve()),
+            },
+        }
+
+    metrics = validation["metrics"]
+    checks = list(validation["checks"])
+
+    def add_check(name: str, passed: bool, value: Any, threshold: Any) -> None:
+        checks.append(
+            {
+                "name": name,
+                "status": "pass" if passed else "fail",
+                "value": value,
+                "threshold": threshold,
+            }
+        )
+
+    add_check("min_trades", int(metrics["n_trades"]) >= resolved_policy.min_trades, int(metrics["n_trades"]), resolved_policy.min_trades)
+    add_check("min_win_rate", float(metrics["win_rate"]) >= resolved_policy.min_win_rate, float(metrics["win_rate"]), resolved_policy.min_win_rate)
+    add_check(
+        "min_profit_factor",
+        float(metrics["profit_factor"]) >= resolved_policy.min_profit_factor,
+        float(metrics["profit_factor"]),
+        resolved_policy.min_profit_factor,
+    )
+    observed_drawdown = abs(float(metrics["max_drawdown"]))
+    add_check("max_drawdown", observed_drawdown <= resolved_policy.max_drawdown, observed_drawdown, resolved_policy.max_drawdown)
+    add_check(
+        "min_total_return",
+        float(metrics["total_return"]) >= resolved_policy.min_total_return,
+        float(metrics["total_return"]),
+        resolved_policy.min_total_return,
+    )
+    add_check(
+        "kill_switch_not_triggered",
+        bool(metrics["kill_switch_triggered"]) is False,
+        bool(metrics["kill_switch_triggered"]),
+        False,
+    )
+
+    status = "PROMOTE_ELIGIBLE" if all(item["status"] == "pass" for item in checks) else "PROMOTE_BLOCKED"
+    return {
+        "status": status,
+        "checks": checks,
+        "summary": {
+            "blocked_by_validation": False,
+            "shadow_evidence_dir": str(Path(shadow_evidence_dir).resolve()),
+            "policy": resolved_policy.to_dict(),
+            "passed_checks": sum(1 for item in checks if item["status"] == "pass"),
+            "failed_checks": sum(1 for item in checks if item["status"] == "fail"),
+        },
+    }
+
+
+def evaluate_promotion(
+    symbol: str | Path,
+    policy: PromotionPolicy | Mapping[str, Any] | None = None,
+    *,
+    run_dir: Optional[Path] = None,
+    metrics_by_tf: Optional[Mapping[str, Mapping[str, Any]]] = None,
+    criteria: Optional[PromotionCriteria] = None,
+    sqlite_path: Optional[Path] = None,
+    jsonl_path: Optional[Path] = None,
+    drift_registry_dir: Optional[Path] = None,
+    risk_incident_count: int = 0,
+    evidence_dir: Optional[Path] = None,
+    run_id: Optional[str] = None,
+) -> PromotionResult | dict[str, Any]:
+    if policy is not None and metrics_by_tf is None and run_dir is None and criteria is None:
+        return _evaluate_shadow_promotion(symbol, policy)
+    return _evaluate_live_promotion(
+        str(symbol),
+        run_dir=run_dir,
+        metrics_by_tf=metrics_by_tf,
+        criteria=criteria,
+        sqlite_path=sqlite_path,
+        jsonl_path=jsonl_path,
+        drift_registry_dir=drift_registry_dir,
+        risk_incident_count=risk_incident_count,
+        evidence_dir=evidence_dir,
+        run_id=run_id,
     )

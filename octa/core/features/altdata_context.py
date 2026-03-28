@@ -150,7 +150,15 @@ def _filter_macro(features: Mapping[str, float]) -> dict[str, float]:
 
 
 def _filter_event(features: Mapping[str, float]) -> dict[str, float]:
-    prefixes = ("event_risk_", "gdelt_", "conflict_", "recession_", "edgar_event_count")
+    prefixes = (
+        "event_risk_",
+        "gdelt_",
+        "conflict_",
+        "recession_",
+        "edgar_event_count",
+        "news_",
+        "scheduled_",
+    )
     return {k: float(v) for k, v in features.items() if _starts_with(k, prefixes)}
 
 
@@ -216,7 +224,7 @@ def _apply_freshness(
 ) -> tuple[dict[str, float], dict[str, float], dict[str, float], dict[str, float], dict[str, float], dict[str, Any]]:
     source_map = {
         "macro": ["fred", "ecb", "oecd", "worldbank", "eia", "stooq"],
-        "event": ["gdelt"],
+        "event": ["gdelt", "news_events", "scheduled_events"],
         "attention": ["google_trends", "wikipedia"],
         "positioning": ["cot"],
         "sentiment": ["reddit"],

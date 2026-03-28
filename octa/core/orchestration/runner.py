@@ -114,6 +114,11 @@ def run_cascade(
     altdata_run_id: Optional[str] = None,
     var_root: Optional[str] = None,
 ) -> CascadeResult:
+    raise RuntimeError(
+        "legacy_orchestrator_retired:octa.core.orchestration.runner.run_cascade:"
+        "use_octa.foundation.control_plane.run_foundation_training"
+    )
+
     cfg = _load_training_config(config_path)
     cfg_dict = _config_to_dict(cfg)
 

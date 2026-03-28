@@ -6,8 +6,8 @@ run_id: null  # optional override
 registry_root: artifacts
 reports_dir: reports
 pkl_dir: raw/PKL
-training_config: configs/dev.yaml
-runtime_profile: smoke_plus
+training_config: configs/p03_research.yaml
+runtime_profile: paper_observe
 
 # Universe scan (local parquet preferred)
 universe:

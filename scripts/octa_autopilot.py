@@ -1,3 +1,4 @@
+# ruff: noqa: F401
 from __future__ import annotations
 
 import argparse
@@ -19,6 +20,7 @@ import pandas as pd
 import yaml
 
 from octa.core.governance.immutability_guard import assert_write_allowed, is_production_context
+from octa.core.governance.hashing import stable_hash
 from octa.core.governance.model_registry import (
     append_entry as append_model_registry_entry,
     build_registry_entry,
@@ -1195,67 +1197,12 @@ def main() -> None:
     if pre_args.about:
         print(f"{BRAND_NAME} | {TAGLINE}")
         return
-
-    ap = argparse.ArgumentParser(
-        description="OCTA Autopilot: universe→gates→cascade training→promote to paper"
+    raise SystemExit(
+        "non_canonical_autopilot_entrypoint:scripts/octa_autopilot.py:"
+        "autopilot_and_paper_paths_are_not_part_of_v0_0_0_foundation_scope;"
+        "use_scripts/run_octa.py_for_canonical_foundation_orchestration"
     )
-    ap.add_argument("--config", required=True, help="Autopilot config YAML")
-    ap.add_argument("--run-id", default=None)
-    ap.add_argument("--limit", type=int, default=0)
-    ap.add_argument(
-        "--run-paper",
-        action="store_true",
-        help="After promotion, attempt to run paper_runner (fail-closed if broker not wired)",
-    )
-    ap.add_argument("--version", action="store_true", default=False)
-    ap.add_argument("--about", action="store_true", default=False)
-    ap.add_argument("--no-banner", action="store_true", default=False)
-    args = ap.parse_args()
-
-    print_banner_once(enabled=not args.no_banner)
-
-    cfg = _load_yaml(args.config)
-    debug_cfg = cfg.get("debug", {}) if isinstance(cfg.get("debug"), dict) else {}
-    debug_one_symbol = str(debug_cfg.get("one_symbol", "") or "").strip()
-    debug_max_internal_steps = int(debug_cfg.get("max_internal_steps", 0) or 0)
-    run_id = (
-        args.run_id
-        or cfg.get("run_id")
-        or now_utc_iso().replace(":", "").replace("-", "")[:15] + "Z_" + uuid.uuid4().hex[:8]
-    )
-
-    paper_cfg = cfg.get("paper") if isinstance(cfg.get("paper"), dict) else {}
-    requested_mode = str(cfg.get("mode", "") or "").strip().lower()
-    inferred_mode = (
-        requested_mode
-        if requested_mode in {"shadow", "paper", "live"}
-        else ("live" if bool(paper_cfg.get("live_enable", False)) else "paper")
-    )
-    execution_active = bool(args.run_paper) or bool(paper_cfg.get("enabled", False))
-    policy_path = str(cfg.get("policy_path", "configs/policy.yaml"))
-    policy_flags = _policy_execution_flags(policy_path) if execution_active else {}
-    run_ctx: Dict[str, Any] = {
-        "mode": inferred_mode,
-        "stage": "research",
-        "service": "autopilot",
-        "execution_active": bool(execution_active),
-        "run_id": str(run_id),
-        "entrypoint": "execution_service" if execution_active else "autopilot",
-        "policy_flags": policy_flags,
-    }
-
-    budgets = cfg.get("budgets", {}) if isinstance(cfg.get("budgets"), dict) else {}
-    budget = ResourceBudgetController(
-        max_runtime_s=int(budgets.get("max_runtime_s", 3600)),
-        max_ram_mb=int(budgets.get("max_ram_mb", 12000)),
-        max_threads=int(budgets.get("max_threads", 4)),
-        max_disk_mb=int(budgets.get("max_disk_mb", 0) or 0),
-        disk_root=str(Path("artifacts") / "runs" / run_id),
-    )
-    budget.apply_thread_caps()
-
-    reg = ArtifactRegistry(root=str(cfg.get("registry_root", "artifacts")), ctx=run_ctx)
-    reg.record_run_start(run_id, cfg)
+    """
 
     run_dir = Path("artifacts") / "runs" / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -1873,7 +1820,7 @@ def main() -> None:
                         "asset_class": u.asset_class,
                         "parquet_paths": u.parquet_paths or {},
                         "cascade": CascadePolicy(order=[tf]),
-                        "safe_mode": True,
+                        "safe_mode": False,
                         "reports_dir": str(reports_dir),
                         "trace_dir": str(per_symbol_dir),
                     },
@@ -2252,7 +2199,7 @@ def main() -> None:
             pkl_path = ""
             sha_txt = ""
             pack = mb.get("pack") if isinstance(mb, dict) else None
-            if isinstance(pack, dict):
+            if isinstance(pack, dict) and str(pack.get("reason", "")) != "debug_on_fail":
                 pkl_path = str(pack.get("pkl") or "")
                 sha_txt = str(pack.get("pkl_sha") or "")
 
@@ -2392,7 +2339,7 @@ def main() -> None:
                         deps_fingerprint=str(model_registry_deps_fingerprint),
                         asset_class=str(getattr(u, "asset_class", "")),
                         training_data_hash=None,
-                        hyperparam_hash=stable_hash(((mb.get("metrics") or {}) if isinstance(mb, dict) else {})),
+                        hyperparam_hash=stable_hash(json.loads(json.dumps(((mb.get("metrics") or {}) if isinstance(mb, dict) else {}), default=str))),
                         seed=int(cfg.get("seed", 42)) if isinstance(cfg, dict) else 42,
                     )
                     append_model_registry_entry(
@@ -2484,6 +2431,9 @@ def main() -> None:
             max_ram_mb=int((paper_cfg.get("budgets") or {}).get("max_ram_mb", 12000)),
             max_threads=int((paper_cfg.get("budgets") or {}).get("max_threads", 4)),
         )
+
+
+    """
 
 
 if __name__ == "__main__":

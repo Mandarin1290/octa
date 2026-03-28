@@ -23,6 +23,20 @@ def _load_json(path: Path) -> Dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _run_allowed_for_execution(run_dir: Path) -> Tuple[bool, str]:
+    manifest = run_dir / "run_manifest.json"
+    if not manifest.exists():
+        return True, "legacy_manifest_missing"
+    try:
+        raw = _load_json(manifest)
+    except Exception:
+        return False, "manifest_unreadable"
+    regime = str(raw.get("training_regime") or raw.get("regime") or "").strip().lower()
+    if regime == "foundation_validation":
+        return False, "foundation_validation_regime_blocked"
+    return True, "allowed"
+
+
 def _safe_metrics(stage: Dict[str, Any]) -> bool:
     metrics = stage.get("metrics_summary")
     return isinstance(metrics, dict) and len(metrics) > 0
@@ -52,13 +66,22 @@ def _discover_latest_run(base_evidence_dir: Path) -> Path:
     candidates = sorted(base_evidence_dir.glob("*/preflight/summary.json"))
     valid: List[Tuple[float, Path]] = []
     for marker in candidates:
+        run_dir = marker.parent.parent
+        results_dir = run_dir / "results"
+        if not results_dir.is_dir():
+            continue
+        allowed, _ = _run_allowed_for_execution(run_dir)
+        if not allowed:
+            continue
         try:
             _ = _load_json(marker)
-            valid.append((marker.stat().st_mtime, marker.parent.parent))
+            valid.append((marker.stat().st_mtime, run_dir))
         except Exception:
             continue
     if not valid:
-        raise RuntimeError(f"No readable training runs found under {base_evidence_dir}")
+        raise RuntimeError(
+            f"No readable training runs with results/ found under {base_evidence_dir}"
+        )
     valid.sort(key=lambda x: x[0], reverse=True)
     return valid[0][1]
 
@@ -69,6 +92,9 @@ def _resolve_run_dir(base_evidence_dir: Path, run_id: Optional[str]) -> Path:
         marker = run_dir / "preflight" / "summary.json"
         if not marker.exists():
             raise RuntimeError(f"Requested run id missing summary marker: {marker}")
+        allowed, reason = _run_allowed_for_execution(run_dir)
+        if not allowed:
+            raise RuntimeError(f"Requested run id not execution-eligible: {run_dir} ({reason})")
         _ = _load_json(marker)
         return run_dir
     return _discover_latest_run(base_evidence_dir)

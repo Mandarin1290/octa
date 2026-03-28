@@ -176,6 +176,8 @@ def train_evaluate_package(
                 sec = med_ns / 1e9
                 if sec >= 20 * 3600:
                     return "1D"
+                if sec >= 2 * 3600:
+                    return "4H"
                 if sec >= 50 * 60:
                     return "1H"
                 if sec >= 20 * 60:
@@ -191,7 +193,10 @@ def train_evaluate_package(
                 if isinstance(gate_policy_snapshot, dict):
                     return gate_policy_snapshot.get('hard_kill_switches', {}) or {}
             except Exception:
-                pass
+                result.passed = False
+                result.reasons.append("smoke_test_handler_error")
+                if isinstance(pack_res, dict):
+                    pack_res = {**pack_res, "smoke_test_handler_error": True}
             return {}
 
         # record run start for monitoring/audit trail
@@ -253,8 +258,13 @@ def train_evaluate_package(
 
             try:
                 state.record_run_end(symbol, run_id, passed=passed, metrics_summary=metrics_summary)
-            except Exception:
-                pass
+            except Exception as e:
+                if logger:
+                    logger.warning("Smoke-test handler failed: %s", e)
+                result.passed = False
+                result.reasons.append("smoke_test_handler_error")
+                if isinstance(pack_res, dict):
+                    pack_res = {**pack_res, "smoke_test_handler_error": True}
 
             # Optional KVP aggregation (non-invasive; writes only aggregate stats)
             try:
@@ -320,6 +330,8 @@ def train_evaluate_package(
                     logger.warning("Assurance emission failed: %s", e)
 
         # idempotence: skip if parquet unchanged and artifact exists and last_pass_time recent
+        # Gate-aware: only skip when the stored gate config identity matches the current config.
+        # A pass from a relaxed gate world must never silently be reused for a stricter gate world.
         sstate = state.get_symbol_state(symbol) or {}
         art_path = sstate.get('artifact_path')
         last_pass = sstate.get('last_pass_time')
@@ -328,8 +340,16 @@ def train_evaluate_package(
             if art_path and Path(art_path).exists() and last_pass:
                 last = datetime.fromisoformat(last_pass)
                 if datetime.utcnow() - last < timedelta(days=getattr(cfg.retrain, 'skip_window_days', 3)):
-                    _record_end(True, metrics_obj=None, gate_obj=None, pack_res={'skipped': True, 'reason': 'recent_pass'})
-                    return PipelineResult(symbol=symbol, run_id=run_id, passed=True, metrics=None, gate_result=None, pack_result={'skipped': True, 'reason': 'recent_pass'})
+                    # Gate-aware idempotence check (fail-closed):
+                    # If either the current or stored gate config id is missing, or they differ,
+                    # we must NOT skip — force fresh evaluation under the current gate world.
+                    _current_gate_id = str((cfg.gates if isinstance(cfg.gates, dict) else {}).get('version', '') or '').strip()
+                    _stored_gate_id = str(sstate.get('last_gate_config_id', '') or '').strip()
+                    _gate_ids_match = bool(_current_gate_id and _stored_gate_id and _current_gate_id == _stored_gate_id)
+                    if _gate_ids_match:
+                        _record_end(True, metrics_obj=None, gate_obj=None, pack_res={'skipped': True, 'reason': 'recent_pass'})
+                        return PipelineResult(symbol=symbol, run_id=run_id, passed=True, metrics=None, gate_result=None, pack_result={'skipped': True, 'reason': 'recent_pass'})
+                    # Gate mismatch or unknown: fall through to full re-evaluation
         except Exception:
             pass
         pinfo = None
@@ -760,6 +780,10 @@ def train_evaluate_package(
             lower_q=cfg.signal.lower_q,
             causal_quantiles=bool(getattr(cfg.signal, 'causal_quantiles', False)),
             quantile_window=getattr(cfg.signal, 'quantile_window', None),
+            adaptive_density_quantiles=bool(getattr(cfg.signal, 'adaptive_density_quantiles', False)),
+            density_target=float(getattr(cfg.signal, 'density_target', 0.10) or 0.10),
+            density_window=getattr(cfg.signal, 'density_window', None),
+            density_relax_max=float(getattr(cfg.signal, 'density_relax_max', 0.0) or 0.0),
             leverage_cap=cfg.signal.leverage_cap,
             vol_target=cfg.signal.vol_target,
             realized_vol_window=cfg.signal.realized_vol_window,
@@ -771,6 +795,8 @@ def train_evaluate_package(
             session_open=str(getattr(getattr(cfg, 'session', None), 'open', '00:00') or '00:00'),
             session_close=str(getattr(getattr(cfg, 'session', None), 'close', '23:59') or '23:59'),
             session_weekdays=getattr(getattr(cfg, 'session', None), 'weekdays', None),
+            timeframe=_infer_timeframe_key(df.index),
+            regime_policy=dict(getattr(cfg.signal, 'regime_policy', {}) or {}),
         )
 
         # FX intraday should not use an equity-style session filter. A session filter
@@ -842,8 +868,13 @@ def train_evaluate_package(
                             },
                         )
                     ]
-            except Exception:
-                pass
+            except Exception as e:
+                if logger:
+                    logger.warning("Smoke-test handler failed: %s", e)
+                result.passed = False
+                result.reasons.append("smoke_test_handler_error")
+                if isinstance(pack_res, dict):
+                    pack_res = {**pack_res, "smoke_test_handler_error": True}
         if bool(hk.get('walk_forward', True)) and (not folds):
             _record_end(False, metrics_obj=None, gate_obj=None)
             if not diagnose_mode:
@@ -1087,7 +1118,7 @@ def train_evaluate_package(
                 preds_s = _oof_pred_series(r)
                 if preds_s is None or preds_s.empty:
                     return None
-                out = compute_equity_and_metrics(df['close'], preds_s, es)
+                out = compute_equity_and_metrics(df['close'], preds_s, es, market_df=df)
                 m = out.get('metrics')
                 sharpe = getattr(m, 'sharpe', None)
                 if sharpe is None:
@@ -1233,7 +1264,7 @@ def train_evaluate_package(
         preds = _oof_pred_series(best)
         if preds is None:
             raise ValueError('Best model has no OOF predictions')
-        res = compute_equity_and_metrics(df['close'], preds, es)
+        res = compute_equity_and_metrics(df['close'], preds, es, market_df=df)
         metrics = res['metrics']
         stress_metrics = res.get('stress_metrics')
         # add fold metrics from training
@@ -1277,6 +1308,13 @@ def train_evaluate_package(
                 "max_drawdown_max": 0.06,
                 "min_trades": 20,
                 "min_bars": 130,
+            },
+            "4H": {
+                "profit_factor_min": 1.18,
+                "sharpe_min": 0.63,
+                "max_drawdown_max": 0.055,
+                "min_trades": 30,
+                "min_bars": 200,
             },
             "1H": {
                 "profit_factor_min": 1.15,
@@ -1907,6 +1945,7 @@ def train_evaluate_package(
                     source_df=df,
                     asset_class=asset_class,
                     timeframe=tf_key,
+                    proof_mode=bool(getattr(cfg, "proof_mode", False)),
                 )
             else:
                 robustness_result = run_all_tests(
@@ -2026,8 +2065,13 @@ def train_evaluate_package(
                         pack_res = {**pack_res, 'quarantined': True, 'quarantine_reason': str(e)}
                         result.passed = False
                         result.reasons.append(f"smoke_test_failed:{str(e)}")
-            except Exception:
-                pass
+            except Exception as e:
+                if logger:
+                    logger.warning("Smoke-test handler failed: %s", e)
+                result.passed = False
+                result.reasons.append("smoke_test_handler_error")
+                if isinstance(pack_res, dict):
+                    pack_res = {**pack_res, "smoke_test_handler_error": True}
 
         # Ensure artifacts exist even on FAIL (auditability, fail-closed).
         if (not result.passed) and (pack_res is None) and (not safe_mode):

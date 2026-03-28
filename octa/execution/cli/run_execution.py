@@ -14,7 +14,7 @@ def _default_run_id() -> str:
 
 def main() -> int:
     p = argparse.ArgumentParser()
-    p.add_argument("--mode", default="dry-run", choices=["dry-run", "paper", "live"])
+    p.add_argument("--mode", default="dry-run", choices=["dry-run"])
     p.add_argument("--asset-class", default=None)
     p.add_argument("--max-symbols", type=int, default=0)
     p.add_argument("--run-id", default=None, help="Training run id override for selection")

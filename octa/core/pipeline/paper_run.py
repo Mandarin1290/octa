@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -291,20 +290,11 @@ def _populate_provider(
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Run cascade paper pipeline with synthetic data.")
-    parser.add_argument("--symbols", required=True, help="Comma-separated symbols")
-    parser.add_argument("--bars", type=int, default=500, help="Bars per timeframe")
-    parser.add_argument("--output", type=Path, default=Path("reports/paper_run.jsonl"))
-    args = parser.parse_args(argv)
-
-    symbols = [symbol.strip() for symbol in args.symbols.split(",") if symbol.strip()]
-    provider = InMemoryOHLCVProvider()
-    start = datetime(2024, 1, 1)
-    _populate_provider(provider, symbols, args.bars, start)
-
-    portfolio_engine = PortfolioEngine(PortfolioEngineConfig())
-    run_paper_cascade(symbols, provider, start, None, args.output, portfolio_engine=portfolio_engine)
-    return 0
+    del argv
+    raise SystemExit(
+        "non_canonical_paper_entrypoint:octa.core.pipeline.paper_run:"
+        "paper_execution_is_not_part_of_v0_0_0_foundation_scope"
+    )
 
 
 if __name__ == "__main__":

@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import argparse
 import json
-import time
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -10,7 +8,6 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 import pandas as pd
 
-from octa import __version__ as OCTA_VERSION
 from octa.core.orchestration.resources import get_paths
 from octa.core.orchestration.runner import run_cascade
 from octa.support.ops.training_state import TrainingStateRecord, TrainingStateStore
@@ -333,66 +330,10 @@ def _update_state_from_run(
 
 
 def main() -> None:
-    p = argparse.ArgumentParser()
-    p.add_argument("--preflight_outdir", required=True)
-    p.add_argument("--config", default=None)
-    p.add_argument("--var-root", default=None)
-    p.add_argument("--max-symbols", type=int, default=0)
-    p.add_argument("--max-seconds", type=int, default=0)
-    p.add_argument("--age-threshold-hours", type=int, default=24 * 7)
-    p.add_argument("--new-data-threshold-minutes", type=int, default=60)
-    p.add_argument("--state-path", default=None)
-    args = p.parse_args()
-
-    preflight_outdir = Path(args.preflight_outdir)
-    config_hash = _config_hash(args.config)
-    pipeline_version = OCTA_VERSION
-    thresholds = Thresholds(
-        age_threshold_s=int(args.age_threshold_hours) * 3600,
-        new_data_threshold_s=int(args.new_data_threshold_minutes) * 60,
+    raise SystemExit(
+        "non_canonical_training_entrypoint:octa.support.ops.train_universe:"
+        "use_octa.support.ops.run_training_or_python_-m_octa.foundation.control_plane_train"
     )
-    var_root = Path(args.var_root) if args.var_root else None
-
-    state_path = Path(args.state_path) if args.state_path else Path("octa") / "var" / "state" / "training_state.jsonl"
-    store = TrainingStateStore(state_path)
-
-    symbols = _load_trainable_symbols(preflight_outdir)
-    inventory = _load_inventory(preflight_outdir)
-
-    now = _utc_now()
-    buckets = build_worklist(symbols, inventory, store, config_hash, pipeline_version, thresholds, now)
-    store.save()
-
-    def _count(bucket: str) -> int:
-        return len(buckets.get(bucket, []))
-
-    print("Training selector summary")
-    print(f"- symbols: {len(symbols)}")
-    print(f"- missing: {_count('missing')}")
-    print(f"- partial: {_count('partial')}")
-    print(f"- stale_config: {_count('stale_config')}")
-    print(f"- stale_ageing: {_count('stale_ageing')}")
-    print(f"- stale_data: {_count('stale_data')}")
-    print(f"- drift: {_count('drift')}")
-    print(f"- skip: {_count('skip')}")
-
-    worklist: List[SymbolDecision] = []
-    for bucket in ("stale_config", "stale_ageing", "stale_data", "drift", "partial"):
-        worklist.extend([d for d in buckets.get(bucket, []) if d.action == "train"])
-
-    if args.max_symbols and args.max_symbols > 0:
-        worklist = worklist[: int(args.max_symbols)]
-
-    start = time.time()
-    for decision in worklist:
-        if args.max_seconds and args.max_seconds > 0 and (time.time() - start) >= args.max_seconds:
-            print("Max seconds reached; stopping.")
-            break
-        run_id = f"cascade_{decision.symbol}_{config_hash[:8]}"
-        print(f"[train] {decision.symbol} reason={decision.reason} bucket={decision.bucket} run_id={run_id}")
-        _run_symbol(decision.symbol, args.config, run_id, var_root)
-        _update_state_from_run(store, decision.symbol, run_id, config_hash, pipeline_version, var_root, inventory)
-        store.save()
 
 
 if __name__ == "__main__":

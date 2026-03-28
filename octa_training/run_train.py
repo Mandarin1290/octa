@@ -449,7 +449,23 @@ def main(argv: Optional[List[str]] = None) -> int:
                     EvalSettings,
                     compute_equity_and_metrics,
                 )
-                es = EvalSettings(mode='cls' if args.task in ('cls','both') else 'reg', upper_q=cfg.signal.upper_q, lower_q=cfg.signal.lower_q, leverage_cap=cfg.signal.leverage_cap, vol_target=cfg.signal.vol_target, realized_vol_window=cfg.signal.realized_vol_window, cost_bps=cfg.signal.cost_bps, spread_bps=cfg.signal.spread_bps, stress_cost_multiplier=cfg.signal.stress_cost_multiplier)
+                es = EvalSettings(
+                    mode='cls' if args.task in ('cls','both') else 'reg',
+                    upper_q=cfg.signal.upper_q,
+                    lower_q=cfg.signal.lower_q,
+                    causal_quantiles=bool(getattr(cfg.signal, 'causal_quantiles', False)),
+                    quantile_window=getattr(cfg.signal, 'quantile_window', None),
+                    adaptive_density_quantiles=bool(getattr(cfg.signal, 'adaptive_density_quantiles', False)),
+                    density_target=float(getattr(cfg.signal, 'density_target', 0.10) or 0.10),
+                    density_window=getattr(cfg.signal, 'density_window', None),
+                    density_relax_max=float(getattr(cfg.signal, 'density_relax_max', 0.0) or 0.0),
+                    leverage_cap=cfg.signal.leverage_cap,
+                    vol_target=cfg.signal.vol_target,
+                    realized_vol_window=cfg.signal.realized_vol_window,
+                    cost_bps=cfg.signal.cost_bps,
+                    spread_bps=cfg.signal.spread_bps,
+                    stress_cost_multiplier=cfg.signal.stress_cost_multiplier,
+                )
                 try:
                     res = compute_equity_and_metrics(df['close'], preds, es)
                 except Exception as e:

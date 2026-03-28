@@ -7,6 +7,7 @@ from octa_strategy.state_machine import LifecycleState
 
 def test_paper_gate_bootstrap_requires_returns_when_configured():
     lifecycle = StrategyLifecycle("S_PAPER_BOOT_REQ")
+    lifecycle.transition_to(LifecycleState.SHADOW, doc="shadow doc")
     lifecycle.transition_to(LifecycleState.PAPER, doc="paper doc")
     pg = PaperGates(
         thresholds={
@@ -31,6 +32,7 @@ def test_paper_gate_bootstrap_requires_returns_when_configured():
 
 def test_paper_gate_bootstrap_can_pass_with_returns():
     lifecycle = StrategyLifecycle("S_PAPER_BOOT_OK")
+    lifecycle.transition_to(LifecycleState.SHADOW, doc="shadow doc")
     lifecycle.transition_to(LifecycleState.PAPER, doc="paper doc")
 
     # simple synthetic daily returns: small positive drift, low noise
@@ -59,5 +61,5 @@ def test_paper_gate_bootstrap_can_pass_with_returns():
         "returns": returns,
     }
 
-    pg.promote_if_pass(lifecycle, metrics, doc="shadow promotion doc")
-    assert lifecycle.current_state == LifecycleState.SHADOW
+    pg.promote_if_pass(lifecycle, metrics, doc="live promotion doc")
+    assert lifecycle.current_state == LifecycleState.LIVE

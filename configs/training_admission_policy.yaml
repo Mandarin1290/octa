@@ -1,0 +1,41 @@
+recycling_run_dir: artifacts/parquet_recycling/latest
+output_root: artifacts/training_admission
+evidence_root: octa/var/evidence/training_admission
+approval_registry_path: configs/training_admission_approvals.json
+prior_decisions_registry_path: configs/training_admission_prior_decisions.json
+admitted_candidates_output: admitted_offline_training_candidates.json
+rejected_candidates_output: rejected_training_candidates.json
+waiting_candidates_output: waiting_for_approval_candidates.json
+quarantined_candidates_output: quarantined_training_candidates.json
+require_explicit_approval: true
+approval_scope_required: offline_training_only
+allowed_asset_classes:
+  - equities
+allowed_source_families:
+  - market_ohlcv
+blocked_providers:
+  - unknown
+allowed_symbols: []
+allowed_symbol_patterns:
+  - "*"
+allowed_frequencies:
+  - 1D
+  - 1H
+min_coverage_rows: 256
+# Raw market_ohlcv prototype candidates currently recycle at confidence 0.8.
+# This does not relax event/publish/effective-sensitive datasets, which remain
+# governed by the open-risk-flag checks in Admission.
+min_confidence: 0.8
+min_quality: 0.9
+min_interpretability: 0.7
+min_coverage_value: 0.02
+max_open_risk_flags: 0
+offline_only: true
+decision_ttl_days: 30
+conflict_behavior: quarantine
+evidence_requirements:
+  - dataset_catalog.json
+  - classification_report.json
+  - validation_report.json
+  - routing_report.json
+  - roi_report.json

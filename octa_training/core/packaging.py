@@ -167,7 +167,15 @@ def _train_full_model(X: pd.DataFrame, y: pd.Series, model_name: str, task: str,
         from sklearn.preprocessing import StandardScaler
         scaler = StandardScaler()
         Xs = scaler.fit_transform(X.fillna(0))
-        clf = LogisticRegression(random_state=seed, max_iter=200)
+        params = {"C": 0.1, "penalty": "l2", "solver": "liblinear", "max_iter": 500}
+        try:
+            user_params = getattr(settings, "logreg_params", {}) or {}
+            if isinstance(user_params, dict):
+                params.update(user_params)
+        except Exception:
+            pass
+        params["random_state"] = seed
+        clf = LogisticRegression(**params)
         clf.fit(Xs, y)
         return clf, list(X.columns), scaler
     elif model_name == "ridge":
@@ -468,7 +476,16 @@ def save_tradeable_artifact(
     # update state (only for tradeable/PASS path)
     if update_state:
         try:
-            state.update_symbol_state(symbol, last_pass_time=dt.utcnow().isoformat(), artifact_path=target_pkl, artifact_hash=pkl_sha)
+            # Gate-aware idempotence: store the gate policy version so future runs can
+            # detect gate-world mismatches and refuse to reuse a pass from a different gate config.
+            _gate_cfg_id = str((getattr(cfg, 'gates', {}) or {}).get('version', '') or '').strip() or None
+            state.update_symbol_state(
+                symbol,
+                last_pass_time=dt.utcnow().isoformat(),
+                artifact_path=target_pkl,
+                artifact_hash=pkl_sha,
+                last_gate_config_id=_gate_cfg_id,
+            )
         except Exception:
             pass
 

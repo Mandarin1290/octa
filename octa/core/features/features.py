@@ -115,6 +115,103 @@ def _atr(df: pd.DataFrame, window: int = 14) -> pd.Series:
     return atr
 
 
+def _build_intraday_breakout_features(
+    *,
+    close_prev: "pd.Series",
+    open_prev: "pd.Series",
+    high_prev: "pd.Series",
+    low_prev: "pd.Series",
+    volume_prev: "pd.Series",
+    has_usable_volume: bool,
+    feat_cfg: dict,
+    vwap_series: "pd.Series | None" = None,
+    atr_14_series: "pd.Series | None" = None,
+) -> dict:
+    """Intraday-native breakout features (ib_*). All inputs are shift(1) — never current bar."""
+    try:
+        out: dict = {}
+        _window = int((feat_cfg or {}).get("range_expansion_window", 10))
+        _rank_w = int((feat_cfg or {}).get("range_rank_window", 20))
+        _clip_ratio = float((feat_cfg or {}).get("range_ratio_clip", 4.0))
+        _clip_vol = float((feat_cfg or {}).get("rel_volume_clip", 5.0))
+        _clip_vwap = float((feat_cfg or {}).get("vwap_z_clip", 3.0))
+
+        range_hl = (high_prev - low_prev).clip(lower=1e-10)
+        range_co = close_prev - open_prev
+
+        _min_p = max(2, _window // 2)
+        _rhl_mean = range_hl.rolling(_window, min_periods=_min_p).mean().replace(0, np.nan)
+        out["ib_range_expansion_ratio"] = (range_hl / _rhl_mean).clip(upper=_clip_ratio).fillna(1.0)
+        out["ib_bar_body_ratio"] = (range_co.abs() / range_hl).clip(0.0, 1.0).fillna(0.0)
+        out["ib_bar_direction"] = np.sign(range_co).fillna(0.0)
+
+        body_top = np.maximum(open_prev.values, close_prev.values)
+        body_bot = np.minimum(open_prev.values, close_prev.values)
+        body_top_s = pd.Series(body_top, index=range_hl.index)
+        body_bot_s = pd.Series(body_bot, index=range_hl.index)
+        out["ib_upper_wick_ratio"] = ((high_prev - body_top_s) / range_hl).clip(0.0, 1.0).fillna(0.0)
+        out["ib_lower_wick_ratio"] = ((body_bot_s - low_prev) / range_hl).clip(0.0, 1.0).fillna(0.0)
+        out["ib_range_rank_20"] = (
+            range_hl.rolling(_rank_w, min_periods=max(5, _rank_w // 4)).rank(pct=True).fillna(0.5)
+        )
+
+        prior_close2 = close_prev.shift(1).replace(0, np.nan)
+        out["ib_hl_range_vs_prior_close"] = (range_hl / prior_close2).clip(upper=0.05).fillna(0.0)
+
+        ret1 = close_prev.pct_change(1, fill_method=None).fillna(0.0)
+        dir_now = np.sign(ret1)
+        out["ib_momentum_consistency_3"] = (
+            (dir_now == dir_now.shift(1).fillna(0.0)).astype(float)
+            + (dir_now == dir_now.shift(2).fillna(0.0)).astype(float)
+        ).fillna(0.0)
+
+        if vwap_series is not None and has_usable_volume:
+            _denom = (
+                atr_14_series.replace(0, np.nan)
+                if atr_14_series is not None
+                else range_hl.rolling(14, min_periods=5).mean().replace(0, np.nan)
+            )
+            out["ib_vwap_z"] = ((close_prev - vwap_series) / _denom).clip(-_clip_vwap, _clip_vwap).fillna(0.0)
+        else:
+            out["ib_vwap_z"] = pd.Series(0.0, index=range_hl.index)
+
+        if has_usable_volume:
+            _vol_mean = volume_prev.replace(0, np.nan).rolling(_window, min_periods=_min_p).mean().replace(0, np.nan)
+            _rel_vol = (volume_prev.replace(0, np.nan) / _vol_mean).clip(upper=_clip_vol).fillna(1.0)
+            out["ib_rel_volume"] = _rel_vol
+            out["ib_vol_accel"] = _rel_vol.diff(1).clip(-3.0, 3.0).fillna(0.0)
+        else:
+            out["ib_rel_volume"] = pd.Series(0.0, index=range_hl.index)
+            out["ib_vol_accel"] = pd.Series(0.0, index=range_hl.index)
+
+        # Mean-reversion specific features
+        # ib_close_position_in_bar: where within the bar did close land? 1.0=top, 0.0=bottom.
+        close_pos = ((close_prev - low_prev) / range_hl).clip(0.0, 1.0).fillna(0.5)
+        out["ib_close_position_in_bar"] = close_pos
+
+        # ib_excess_return_z: signed bar return in ATR units — how stretched was this bar?
+        _atr_raw = (
+            atr_14_series.replace(0, np.nan)
+            if atr_14_series is not None
+            else range_hl.rolling(14, min_periods=5).mean().replace(0, np.nan)
+        )
+        out["ib_excess_return_z"] = ((close_prev - open_prev) / _atr_raw).clip(-3.0, 3.0).fillna(0.0)
+
+        # ib_reversal_setup: direction-aware reversal composite.
+        # For up bars (dir>=0): (1 - close_pos) × range_expansion_ratio — closed at bottom of up bar = rejection.
+        # For down bars (dir<0): close_pos × range_expansion_ratio — closed at top of down bar = rejection.
+        _dir_sign = np.sign(close_prev.values - open_prev.values)
+        _rev_raw = np.where(_dir_sign >= 0, 1.0 - close_pos.values, close_pos.values)
+        out["ib_reversal_setup"] = (
+            pd.Series(_rev_raw, index=range_hl.index) * out["ib_range_expansion_ratio"]
+        ).clip(0.0, 4.0).fillna(0.0)
+
+        return out
+    except Exception as _exc:
+        logging.getLogger(__name__).warning("_build_intraday_breakout_features failed: %s", _exc)
+        return {}
+
+
 def build_features(raw: pd.DataFrame, settings, asset_class: str, build_targets: bool = True) -> FeatureBuildResult:
     """
     Build leakage-safe features from OHLCV raw dataframe.
@@ -667,6 +764,24 @@ def build_features(raw: pd.DataFrame, settings, asset_class: str, build_targets:
     except Exception:
         pass
 
+    # Intraday-native breakout features (ib_*) — 1H, 30M, 5M, 1M only.
+    _tf_ib = str(getattr(settings, "timeframe", "") or "").strip().upper()
+    if _tf_ib and _tf_ib not in ("1D", "4H"):
+        _ib_cfg = (feat_cfg or {}).get("intraday_breakout", {}) if isinstance(feat_cfg, dict) else {}
+        _ib_feats = _build_intraday_breakout_features(
+            close_prev=close_prev,
+            open_prev=open_prev,
+            high_prev=high_prev,
+            low_prev=low_prev,
+            volume_prev=volume_prev,
+            has_usable_volume=has_usable_volume,
+            feat_cfg=_ib_cfg,
+            vwap_series=X["vwap"] if "vwap" in X.columns else None,
+            atr_14_series=X["atr_14"] if "atr_14" in X.columns else None,
+        )
+        for _ib_k, _ib_v in _ib_feats.items():
+            X[_ib_k] = _ib_v
+
     # Optional alternative-data features (exogenous).
     # Policy: Aviation traffic features may be used ONLY for 1D and 1H models.
     # Explicitly forbidden for 30m/5m/1m.
@@ -740,6 +855,25 @@ def build_features(raw: pd.DataFrame, settings, asset_class: str, build_targets:
                 X[f"altdat_source_{src_name}_present"] = present
     except Exception:
         pass
+
+    # Intraday feature isolation: drop daily-native features for sub-daily timeframes.
+    # These features use multi-day lookback windows or accumulate over full history;
+    # they carry regime/trend information not native to intraday bars and contaminate
+    # 1H/30M/5M/1M models.
+    _tf_iso = str(getattr(settings, "timeframe", "") or "").strip().upper()
+    if _tf_iso and _tf_iso not in ("1D", "4H"):
+        _INTRADAY_FORBIDDEN = frozenset([
+            "sma_50",          # 50-bar SMA: ~8 trading days at 1H
+            "trend_slope_20",  # 20-bar rolling slope: ~3 trading days at 1H
+            "trend_regime",    # derived from trend_slope_20
+            "rolling_max_60",  # 60-bar max: ~9 trading days at 1H
+            "drawdown_60",     # derived from rolling_max_60
+            "obv",             # cumulative over full history
+            "adosc",           # accumulating volume indicator
+        ])
+        _to_drop = [c for c in _INTRADAY_FORBIDDEN if c in X.columns]
+        if _to_drop:
+            X = X.drop(columns=_to_drop)
 
     # Stable ordering for deterministic training artifacts.
     X = X.reindex(sorted(X.columns), axis=1)

@@ -7,6 +7,8 @@ enabled_sources:
   - worldbank
   - cot
   - gdelt
+  - news_events
+  - scheduled_events
   - google_trends
   - wikipedia
   - reddit
@@ -55,6 +57,20 @@ sources:
     timeout_seconds: 20
     max_retries: 2
     cache_ttl_seconds: 21600
+    live_allowed: true
+  news_events:
+    enabled: true
+    refresh_interval_seconds: 3600
+    timeout_seconds: 20
+    max_retries: 1
+    cache_ttl_seconds: 21600
+    live_allowed: true
+  scheduled_events:
+    enabled: true
+    refresh_interval_seconds: 86400
+    timeout_seconds: 5
+    max_retries: 0
+    cache_ttl_seconds: 172800
     live_allowed: true
   google_trends:
     enabled: true

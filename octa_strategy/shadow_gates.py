@@ -9,7 +9,14 @@ class ShadowGateFailure(Exception):
 
 
 class ShadowGates:
-    """Gates to promote a strategy from SHADOW -> LIVE.
+    """Gates to promote a strategy from SHADOW -> PAPER.
+
+    Lifecycle order: IDEA -> SHADOW -> PAPER -> LIVE (shadow before paper).
+    ShadowGates applies when a strategy has completed shadow mode and is
+    being evaluated for promotion to PAPER trading.
+
+    Previous docstring incorrectly stated SHADOW -> LIVE (old wrong lifecycle order
+    was fixed 2026-03-21).
 
     Required deterministic metric keys:
       - runtime_days
@@ -98,7 +105,7 @@ class ShadowGates:
             self.audit_fn("shadow_gates.failed", {"failed": failed})
             raise ShadowGateFailure(f"Shadow gates failed: {list(failed.keys())}")
 
-        lifecycle.transition_to(LifecycleState.LIVE, doc=doc)
+        lifecycle.transition_to(LifecycleState.PAPER, doc=doc)
         self.audit_fn(
             "shadow_gates.promoted", {"strategy_id": lifecycle.strategy_id, "doc": doc}
         )

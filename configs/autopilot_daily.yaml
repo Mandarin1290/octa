@@ -8,7 +8,7 @@ run_id: null
 registry_root: artifacts
 reports_dir: reports
 pkl_dir: raw/PKL
-training_config: configs/dev.yaml
+training_config: configs/p03_research.yaml
 runtime_profile: paper_observe
 
 universe:

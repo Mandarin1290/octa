@@ -77,12 +77,18 @@ class SignalConfig(BaseModel):
     causal_quantiles: bool = False
     # Rolling lookback window for causal quantiles. If None, uses an expanding window.
     quantile_window: Optional[int] = 252
+    # Optional causal threshold relaxation when realized signal density is too low.
+    adaptive_density_quantiles: bool = False
+    density_target: float = 0.10
+    density_window: Optional[int] = 63
+    density_relax_max: float = 0.0
     leverage_cap: float = 3.0
     vol_target: float = 0.1
     realized_vol_window: int = 20
     cost_bps: float = 1.0
     spread_bps: float = 0.5
     stress_cost_multiplier: float = 3.0
+    regime_policy: Dict[str, Any] = Field(default_factory=dict)
 
 
 class BrokerConfig(BaseModel):
@@ -209,6 +215,8 @@ class KvpConfig(BaseModel):
 
 
 class TrainingConfig(BaseModel):
+    regime: str = "institutional_production"
+    proof_mode: bool = False
     paths: PathsConfig = Field(default_factory=PathsConfig)
     gating: GatingConfig = Field(default_factory=GatingConfig)
     tuning: TuningConfig = Field(default_factory=TuningConfig)
@@ -279,15 +287,25 @@ class TrainingConfig(BaseModel):
         "min_folds_required": 1,
         "expanding": True
     })
-    # Per-timeframe split overrides (keys: 1D, 1H, 30M, 5M, 1M).
+    # Per-timeframe split overrides (keys: 1D, 4H, 1H, 30M, 5M, 1M).
     # Each entry merges on top of `splits` for that timeframe only.
     # Required so the OOF window (n_folds * test_window) meets the
     # institutional gate minimum (train_bars + 2*oos_bars) per TF.
     splits_by_timeframe: Dict[str, Any] = Field(default_factory=dict)
+    # Optional cascade timeframe order override. If set, replaces DEFAULT_TIMEFRAMES
+    # for this training run. Must be an ordered list of known TF strings.
+    # If None (default), the standard 5-TF cascade (1D→1H→30M→5M→1M) is used.
+    cascade_timeframes: Optional[List[str]] = None
     # Model training settings
     seed: int = 42
     scale_linear: bool = True
     models_order: List[str] = Field(default_factory=lambda: ["lightgbm", "xgboost", "catboost", "logreg", "ridge"])
+    logreg_params: Dict[str, Any] = Field(default_factory=lambda: {
+        "C": 0.1,
+        "penalty": "l2",
+        "solver": "liblinear",
+        "max_iter": 500,
+    })
     lgbm_params: Dict[str, Any] = Field(default_factory=lambda: {"objective": "binary", "metric": "auc"})
     xgb_params: Dict[str, Any] = Field(default_factory=lambda: {"objective": "binary:logistic", "eval_metric": "auc"})
     cat_params: Dict[str, Any] = Field(default_factory=lambda: {"loss_function": "Logloss"})

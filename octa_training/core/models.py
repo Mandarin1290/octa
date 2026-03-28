@@ -314,8 +314,16 @@ def train_models(
 
                     try:
                         if model_name == "logreg":
-                            model = LogisticRegression(random_state=seed, max_iter=200)
-                            model_params = {"random_state": seed, "max_iter": 200}
+                            params = {"C": 0.1, "penalty": "l2", "solver": "liblinear", "max_iter": 500}
+                            try:
+                                user_params = getattr(settings, "logreg_params", {}) or {}
+                                if isinstance(user_params, dict):
+                                    params.update(user_params)
+                            except Exception:
+                                pass
+                            params["random_state"] = seed
+                            model = LogisticRegression(**params)
+                            model_params = dict(params)
                             model.fit(X_tr_m, y_tr)
                             prob = _positive_proba(model, X_val_m)
                             pred = (prob > 0.5).astype(int)

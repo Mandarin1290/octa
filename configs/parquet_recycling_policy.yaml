@@ -1,0 +1,42 @@
+raw_roots:
+  - raw
+  - data/altdat/parquet
+output_root: artifacts/parquet_recycling
+evidence_root: octa/var/evidence/parquet_recycling
+curated_zone_root: artifacts/parquet_recycling/curated
+feature_zone_root: artifacts/parquet_recycling/recycled_features
+risk_zone_root: artifacts/parquet_recycling/risk_monitoring
+simulation_zone_root: artifacts/parquet_recycling/simulation
+quarantine_zone_root: artifacts/parquet_recycling/quarantine
+allowed_time_columns:
+  - timestamp
+  - datetime
+  - date
+  - time
+allowed_publish_columns:
+  - publish_time
+  - published_at
+  - release_ts
+allowed_effective_columns:
+  - effective_time
+  - effective_at
+  - asof_date
+forbidden_alpha_source_families:
+  - unknown
+  - archive_only
+transform_whitelist:
+  - zscore
+  - rolling_delta
+  - percentile
+  - anomaly_flag
+quality_minimum: 0.55
+confidence_minimum: 0.60
+model_ready_minimum: 0.85
+coverage_minimum_rows: 128
+freshness_days_soft_limit: 30
+max_null_fraction: 0.25
+max_duplicate_fraction: 0.02
+fail_closed_on_unknown_asset: true
+default_region: global
+default_provider: unknown
+default_source_family: unknown

@@ -6,6 +6,8 @@ from typing import Any, Dict, Optional
 
 from octa_vertex.broker.base import BrokerAdapter
 
+_FOUNDATION_SCOPE_BLOCK_REASON = "real_order_blocked_in_v0_0_0_foundation_scope"
+
 
 @dataclass
 class IBKRIBInsyncConfig:
@@ -54,16 +56,7 @@ class IBKRIBInsyncAdapter(BrokerAdapter):
 
     def __init__(self, cfg: IBKRIBInsyncConfig):
         self.cfg = cfg
-        try:
-            from ib_insync import IB  # type: ignore
-        except Exception as e:  # pragma: no cover
-            raise RuntimeError("ib_insync_not_available") from e
-
-        self._IB = IB
-        self.ib = IB()
-        ok = self.ib.connect(self.cfg.host, int(self.cfg.port), clientId=int(self.cfg.client_id))
-        if not ok:
-            raise RuntimeError("ibkr_connect_failed")
+        raise RuntimeError(_FOUNDATION_SCOPE_BLOCK_REASON)
 
     def submit_order(self, order: Dict[str, Any]) -> Dict[str, Any]:
         from ib_insync import MarketOrder  # type: ignore

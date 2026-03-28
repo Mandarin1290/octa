@@ -78,7 +78,7 @@ def _redact_env(env_map: dict[str, str]) -> dict[str, str]:
     out: dict[str, str] = {}
     for key, value in sorted(env_map.items()):
         upper = key.upper()
-        if any(tok in upper for tok in ("PASS", "SECRET", "TOKEN", "KEY", "USER")):
+        if any(tok in upper for tok in ("PASS", "SECRET", "TOKEN", "KEY", "USER", "ACCOUNT", "AUTH")):
             out[key] = "<REDACTED>"
         else:
             out[key] = str(value)
@@ -492,6 +492,11 @@ def _write_sha_manifest(evidence_dir: Path) -> None:
 
 
 def main() -> int:
+    raise SystemExit(
+        "non_canonical_broker_supervisor:scripts/octa_ibkr_supervisor.py:"
+        "broker_supervision_is_not_part_of_v0_0_0_foundation_scope"
+    )
+
     ap = argparse.ArgumentParser(description="OCTA IBKR bring-up supervisor (paper/shadow-safe, no-skip probe).")
     ap.add_argument("--config", default="configs/execution_ibkr.yaml")
     ap.add_argument("--timeout-sec", type=int, default=30)

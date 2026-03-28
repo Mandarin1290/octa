@@ -333,6 +333,11 @@ def run(config_path: str, out_dir: Path) -> dict[str, Any]:
 
 
 def main() -> int:
+    raise SystemExit(
+        "deprecated_v000_training_entrypoint:octa.support.ops.v000_full_universe_cascade_train:"
+        "use_scripts/run_octa.py_or_octa.foundation.control_plane"
+    )
+
     ap = argparse.ArgumentParser(description="v000 full-universe cascade structural progression runner")
     ap.add_argument("--config", required=True)
     ap.add_argument("--out", default=None)

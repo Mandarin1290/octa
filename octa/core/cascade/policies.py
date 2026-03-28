@@ -6,6 +6,7 @@ from typing import Sequence
 from .contracts import GateInterface
 
 DEFAULT_TIMEFRAMES: tuple[str, ...] = ("1D", "1H", "30M", "5M", "1M")
+EXTENDED_TIMEFRAMES_WITH_4H: tuple[str, ...] = ("1D", "4H", "1H", "30M", "5M", "1M")
 
 
 @dataclass(frozen=True)

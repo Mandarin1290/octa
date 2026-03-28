@@ -349,6 +349,7 @@ def test_redact_env_masks_secret_keys() -> None:
         "OCTA_IBKR_PASSWORD": "s3cr3t",
         "OCTA_TELEGRAM_BOT_TOKEN": "mytoken",
         "OCTA_IBKR_USERNAME": "trader",
+        "OCTA_IBKR_ACCOUNT": "DU1234567",
         "PATH": "/usr/bin",
         "MY_SECRET": "hidden",
         "API_KEY": "key123",
@@ -356,7 +357,8 @@ def test_redact_env_masks_secret_keys() -> None:
     redacted = _redact_env(env)
     assert redacted["HOME"] == "/home/user"
     assert redacted["PATH"] == "/usr/bin"
-    assert redacted["OCTA_IBKR_USERNAME"] == "trader"
+    assert redacted["OCTA_IBKR_USERNAME"] == "<redacted>"
+    assert redacted["OCTA_IBKR_ACCOUNT"] == "<redacted>"
     assert redacted["OCTA_IBKR_PASSWORD"] == "<redacted>"
     assert redacted["OCTA_TELEGRAM_BOT_TOKEN"] == "<redacted>"
     assert redacted["MY_SECRET"] == "<redacted>"
