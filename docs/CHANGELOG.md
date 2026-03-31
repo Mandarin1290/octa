@@ -41,6 +41,15 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `configs/p03_research.yaml`
 
 
+### [2026-03-31 19:53:35] CHANGE
+**Beschreibung:** Code-Änderungen - (+15/-4 Zeilen)
+
+**Geänderte Dateien:**
+- **CONFIG:** 2 Dateien
+  - `configs/dev.yaml`
+  - `configs/p03_research.yaml`
+
+
 ## 2026-03-28
 
 

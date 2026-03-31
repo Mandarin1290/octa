@@ -3,6 +3,22 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-03-31 19:53:35] CHANGE
+Code-Änderungen - (+15/-4 Zeilen)
+
+**Statistics:**
+- Files Changed: 2
+- Lines Added: +15
+- Lines Deleted: -4
+- Net Change: +11
+
+**File-Level Changes:**
+```
++    4 -    0  configs/dev.yaml
++   11 -    4  configs/p03_research.yaml
+```
+
+
 ## [2026-03-31 19:26:18] TEST
 Code-Änderungen - 1 Test-Dateien - (+67/-24 Zeilen)
 
