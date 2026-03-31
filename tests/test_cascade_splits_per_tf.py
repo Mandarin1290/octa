@@ -97,14 +97,13 @@ def test_dev_yaml_1h_oof_sufficient_for_institutional_gate():
         "Positive n_folds trains on year-2000 history and all gates fail on modern data."
     )
     n_folds = abs(n_folds_raw)
-    train_window = int(effective.get("train_window", 1000))
     test_window = int(effective.get("test_window", 200))
-    # Total backtest length: training window of first fold + all OOS windows
-    total_backtest_bars = train_window + n_folds * test_window
-    institutional_min_2_1h = 2880 + 2 * 480  # = 3840
-    assert total_backtest_bars >= institutional_min_2_1h, (
-        f"1H total backtest bars ({total_backtest_bars}) < institutional min_2 ({institutional_min_2_1h}). "
-        f"evaluate_walk_forward_oos will fail for 1H."
+    # OOF bars = n_folds * test_window (res['df'] contains only OOF predictions)
+    oof_bars = n_folds * test_window
+    institutional_min_3_1h = 2880 + 3 * 480  # = 4320 (allows 3 institutional walk-forward folds)
+    assert oof_bars >= institutional_min_3_1h, (
+        f"1H OOF bars ({oof_bars}) < institutional min_3 ({institutional_min_3_1h}). "
+        f"evaluate_walk_forward_oos will only produce 2 (or 0) folds for 1H."
     )
 
 
@@ -124,12 +123,11 @@ def test_dev_yaml_30m_oof_sufficient_for_institutional_gate():
         f"30M n_folds must be negative (use most-recent data), got {n_folds_raw}."
     )
     n_folds = abs(n_folds_raw)
-    train_window = int(effective.get("train_window", 1000))
     test_window = int(effective.get("test_window", 200))
-    total_backtest_bars = train_window + n_folds * test_window
-    institutional_min_2_30m = 1560 + 2 * 260  # = 2080
-    assert total_backtest_bars >= institutional_min_2_30m, (
-        f"30M total backtest bars ({total_backtest_bars}) < institutional min_2 ({institutional_min_2_30m})."
+    oof_bars = n_folds * test_window
+    institutional_min_3_30m = 1560 + 3 * 260  # = 2340
+    assert oof_bars >= institutional_min_3_30m, (
+        f"30M OOF bars ({oof_bars}) < institutional min_3 ({institutional_min_3_30m})."
     )
 
 

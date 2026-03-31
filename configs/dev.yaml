@@ -26,25 +26,25 @@ splits_by_timeframe:
     min_train_size: 252
     min_test_size: 126
   1H:
-    n_folds: -3
+    n_folds: -5     # 5*960=4800 OOF bars > institutional min_3=4320 (train_bars+3*oos_bars)
     train_window: 2880
     test_window: 960
     step: 960
     expanding: false
   30M:
-    n_folds: -3
+    n_folds: -5     # 5*500=2500 OOF bars > institutional min_3=2340
     train_window: 1560
     test_window: 500
     step: 500
     expanding: false
   5M:
-    n_folds: -3
+    n_folds: -5     # 5*2000=10000 OOF bars > institutional min_3=9750
     train_window: 6240
     test_window: 2000
     step: 2000
     expanding: false
   1M:
-    n_folds: -3
+    n_folds: -6     # 6*6500=39000 OOF bars > institutional min_3=35100
     train_window: 23400
     test_window: 6500
     step: 6500

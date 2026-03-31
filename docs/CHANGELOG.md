@@ -50,6 +50,17 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `configs/p03_research.yaml`
 
 
+### [2026-03-31 20:14:29] TEST
+**Beschreibung:** Code-Änderungen - 1 Test-Dateien - (+18/-20 Zeilen)
+
+**Geänderte Dateien:**
+- **TESTS:** 1 Dateien
+  - `tests/test_cascade_splits_per_tf.py`
+- **CONFIG:** 2 Dateien
+  - `configs/dev.yaml`
+  - `configs/p03_research.yaml`
+
+
 ## 2026-03-28
 
 

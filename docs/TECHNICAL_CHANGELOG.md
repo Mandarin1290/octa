@@ -3,6 +3,23 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-03-31 20:14:29] TEST
+Code-Änderungen - 1 Test-Dateien - (+18/-20 Zeilen)
+
+**Statistics:**
+- Files Changed: 3
+- Lines Added: +18
+- Lines Deleted: -20
+- Net Change: -2
+
+**File-Level Changes:**
+```
++    4 -    4  configs/dev.yaml
++    4 -    4  configs/p03_research.yaml
++   10 -   12  tests/test_cascade_splits_per_tf.py
+```
+
+
 ## [2026-03-31 19:53:35] CHANGE
 Code-Änderungen - (+15/-4 Zeilen)
 
