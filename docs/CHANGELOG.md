@@ -22,6 +22,14 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `configs/p03_research.yaml`
 
 
+### [2026-03-31 16:52:19] CHANGE
+**Beschreibung:** Code-Änderungen - 1 Code-Dateien - (+7/-2 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 1 Dateien
+  - `octa_training/core/pipeline.py`
+
+
 ## 2026-03-28
 
 

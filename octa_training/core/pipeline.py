@@ -1981,7 +1981,12 @@ def train_evaluate_package(
         if str(robustness_profile or 'full').lower() == 'risk_overlay':
             robustness_result = run_risk_overlay_tests(res['df'], preds, metrics, gate, es)
         else:
-            robustness_result = run_all_tests(symbol, features_res, folds, res['df'], preds, metrics, gate, es)
+            robustness_result = run_all_tests(
+                symbol, features_res, folds, res['df'], preds, metrics, gate, es,
+                source_df=df,
+                asset_class=asset_class,
+                timeframe=tf_key,
+            )
         try:
             result.robustness = robustness_result.model_dump() if hasattr(robustness_result, "model_dump") else robustness_result.dict()
         except Exception:
@@ -2029,7 +2034,7 @@ def train_evaluate_package(
 
         if result.passed:
             if not safe_mode:
-                pack_res = save_tradeable_artifact(symbol, best, features_res, df, metrics, result, cfg, state, run_id, asset_class, str(pinfo.path))
+                pack_res = save_tradeable_artifact(symbol, best, features_res, df, metrics, result, cfg, state, run_id, asset_class, str(pinfo.path), enforce_improvement=False)
             else:
                 pack_res = {'saved': False, 'reason': 'safe_mode'}
             # Fail-closed: PASS requires saved artifacts and metrics.
