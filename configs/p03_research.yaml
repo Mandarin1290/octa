@@ -79,6 +79,52 @@ splits_by_timeframe:
 retrain:
   skip_window_days: 0
 
+# Explicit multi-asset profile routing for research training.
+# This does not change thresholds or model logic by itself; it removes the
+# implicit legacy fallback so routing is auditable by asset class.
+asset_defaults:
+  default_profile: legacy
+  by_asset_class:
+    stock: stock
+    equities: stock
+    etf: etf
+    etfs: etf
+    forex: forex
+    fx: forex
+    crypto: crypto
+    future: future
+    futures: future
+    index: index
+    indices: index
+    bond: bond
+    option: option
+    options: option
+
+asset_profiles:
+  legacy:
+    kind: legacy
+  stock:
+    kind: stock
+  etf:
+    kind: etf
+  forex:
+    kind: fx
+  crypto:
+    kind: crypto
+  future:
+    kind: future
+  index:
+    kind: index
+  bond:
+    kind: bond
+  option:
+    kind: option
+
+training_policy:
+  prototype:
+    enabled: true
+    active_policy: stock
+
 # Feature selection — reduce 55→≤35 features before training.
 #
 # WHY: 55 features on ~600 bars is marginal. CatBoost depth=6 can use all splits,
@@ -100,6 +146,14 @@ feature_selection:
 # iterations=500 matches early_stopping_rounds=50 — any good model converges before 500.
 cat_params:
   loss_function: Logloss
+  eval_metric: AUC
+  depth: 4
+  l2_leaf_reg: 8
+  iterations: 500
+  early_stopping_rounds: 50
+  random_seed: 42
+  verbose: 0
+  allow_writing_files: false
 
 gates:
   by_asset_class:

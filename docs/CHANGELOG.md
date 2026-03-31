@@ -2,6 +2,26 @@
 
 Automatisch generiert. Alle Änderungen werden hier dokumentiert.
 
+## 2026-03-31
+
+
+### [2026-03-31 07:26:37] TEST
+**Beschreibung:** Code-Änderungen - 8 Code-Dateien - 1 Test-Dateien - (+906/-599 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 8 Dateien
+  - `octa/core/data/storage/artifact_io.py`
+  - `octa/core/features/features.py`
+  - `octa/support/ops/run_full_cascade_training_from_parquets.py`
+  - ... und 5 weitere
+- **TESTS:** 1 Dateien
+  - `tests/test_adaptive_feature_selection.py`
+- **CONFIG:** 3 Dateien
+  - `configs/asset/etf.yaml`
+  - `configs/asset/stock.yaml`
+  - `configs/p03_research.yaml`
+
+
 ## 2026-03-28
 
 

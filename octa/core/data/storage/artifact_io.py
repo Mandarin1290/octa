@@ -20,6 +20,12 @@ class ArtifactMeta(BaseModel):
     schema_version: int = 1
     symbol: str
     asset_class: Optional[str]
+    asset_profile: Optional[str] = None
+    asset_profile_kind: Optional[str] = None
+    asset_profile_hash: Optional[str] = None
+    asset_profile_source: Optional[str] = None
+    training_policy: Optional[str] = None
+    training_policy_source: Optional[str] = None
     run_id: str
     created_at: datetime
     artifact_kind: str = "tradeable"

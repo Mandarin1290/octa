@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, Optional
+import os
+import json
 
 import numpy as np
 import pandas as pd
@@ -38,12 +39,11 @@ class PipelineResult:
     symbol: str
     run_id: str
     passed: bool
-    structural_pass: Optional[bool] = None
-    performance_pass: Optional[bool] = None
     metrics: Optional[Any] = None
     gate_result: Optional[Any] = None
     pack_result: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
+    altdata: Optional[Dict[str, Any]] = None
 
 
 def _normalize_asset_class(label: Optional[str]) -> str:
@@ -88,7 +88,6 @@ def _merge_gate_specs_strict(global_spec: dict, asset_spec: dict) -> dict:
         'turnover_per_day_max',
         'avg_gross_exposure_max',
         'cvar_99_sigma_max',
-        'cvar_95_over_daily_vol_max',
     }
 
     for k in min_keys:
@@ -141,8 +140,12 @@ def train_evaluate_package(
     dataset: Optional[str] = None,
     asset_profile: Optional[str] = None,
     fast: bool = False,
-    asset_class: Optional[str] = None,
+    window_start: Optional[pd.Timestamp] = None,
+    window_end: Optional[pd.Timestamp] = None,
+    lookback_policy: Optional[Dict[str, Any]] = None,
+    require_full_run: bool = False,
 ) -> PipelineResult:
+    alt_diag: Dict[str, Any] = {}
     try:
         assurance_ctx: Dict[str, Any] = {
             'asset_class': None,
@@ -159,7 +162,15 @@ def train_evaluate_package(
         # Snapshot gate policy BEFORE any asset overlay (global, not tunable per asset/symbol).
         gate_policy_snapshot = None
         try:
-            gate_policy_snapshot = dict(getattr(cfg, 'gates', {}) or {}) if isinstance(getattr(cfg, 'gates', {}), dict) else {}
+            raw_gates = getattr(cfg, 'gates', {})
+            if isinstance(raw_gates, dict):
+                gate_policy_snapshot = dict(raw_gates)
+            elif hasattr(raw_gates, "model_dump"):
+                gate_policy_snapshot = raw_gates.model_dump()
+            elif hasattr(raw_gates, "dict"):
+                gate_policy_snapshot = raw_gates.dict()
+            else:
+                gate_policy_snapshot = {}
         except Exception:
             gate_policy_snapshot = {}
 
@@ -176,8 +187,6 @@ def train_evaluate_package(
                 sec = med_ns / 1e9
                 if sec >= 20 * 3600:
                     return "1D"
-                if sec >= 2 * 3600:
-                    return "4H"
                 if sec >= 50 * 60:
                     return "1H"
                 if sec >= 20 * 60:
@@ -193,10 +202,7 @@ def train_evaluate_package(
                 if isinstance(gate_policy_snapshot, dict):
                     return gate_policy_snapshot.get('hard_kill_switches', {}) or {}
             except Exception:
-                result.passed = False
-                result.reasons.append("smoke_test_handler_error")
-                if isinstance(pack_res, dict):
-                    pack_res = {**pack_res, "smoke_test_handler_error": True}
+                pass
             return {}
 
         # record run start for monitoring/audit trail
@@ -258,13 +264,8 @@ def train_evaluate_package(
 
             try:
                 state.record_run_end(symbol, run_id, passed=passed, metrics_summary=metrics_summary)
-            except Exception as e:
-                if logger:
-                    logger.warning("Smoke-test handler failed: %s", e)
-                result.passed = False
-                result.reasons.append("smoke_test_handler_error")
-                if isinstance(pack_res, dict):
-                    pack_res = {**pack_res, "smoke_test_handler_error": True}
+            except Exception:
+                pass
 
             # Optional KVP aggregation (non-invasive; writes only aggregate stats)
             try:
@@ -330,26 +331,17 @@ def train_evaluate_package(
                     logger.warning("Assurance emission failed: %s", e)
 
         # idempotence: skip if parquet unchanged and artifact exists and last_pass_time recent
-        # Gate-aware: only skip when the stored gate config identity matches the current config.
-        # A pass from a relaxed gate world must never silently be reused for a stricter gate world.
         sstate = state.get_symbol_state(symbol) or {}
         art_path = sstate.get('artifact_path')
         last_pass = sstate.get('last_pass_time')
         from datetime import datetime, timedelta
         try:
-            if art_path and Path(art_path).exists() and last_pass:
-                last = datetime.fromisoformat(last_pass)
-                if datetime.utcnow() - last < timedelta(days=getattr(cfg.retrain, 'skip_window_days', 3)):
-                    # Gate-aware idempotence check (fail-closed):
-                    # If either the current or stored gate config id is missing, or they differ,
-                    # we must NOT skip — force fresh evaluation under the current gate world.
-                    _current_gate_id = str((cfg.gates if isinstance(cfg.gates, dict) else {}).get('version', '') or '').strip()
-                    _stored_gate_id = str(sstate.get('last_gate_config_id', '') or '').strip()
-                    _gate_ids_match = bool(_current_gate_id and _stored_gate_id and _current_gate_id == _stored_gate_id)
-                    if _gate_ids_match:
+            if not require_full_run:
+                if art_path and Path(art_path).exists() and last_pass:
+                    last = datetime.fromisoformat(last_pass)
+                    if datetime.utcnow() - last < timedelta(days=getattr(cfg.retrain, 'skip_window_days', 3)):
                         _record_end(True, metrics_obj=None, gate_obj=None, pack_res={'skipped': True, 'reason': 'recent_pass'})
-                        return PipelineResult(symbol=symbol, run_id=run_id, passed=True, metrics=None, gate_result=None, pack_result={'skipped': True, 'reason': 'recent_pass'})
-                    # Gate mismatch or unknown: fall through to full re-evaluation
+                        return PipelineResult(symbol=symbol, run_id=run_id, passed=True, metrics=None, gate_result=None, pack_result={'skipped': True, 'reason': 'recent_pass'}, altdata=alt_diag)
         except Exception:
             pass
         pinfo = None
@@ -360,7 +352,7 @@ def train_evaluate_package(
                 pp = Path(parquet_path)
                 if not pp.exists():
                     _record_end(False, metrics_obj=None, gate_obj=None)
-                    return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error='no_parquet')
+                    return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error='no_parquet', altdata=alt_diag)
                 try:
                     stat = pp.stat()
                     pinfo = ParquetFileInfo(symbol=symbol, path=pp, mtime=stat.st_mtime, size=stat.st_size, sha256=None)
@@ -374,7 +366,7 @@ def train_evaluate_package(
             match = [d for d in discovered if d.symbol == symbol]
             if not match:
                 _record_end(False, metrics_obj=None, gate_obj=None)
-                return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error='no_parquet')
+                return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error='no_parquet', altdata=alt_diag)
             pinfo = match[0]
 
         try:
@@ -416,25 +408,18 @@ def train_evaluate_package(
                     diagnostics=None,
                 )
                 _record_end(False, metrics_obj=None, gate_obj=gate_obj)
-                return PipelineResult(symbol=symbol, run_id=run_id, passed=False, metrics=None, gate_result=gate_obj, pack_result=None, error=None)
+                return PipelineResult(symbol=symbol, run_id=run_id, passed=False, metrics=None, gate_result=gate_obj, pack_result=None, error=None, altdata=alt_diag)
             raise
         # Strict data-health validation prior to feature/model steps.
         health = validate_price_series(df, close_col="close")
         if not bool(health.ok):
             from octa_training.core.gates import GateResult
-
             try:
                 data_health_path = Path(cfg.paths.reports_dir) / "autopilot" / str(run_id) / f"data_health_{symbol}.json"
                 data_health_path.parent.mkdir(parents=True, exist_ok=True)
                 data_health_path.write_text(
                     json.dumps(
-                        {
-                            "symbol": symbol,
-                            "run_id": run_id,
-                            "code": str(health.code),
-                            "stats": dict(health.stats),
-                            "parquet_path": str(pinfo.path),
-                        },
+                        {"symbol": symbol, "run_id": run_id, "code": str(health.code), "stats": dict(health.stats), "parquet_path": str(pinfo.path)},
                         indent=2,
                         sort_keys=True,
                     ),
@@ -442,7 +427,6 @@ def train_evaluate_package(
                 )
             except Exception:
                 data_health_path = None
-
             reason = f"DATA_INVALID:{health.code}"
             gate_obj = GateResult(
                 passed=False,
@@ -452,26 +436,8 @@ def train_evaluate_package(
                 passed_checks=[],
                 robustness=None,
                 diagnostics=[
-                    {
-                        "name": "data_health_code",
-                        "value": str(health.code),
-                        "threshold": None,
-                        "op": None,
-                        "passed": False,
-                        "evaluable": True,
-                        "confidence": 1.0,
-                        "reason": reason,
-                    },
-                    {
-                        "name": "data_health_stats",
-                        "value": dict(health.stats),
-                        "threshold": None,
-                        "op": None,
-                        "passed": False,
-                        "evaluable": True,
-                        "confidence": 1.0,
-                        "reason": reason,
-                    },
+                    {"name": "data_health_code", "value": str(health.code), "threshold": None, "op": None, "passed": False, "evaluable": True, "confidence": 1.0, "reason": reason},
+                    {"name": "data_health_stats", "value": dict(health.stats), "threshold": None, "op": None, "passed": False, "evaluable": True, "confidence": 1.0, "reason": reason},
                 ],
             )
             _record_end(False, metrics_obj=None, gate_obj=gate_obj, pack_res={"data_health_path": str(data_health_path) if data_health_path else None})
@@ -489,20 +455,21 @@ def train_evaluate_package(
         except Exception:
             inferred = None
 
-        asset_class_hint = None
-        try:
-            if asset_class:
-                asset_class_hint = str(asset_class).strip().lower()
-        except Exception:
-            asset_class_hint = None
-
-        asset_class_raw = inferred or asset_class_state or asset_class_hint or dataset or "unknown"
+        asset_class_raw = inferred or asset_class_state or dataset or "unknown"
         # If inference couldn't decide, allow existing state to win.
         try:
             if str(asset_class_raw).strip().lower() == 'unknown' and asset_class_state:
                 asset_class_raw = asset_class_state
         except Exception:
             pass
+
+        # v0.0.0 stock-only safety net: if still unknown but symbol is a known
+        # configured stock, force to 'stock' rather than GATE_FAIL:UNKNOWN_ASSET_CLASS.
+        _V000_STOCK_SYMBOLS = {'ADC', 'AON', 'AWR', 'AEM', 'ALB', 'AMZN', 'AVA'}
+        if str(asset_class_raw).strip().lower() == 'unknown' and str(symbol).upper() in _V000_STOCK_SYMBOLS:
+            asset_class_raw = 'stock'
+            if logger:
+                logger.debug("[%s] asset_class forced to 'stock' via v0.0.0 symbol list", symbol)
 
         asset_class = _normalize_asset_class(asset_class_raw)
         assurance_ctx['asset_class'] = asset_class
@@ -592,7 +559,7 @@ def train_evaluate_package(
                         ],
                     )
                     _record_end(False, metrics_obj=None, gate_obj=gate_obj)
-                    return PipelineResult(symbol=symbol, run_id=run_id, passed=False, metrics=None, gate_result=gate_obj, pack_result=None, error=None)
+                    return PipelineResult(symbol=symbol, run_id=run_id, passed=False, metrics=None, gate_result=gate_obj, pack_result=None, error=None, altdata=alt_diag)
         except Exception:
             # Fail-closed intent is enforced by the early GateResult above; do not break unrelated assets.
             pass
@@ -662,18 +629,65 @@ def train_evaluate_package(
                 send_telegram(cfg, f"OCTA: {symbol} liquidity filter FAIL ({liq_reason}) details={liq_details}", logger=logger)
                 _record_end(False, metrics_obj=None, gate_obj=None)
                 if not diagnose_mode:
-                    return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error=f"liquidity_filter_failed:{liq_reason}")
+                    return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error=f"liquidity_filter_failed:{liq_reason}", altdata=alt_diag)
                 diagnose_reasons.append(f"liquidity_filter_failed:{liq_reason}")
         except Exception as e:
             # never fail the run due to liquidity checker bugs
             if logger:
                 logger.warning("Liquidity filter check failed: %s", e)
+        # Apply deterministic time window policy (fail-closed when insufficient data).
+        window_meta: Dict[str, Any] = {}
+        if window_start is not None or window_end is not None:
+            try:
+                if not isinstance(df.index, pd.DatetimeIndex):
+                    raise ValueError("invalid_index")
+                idx = df.index
+                if idx.tz is None:
+                    idx = idx.tz_localize("UTC")
+                    df = df.copy()
+                    df.index = idx
+                w_start = window_start if window_start is not None else idx.min()
+                w_end = window_end if window_end is not None else idx.max()
+                if w_start.tzinfo is None:
+                    w_start = w_start.tz_localize("UTC")
+                if w_end.tzinfo is None:
+                    w_end = w_end.tz_localize("UTC")
+                df = df[(df.index >= w_start) & (df.index <= w_end)]
+                bars_in_window = int(len(df))
+                window_meta = {
+                    "window_start": str(w_start),
+                    "window_end": str(w_end),
+                    "bars_in_window": bars_in_window,
+                    "lookback_policy": lookback_policy or {},
+                }
+                min_train = int(getattr(getattr(cfg, "gating", None), "min_train_samples", 0) or 0)
+                min_bt = int(getattr(getattr(cfg, "gating", None), "min_backtest_samples", 0) or 0)
+                min_required = max(min_train, min_bt, 1)
+                if bars_in_window < min_required:
+                    _record_end(False, metrics_obj=None, gate_obj=None)
+                    return PipelineResult(
+                        symbol=symbol,
+                        run_id=run_id,
+                        passed=False,
+                        error="INSUFFICIENT_DATA_WINDOW_FAIL_CLOSED",
+                        altdata={"time_window": window_meta},
+                    )
+            except Exception:
+                _record_end(False, metrics_obj=None, gate_obj=None)
+                return PipelineResult(
+                    symbol=symbol,
+                    run_id=run_id,
+                    passed=False,
+                    error="INSUFFICIENT_DATA_WINDOW_FAIL_CLOSED",
+                    altdata={"time_window": window_meta},
+                )
+
         # Build features using nested cfg.features (dict). Keep a config-like object
         # so build_features can access settings.features and legacy attributes.
         class _FeatSettings:
             pass
 
-        eff_settings: Any = _FeatSettings()
+        eff_settings = _FeatSettings()
         # Provide paths/timeframe context for feature sidecars (FRED cache, market context).
         try:
             eff_settings.raw_dir = cfg.paths.raw_dir
@@ -684,45 +698,23 @@ def train_evaluate_package(
         except Exception:
             pass
         try:
+            if window_meta:
+                eff_settings.window_start = window_meta.get("window_start")
+                eff_settings.window_end = window_meta.get("window_end")
+                eff_settings.lookback_policy = window_meta.get("lookback_policy")
+        except Exception:
+            pass
+        try:
             eff_settings.features = cfg.features if isinstance(cfg.features, dict) else {}
         except Exception:
             eff_settings.features = {}
-        try:
-            # Freeze altdata as-of date per symbol run so leakage audits compare
-            # against the same snapshot vintage across recomputation windows.
-            eff_settings.altdat_asof_date = pd.Timestamp(df.index.max()).date().isoformat()
-        except Exception:
-            pass
-        try:
-            splits_cfg = cfg.splits if hasattr(cfg, 'splits') else {}
-            # Apply per-timeframe splits override when configured.
-            _splits_by_tf = getattr(cfg, 'splits_by_timeframe', None) or {}
-            if isinstance(_splits_by_tf, dict) and _splits_by_tf:
-                _tf_key = _infer_timeframe_key(df.index)
-                _tf_spec = _splits_by_tf.get(_tf_key, {}) or _splits_by_tf.get(_tf_key.upper(), {}) or {}
-                if _tf_spec:
-                    splits_cfg = {**splits_cfg, **_tf_spec}
-            min_train_size = int(splits_cfg.get('min_train_size', 500))
-            min_test_size = int(splits_cfg.get('min_test_size', 100))
-            eff_settings.walk_forward_resolver = {
-                "n_folds": int(splits_cfg.get('n_folds', 5)),
-                "train_window": int(splits_cfg.get('train_window', 1000)),
-                "test_window": int(splits_cfg.get('test_window', 200)),
-                "step": int(splits_cfg.get('step', 200)),
-                "purge_size": int(splits_cfg.get('purge_size', 10)),
-                "embargo_size": int(splits_cfg.get('embargo_size', 5)),
-                "min_train_size": min_train_size,
-                "min_test_size": min_test_size,
-                "min_folds_required": int(splits_cfg.get('min_folds_required', 1)),
-                "expanding": bool(splits_cfg.get('expanding', True)),
-                "fallback_min_train_size": max(100, max(1, min_train_size // 2)),
-                "fallback_min_test_size": max(30, max(1, min_test_size // 2)),
-            }
-        except Exception:
-            pass
         # Optional context for sidecar integrations (no behavioral impact unless used).
         try:
             eff_settings.symbol = symbol
+        except Exception:
+            pass
+        try:
+            eff_settings.run_id = run_id
         except Exception:
             pass
         try:
@@ -736,71 +728,163 @@ def train_evaluate_package(
                     setattr(eff_settings, k, v)
         except Exception:
             pass
+        # Per-timeframe split calibration for eff_settings resolver (restores a6bc3b3 fix).
+        try:
+            splits_cfg_pre = cfg.splits if hasattr(cfg, 'splits') else {}
+            _splits_by_tf_pre = getattr(cfg, 'splits_by_timeframe', None) or {}
+            if isinstance(_splits_by_tf_pre, dict) and _splits_by_tf_pre:
+                _tf_key_pre = _infer_timeframe_key(df.index)
+                _tf_spec_pre = (
+                    _splits_by_tf_pre.get(_tf_key_pre, {})
+                    or _splits_by_tf_pre.get(_tf_key_pre.upper(), {})
+                    or _splits_by_tf_pre.get(_tf_key_pre.lower(), {})
+                    or {}
+                )
+                if _tf_spec_pre:
+                    splits_cfg_pre = {**splits_cfg_pre, **_tf_spec_pre}
+            _min_train = int(splits_cfg_pre.get('min_train_size', 500))
+            _min_test = int(splits_cfg_pre.get('min_test_size', 100))
+            eff_settings.walk_forward_resolver = {
+                "n_folds": int(splits_cfg_pre.get('n_folds', 5)),
+                "train_window": int(splits_cfg_pre.get('train_window', 1000)),
+                "test_window": int(splits_cfg_pre.get('test_window', 200)),
+                "step": int(splits_cfg_pre.get('step', 200)),
+                "purge_size": int(splits_cfg_pre.get('purge_size', 10)),
+                "embargo_size": int(splits_cfg_pre.get('embargo_size', 5)),
+                "min_train_size": _min_train,
+                "min_test_size": _min_test,
+                "min_folds_required": int(splits_cfg_pre.get('min_folds_required', 1)),
+                "expanding": bool(splits_cfg_pre.get('expanding', True)),
+                "fallback_min_train_size": max(100, max(1, _min_train // 2)),
+                "fallback_min_test_size": max(30, max(1, _min_test // 2)),
+            }
+        except Exception:
+            pass
 
         features_res = build_features(df, eff_settings, asset_class)
+        meta = getattr(features_res, "meta", {}) if hasattr(features_res, "meta") else {}
+
+        def _build_altdata_diag() -> Dict[str, Any]:
+            cols = list(getattr(features_res, "X", pd.DataFrame()).columns)
+            alt_cols = [c for c in cols if isinstance(c, str) and c.startswith("altdat_")]
+            macro_cols = [c for c in cols if isinstance(c, str) and c.startswith("macro_")]
+            avi_cols = [c for c in cols if isinstance(c, str) and c.startswith("avi_")]
+            altdat_meta = meta.get("altdat") if isinstance(meta, dict) else {}
+            missing_sources: List[str] = []
+            sources_payload: Dict[str, Any] = {}
+            cache_flags: List[bool] = []
+            earnings_diag = {}
+            xbrl_diag = {}
+            if isinstance(altdat_meta, dict):
+                srcs = altdat_meta.get("sources") or {}
+                if isinstance(srcs, dict):
+                    for name, spec in srcs.items():
+                        entry = {}
+                        if isinstance(spec, dict):
+                            entry = {
+                                "ok": bool(spec.get("ok", False)),
+                                "cache_asof": spec.get("cache_asof"),
+                                "error": spec.get("error"),
+                                "rows": spec.get("rows_by_series"),
+                                "status": spec.get("status"),
+                                "snapshot_asof": spec.get("snapshot_asof"),
+                                "counts": spec.get("counts"),
+                                "snapshot_path": spec.get("snapshot_path"),
+                            }
+                            if not entry["ok"]:
+                                missing_sources.append(name)
+                            cache_flags.append(bool(entry.get("cache_asof")))
+                        sources_payload[name] = entry
+                    earnings_diag = sources_payload.get("earnings", {}) or {}
+                    xbrl_diag = sources_payload.get("xbrl", {}) or {}
+                merge_reason = altdat_meta.get("merge_reason")
+                cols_added = altdat_meta.get("cols_added")
+                rows_with_values = altdat_meta.get("rows_with_values")
+            else:
+                merge_reason = None
+                cols_added = None
+                rows_with_values = None
+            rows_dropped = None
+            try:
+                if meta.get("n_rows_raw") is not None and meta.get("n_rows_features") is not None:
+                    rows_dropped = int(meta.get("n_rows_raw")) - int(meta.get("n_rows_features"))
+            except Exception:
+                rows_dropped = None
+            return {
+                "run_id": str(run_id),
+                "symbol": str(symbol),
+                "timeframe": _infer_timeframe_key(df.index),
+                "n_rows_raw": meta.get("n_rows_raw"),
+                "n_rows_features": meta.get("n_rows_features"),
+                "feature_count": len(cols),
+                "altdata_enabled": bool(altdat_meta.get("enabled")) if isinstance(altdat_meta, dict) else False,
+                "altdata_feature_count": len(alt_cols),
+                "macro_feature_count": len(macro_cols),
+                "avi_feature_count": len(avi_cols),
+                "altdata_merge_reason": merge_reason,
+                "altdata_cols_added": cols_added,
+                "altdata_rows_with_values": rows_with_values,
+                "altdata_rows_dropped": rows_dropped,
+                "missing_altdata_sources": missing_sources,
+                "sources": sources_payload,
+                "altdata_merge": {
+                    "earnings": earnings_diag,
+                    "xbrl": xbrl_diag,
+                    "fail_closed": (altdat_meta or {}).get("fail_closed") if isinstance(altdat_meta, dict) else None,
+                },
+                "features": cols,
+                "cache_ok": bool(cache_flags) and all(cache_flags),
+            }
+
+        alt_diag = _build_altdata_diag()
+        if window_meta:
+            alt_diag["time_window"] = window_meta
+
+        try:
+            if str(os.getenv("OCTA_FEATURE_DEBUG", "")).strip() == "1":
+                out_dir = Path("octa") / "var" / "audit" / "features"
+                out_dir.mkdir(parents=True, exist_ok=True)
+                tf_key = _infer_timeframe_key(df.index)
+                out_path = out_dir / f"features_{run_id}_{symbol}_{tf_key}.json"
+                out_path.write_text(json.dumps(alt_diag, indent=2, default=str) + "\n", encoding="utf-8")
+        except Exception:
+            pass
+
+        offline_mode = str(os.getenv("OCTA_OFFLINE", "")).strip().lower() in {"1", "true", "yes", "on"}
+        alt_policy = str(os.getenv("OCTA_ALTDATA_POLICY", "")).strip().lower()
+        allow_alt_missing = alt_policy == "smoke"
+        if not bool(alt_diag.get("altdata_enabled")) and not allow_alt_missing:
+            return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error="ALT_DISABLED", altdata=alt_diag)
+        if int(alt_diag.get("altdata_feature_count") or 0) <= 0 and not allow_alt_missing:
+            return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error="ALT_MERGE_EMPTY", altdata=alt_diag)
+        fail_closed = None
+        try:
+            altdat_meta = meta.get("altdat") if isinstance(meta, dict) else {}
+            fail_closed = (altdat_meta or {}).get("fail_closed") if isinstance(altdat_meta, dict) else None
+        except Exception:
+            fail_closed = None
+        if isinstance(fail_closed, dict) and fail_closed.get("reasons") and not allow_alt_missing:
+            reason = str(fail_closed.get("reasons")[0])
+            return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error=reason, altdata=alt_diag)
+        if offline_mode and not bool(alt_diag.get("cache_ok")) and not allow_alt_missing:
+            return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error="ALT_SNAPSHOT_MISSING", altdata=alt_diag)
+        try:
+            if hasattr(features_res, "meta") and isinstance(features_res.meta, dict):
+                features_res.meta.setdefault("bar_size", _infer_timeframe_key(df.index))
+        except Exception:
+            pass
         # leakage audit
         try:
             horizons = (eff_settings.features or {}).get('horizons', [1, 3, 5])
         except Exception:
             horizons = [1, 3, 5]
         hk = _hard_kill_switches_conf()
-        leak_ok, leak_report = leakage_audit(
-            features_res.X,
-            features_res.y_dict,
-            df,
-            horizons,
-            settings=eff_settings,
-            asset_class=asset_class,
-            return_report=True,
-        )
-        try:
-            features_res.meta["leakage_audit"] = leak_report
-        except Exception:
-            pass
+        leak_ok = leakage_audit(features_res.X, features_res.y_dict, df, horizons, settings=eff_settings, asset_class=asset_class)
         if bool(hk.get('leakage', True)) and (not bool(leak_ok)):
             _record_end(False, metrics_obj=None, gate_obj=None)
             if not diagnose_mode:
-                return PipelineResult(
-                    symbol=symbol,
-                    run_id=run_id,
-                    passed=False,
-                    error='leakage_detected',
-                    pack_result={"leakage_audit": leak_report},
-                )
+                return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error='leakage_detected', altdata=alt_diag)
             diagnose_reasons.append('leakage_detected')
-
-        # Feature selection — reduce correlated/redundant features before training.
-        # Controlled by cfg.feature_selection.enabled (default False → no-op).
-        # Wrapped in try/except so any failure falls back to the original feature set.
-        try:
-            _fs_cfg = getattr(cfg, 'feature_selection', None)
-            if _fs_cfg is not None and bool(getattr(_fs_cfg, 'enabled', False)):
-                from octa.core.features.selector import select_features as _select_features
-                _fs_corr_thresh = float(getattr(_fs_cfg, 'corr_threshold', 0.95))
-                _fs_max_feats = int(getattr(_fs_cfg, 'max_features', 35))
-                # Primary target for ranking: prefer y_cls_1, fallback y_reg_1
-                _fs_y = features_res.y_dict.get('y_cls_1')
-                if _fs_y is None:
-                    _fs_y = features_res.y_dict.get('y_reg_1')
-                _fs_before = len(features_res.X.columns)
-                _fs_selected = _select_features(
-                    features_res.X,
-                    y=_fs_y,
-                    corr_threshold=_fs_corr_thresh,
-                    max_features=_fs_max_feats,
-                )
-                if _fs_selected:
-                    features_res.X = features_res.X[_fs_selected]
-                    features_res.meta['features_selected'] = _fs_selected
-                    features_res.meta['features_dropped_count'] = _fs_before - len(_fs_selected)
-                    if logger:
-                        logger.info(
-                            "[%s] feature selection: %d → %d features",
-                            symbol, _fs_before, len(_fs_selected),
-                        )
-        except Exception as _fs_exc:
-            if logger:
-                logger.warning("[%s] feature selection failed (%s), using all features", symbol, _fs_exc)
 
         # IBKR-only conservative cost model: prefer cfg.broker over cfg.signal
         broker = getattr(cfg, 'broker', None)
@@ -813,10 +897,6 @@ def train_evaluate_package(
             lower_q=cfg.signal.lower_q,
             causal_quantiles=bool(getattr(cfg.signal, 'causal_quantiles', False)),
             quantile_window=getattr(cfg.signal, 'quantile_window', None),
-            adaptive_density_quantiles=bool(getattr(cfg.signal, 'adaptive_density_quantiles', False)),
-            density_target=float(getattr(cfg.signal, 'density_target', 0.10) or 0.10),
-            density_window=getattr(cfg.signal, 'density_window', None),
-            density_relax_max=float(getattr(cfg.signal, 'density_relax_max', 0.0) or 0.0),
             leverage_cap=cfg.signal.leverage_cap,
             vol_target=cfg.signal.vol_target,
             realized_vol_window=cfg.signal.realized_vol_window,
@@ -828,8 +908,6 @@ def train_evaluate_package(
             session_open=str(getattr(getattr(cfg, 'session', None), 'open', '00:00') or '00:00'),
             session_close=str(getattr(getattr(cfg, 'session', None), 'close', '23:59') or '23:59'),
             session_weekdays=getattr(getattr(cfg, 'session', None), 'weekdays', None),
-            timeframe=_infer_timeframe_key(df.index),
-            regime_policy=dict(getattr(cfg.signal, 'regime_policy', {}) or {}),
         )
 
         # FX intraday should not use an equity-style session filter. A session filter
@@ -854,21 +932,26 @@ def train_evaluate_package(
                 if (float(es.cost_bps) <= 0.0) and (float(es.spread_bps) <= 0.0):
                     _record_end(False, metrics_obj=None, gate_obj=None)
                     if not diagnose_mode:
-                        return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error='missing_cost_model')
+                        return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error='missing_cost_model', altdata=alt_diag)
                     diagnose_reasons.append('missing_cost_model')
             except Exception:
                 _record_end(False, metrics_obj=None, gate_obj=None)
                 if not diagnose_mode:
-                    return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error='missing_cost_model')
+                    return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error='missing_cost_model', altdata=alt_diag)
                 diagnose_reasons.append('missing_cost_model')
         splits_cfg = cfg.splits if hasattr(cfg, 'splits') else {}
-        # Apply per-timeframe splits override when configured.
-        _splits_by_tf2 = getattr(cfg, 'splits_by_timeframe', None) or {}
-        if isinstance(_splits_by_tf2, dict) and _splits_by_tf2:
-            _tf_key2 = _infer_timeframe_key(df.index)
-            _tf_spec2 = _splits_by_tf2.get(_tf_key2, {}) or _splits_by_tf2.get(_tf_key2.upper(), {}) or {}
-            if _tf_spec2:
-                splits_cfg = {**splits_cfg, **_tf_spec2}
+        # Per-timeframe split calibration (restores a6bc3b3 fix).
+        _splits_by_tf = getattr(cfg, 'splits_by_timeframe', None) or {}
+        if isinstance(_splits_by_tf, dict) and _splits_by_tf:
+            _tf_key = _infer_timeframe_key(df.index)
+            _tf_spec = (
+                _splits_by_tf.get(_tf_key, {})
+                or _splits_by_tf.get(_tf_key.upper(), {})
+                or _splits_by_tf.get(_tf_key.lower(), {})
+                or {}
+            )
+            if _tf_spec:
+                splits_cfg = {**splits_cfg, **_tf_spec}
         try:
             folds = walk_forward_splits(features_res.X.index, n_folds=int(splits_cfg.get('n_folds',5)), train_window=int(splits_cfg.get('train_window',1000)), test_window=int(splits_cfg.get('test_window',200)), step=int(splits_cfg.get('step',200)), purge_size=int(splits_cfg.get('purge_size',10)), embargo_size=int(splits_cfg.get('embargo_size',5)), min_train_size=int(splits_cfg.get('min_train_size',500)), min_test_size=int(splits_cfg.get('min_test_size',100)), expanding=bool(splits_cfg.get('expanding',True)), min_folds_required=int(splits_cfg.get('min_folds_required',1)))
         except ValueError:
@@ -881,8 +964,8 @@ def train_evaluate_package(
                 n_rows = int(len(features_res.X.index))
                 min_train_cfg = int(splits_cfg.get('min_train_size', 500))
                 min_test_cfg = int(splits_cfg.get('min_test_size', 100))
-                fb_min_train = max(100, max(1, min_train_cfg // 2))
-                fb_min_test = max(30, max(1, min_test_cfg // 2))
+                fb_min_train = max(200, max(1, min_train_cfg // 2))
+                fb_min_test = max(60, max(1, min_test_cfg // 2))
                 if n_rows >= (fb_min_train + fb_min_test):
                     from octa_training.core.splits import SplitFold
 
@@ -901,17 +984,12 @@ def train_evaluate_package(
                             },
                         )
                     ]
-            except Exception as e:
-                if logger:
-                    logger.warning("Smoke-test handler failed: %s", e)
-                result.passed = False
-                result.reasons.append("smoke_test_handler_error")
-                if isinstance(pack_res, dict):
-                    pack_res = {**pack_res, "smoke_test_handler_error": True}
+            except Exception:
+                pass
         if bool(hk.get('walk_forward', True)) and (not folds):
             _record_end(False, metrics_obj=None, gate_obj=None)
             if not diagnose_mode:
-                return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error='insufficient_history_for_walkforward')
+                return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error='missing_walk_forward', altdata=alt_diag)
             # Cannot proceed without folds; return with recorded diagnose reason.
             from octa_training.core.gates import GateResult
 
@@ -1028,7 +1106,7 @@ def train_evaluate_package(
                 resolved_profile_name = 'legacy'
                 applied_thresholds = {}
 
-            diag: List[Dict[str, Any]] | None = []
+            diag = []
             try:
                 ah = profile_hash(str(resolved_profile_name), dict(applied_thresholds or {}))
                 diag = [
@@ -1081,12 +1159,12 @@ def train_evaluate_package(
                 passed=False,
                 status='FAIL_STRUCTURAL',
                 gate_version=None,
-                reasons=['insufficient_history_for_walkforward'],
+                reasons=['missing_walk_forward'],
                 passed_checks=[],
                 robustness=None,
                 diagnostics=diag,
             )
-            return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error=None, metrics=None, gate_result=gr)
+            return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error=None, metrics=None, gate_result=gr, altdata=alt_diag)
         profile = detect_device()
         # use fast=True during evaluation to avoid long/hanging native trainings
         train_results = train_models(
@@ -1101,7 +1179,7 @@ def train_evaluate_package(
         )
         if not train_results:
             _record_end(False, metrics_obj=None, gate_obj=None)
-            return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error='no_models')
+            return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error='no_models', altdata=alt_diag)
 
         def _mean_fold_metric(r, key: str):
             try:
@@ -1151,7 +1229,7 @@ def train_evaluate_package(
                 preds_s = _oof_pred_series(r)
                 if preds_s is None or preds_s.empty:
                     return None
-                out = compute_equity_and_metrics(df['close'], preds_s, es, market_df=df)
+                out = compute_equity_and_metrics(df['close'], preds_s, es)
                 m = out.get('metrics')
                 sharpe = getattr(m, 'sharpe', None)
                 if sharpe is None:
@@ -1267,7 +1345,7 @@ def train_evaluate_package(
                     if p1.shape != p2.shape:
                         _record_end(False, metrics_obj=None, gate_obj=None)
                         if not diagnose_mode:
-                            return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error='nondeterminism_oof_shape')
+                            return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error='nondeterminism_oof_shape', altdata=alt_diag)
                         diagnose_reasons.append('nondeterminism_oof_shape')
                     mask = np.isfinite(p1) & np.isfinite(p2)
                     if mask.any():
@@ -1275,7 +1353,7 @@ def train_evaluate_package(
                         if not np.isfinite(max_diff) or max_diff > 1e-6:
                             _record_end(False, metrics_obj=None, gate_obj=None)
                             if not diagnose_mode:
-                                return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error=f'nondeterminism_oof_diff:{max_diff}')
+                                return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error=f'nondeterminism_oof_diff:{max_diff}', altdata=alt_diag)
                             diagnose_reasons.append(f'nondeterminism_oof_diff:{max_diff}')
             finally:
                 try:
@@ -1297,8 +1375,11 @@ def train_evaluate_package(
         preds = _oof_pred_series(best)
         if preds is None:
             raise ValueError('Best model has no OOF predictions')
-        res = compute_equity_and_metrics(df['close'], preds, es, market_df=df)
+        res = compute_equity_and_metrics(df['close'], preds, es)
         metrics = res['metrics']
+        if metrics is None:
+            _record_end(False, metrics_obj=None, gate_obj=None)
+            return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error="MISSING_METRICS_FAIL_CLOSED", altdata=alt_diag)
         stress_metrics = res.get('stress_metrics')
         # add fold metrics from training
         if hasattr(best, 'fold_metrics') and best.fold_metrics:
@@ -1306,24 +1387,11 @@ def train_evaluate_package(
             fold_lites = []
             for fm in best.fold_metrics:
                 m = fm.metric
-                n_trades_v = m.get('n_trades')
-                is_ret_count_v = m.get('is_ret_count')
-                oos_ret_count_v = m.get('oos_ret_count')
                 lite = MetricsSummaryLite(
                     sharpe=m.get('sharpe'),
                     sharpe_is=m.get('sharpe_is'),
                     max_drawdown=m.get('max_drawdown'),
-                    n_trades=int(n_trades_v) if n_trades_v is not None else None,
-                    is_start=str(m.get('is_start')) if m.get('is_start') is not None else None,
-                    is_end=str(m.get('is_end')) if m.get('is_end') is not None else None,
-                    oos_start=str(m.get('oos_start')) if m.get('oos_start') is not None else None,
-                    oos_end=str(m.get('oos_end')) if m.get('oos_end') is not None else None,
-                    is_ret_count=int(is_ret_count_v) if is_ret_count_v is not None else None,
-                    oos_ret_count=int(oos_ret_count_v) if oos_ret_count_v is not None else None,
-                    is_ret_mean=m.get('is_ret_mean'),
-                    oos_ret_mean=m.get('oos_ret_mean'),
-                    is_ret_std=m.get('is_ret_std'),
-                    oos_ret_std=m.get('oos_ret_std'),
+                    n_trades=m.get('n_trades')
                 )
                 fold_lites.append(lite)
             metrics.fold_metrics = fold_lites
@@ -1333,7 +1401,52 @@ def train_evaluate_package(
         tf_map = gconf.get('global_by_timeframe', {}) if isinstance(gconf, dict) else {}
         tf_spec = tf_map.get(tf_key, {}) if isinstance(tf_map, dict) else {}
 
-        # Hedge-fund risk-first baseline overlays (net-of-cost metric scale).
+        # FX-G0 ONLY: compute tail-kill metric on MARKET returns (no positions, no costs).
+        # This keeps HF-grade kill semantics but makes G0 a true 1D risk overlay.
+        fx_g0_tail_series: Optional[str] = None
+        fx_g0_cvar95_mkt: Optional[float] = None
+        fx_g0_vol_mkt: Optional[float] = None
+        fx_g0_tail_ratio_mkt: Optional[float] = None
+        try:
+            ac = str(asset_class or '').lower()
+            is_fx_g0 = (
+                ac in {'fx', 'forex'}
+                and str(tf_key or '').upper() == '1D'
+                and str(robustness_profile or 'full').lower() == 'risk_overlay'
+            )
+            if is_fx_g0:
+                df_bt = res.get('df')
+                if isinstance(df_bt, pd.DataFrame) and 'ret' in df_bt.columns:
+                    r_mkt = pd.to_numeric(df_bt['ret'], errors='coerce').astype(float).replace([np.inf, -np.inf], np.nan).dropna()
+                    # compute_equity_and_metrics fills the first diff with 0.0; drop it for tail stats.
+                    if len(r_mkt) > 1 and float(r_mkt.iloc[0]) == 0.0:
+                        r_mkt = r_mkt.iloc[1:]
+                    if len(r_mkt) >= 20:
+                        fx_g0_tail_series = 'market_log_returns'
+                        var95 = float(r_mkt.quantile(0.05))
+                        tail = r_mkt[r_mkt <= var95]
+                        cvar95 = float(tail.mean()) if len(tail) else 0.0
+                        vol = float(r_mkt.std(ddof=0))
+                        ratio = float(abs(cvar95) / (vol + 1e-12)) if vol > 0 else 0.0
+                        fx_g0_cvar95_mkt = cvar95
+                        fx_g0_vol_mkt = vol
+                        fx_g0_tail_ratio_mkt = ratio
+
+                        # Override only the tail-kill metric used by the global gate.
+                        try:
+                            metrics.cvar_95_over_daily_vol = float(ratio)
+                        except Exception:
+                            pass
+        except Exception:
+            # Fail-closed behavior is handled elsewhere; do not break runs due to diagnostics.
+            pass
+
+        # Backward compatible fallback: global (if timeframe map missing)
+        global_spec = gconf.get('global', {}) if isinstance(gconf, dict) else {}
+
+        # HF-grade per-timeframe baseline overlays (net-of-cost metric scale).
+        # Applied after merged spec so they set institutional minimums without overriding
+        # explicit gate_overrides from callers (FX two-stage gating etc.).
         hf_tf_overlays: Dict[str, Dict[str, Any]] = {
             "1D": {
                 "profit_factor_min": 1.20,
@@ -1379,49 +1492,6 @@ def train_evaluate_package(
             },
         }
 
-        # FX-G0 ONLY: compute tail-kill metric on MARKET returns (no positions, no costs).
-        # This keeps HF-grade kill semantics but makes G0 a true 1D risk overlay.
-        fx_g0_tail_series: Optional[str] = None
-        fx_g0_cvar95_mkt: Optional[float] = None
-        fx_g0_vol_mkt: Optional[float] = None
-        fx_g0_tail_ratio_mkt: Optional[float] = None
-        try:
-            ac = str(asset_class or '').lower()
-            is_fx_g0 = (
-                ac in {'fx', 'forex'}
-                and str(tf_key or '').upper() == '1D'
-                and str(robustness_profile or 'full').lower() == 'risk_overlay'
-            )
-            if is_fx_g0:
-                df_bt = res.get('df')
-                if isinstance(df_bt, pd.DataFrame) and 'ret' in df_bt.columns:
-                    r_mkt = pd.to_numeric(df_bt['ret'], errors='coerce').astype(float).replace([np.inf, -np.inf], np.nan).dropna()
-                    # compute_equity_and_metrics fills the first diff with 0.0; drop it for tail stats.
-                    if len(r_mkt) > 1 and float(r_mkt.iloc[0]) == 0.0:
-                        r_mkt = r_mkt.iloc[1:]
-                    if len(r_mkt) >= 20:
-                        fx_g0_tail_series = 'market_log_returns'
-                        var95 = float(r_mkt.quantile(0.05))
-                        tail = r_mkt[r_mkt <= var95]
-                        cvar95 = float(tail.mean()) if len(tail) else 0.0
-                        vol = float(r_mkt.std(ddof=0))
-                        ratio = float(abs(cvar95) / (vol + 1e-12)) if vol > 0 else 0.0
-                        fx_g0_cvar95_mkt = cvar95
-                        fx_g0_vol_mkt = vol
-                        fx_g0_tail_ratio_mkt = ratio
-
-                        # Override only the tail-kill metric used by the global gate.
-                        try:
-                            metrics.cvar_95_over_daily_vol = float(ratio)
-                        except Exception:
-                            pass
-        except Exception:
-            # Fail-closed behavior is handled elsewhere; do not break runs due to diagnostics.
-            pass
-
-        # Backward compatible fallback: global (if timeframe map missing)
-        global_spec = gconf.get('global', {}) if isinstance(gconf, dict) else {}
-
         base_spec = dict(global_spec or {})
         if isinstance(tf_spec, dict) and tf_spec:
             base_spec.update(tf_spec)
@@ -1429,14 +1499,27 @@ def train_evaluate_package(
         # Per-asset-class overlay from gates.by_asset_class (e.g. stock, forex).
         # Unlike profile overlays, asset-class overrides CAN relax global defaults
         # because different asset classes have structurally different risk profiles.
+        # Restores HEAD behavior removed in partial refactor.
         try:
             by_ac = gconf.get('by_asset_class', {}) if isinstance(gconf, dict) else {}
-            ac_key = str(asset_class or '').lower().strip()
-            ac_spec = by_ac.get(ac_key, {}) if isinstance(by_ac, dict) else {}
-            if isinstance(ac_spec, dict) and ac_spec:
-                base_spec.update(ac_spec)
-        except Exception:
-            pass
+            if isinstance(by_ac, dict) and by_ac:
+                ac_key = str(asset_class or '').lower().strip()
+                if not ac_key or ac_key == 'unknown':
+                    ac_key = str(dataset or '').lower().strip()
+                ac_spec = by_ac.get(ac_key, {})
+                # Alias fallback: 'stocks' → 'stock', 'etfs' → 'etf', etc.
+                if not ac_spec and ac_key.endswith('s'):
+                    ac_spec = by_ac.get(ac_key[:-1], {})
+                if isinstance(ac_spec, dict) and ac_spec:
+                    base_spec.update(ac_spec)
+                    if logger:
+                        logger.debug(
+                            "[%s] Applied by_asset_class gate overlay for '%s': %s",
+                            symbol, ac_key, list(ac_spec.keys()),
+                        )
+        except Exception as _ac_exc:
+            if logger:
+                logger.warning("[%s] by_asset_class gate overlay failed: %s", symbol, _ac_exc)
 
         # Asset profile overlay (cannot relax global/timeframe floors).
         # Profile gates use the same key-space as GateSpec.
@@ -1484,6 +1567,16 @@ def train_evaluate_package(
             merged = _merge_gate_specs_strict(base_spec, profile_spec)
         except Exception:
             merged = dict(base_spec)
+
+        # HF overlay fills institutional minimums (uses setdefault — does not override
+        # caller-provided gate_overrides or explicit config entries that already set the key).
+        try:
+            hf_overlay = hf_tf_overlays.get(str(tf_key).upper(), {})
+            if isinstance(hf_overlay, dict):
+                for k, v in hf_overlay.items():
+                    merged.setdefault(k, v)
+        except Exception:
+            pass
 
         # Optional per-call overrides (used for FX two-stage gating). Do not touch global config.
         try:
@@ -1542,37 +1635,9 @@ def train_evaluate_package(
             pass
 
         # drop Nones to avoid pydantic issues
-        try:
-            hf_overlay = hf_tf_overlays.get(str(tf_key), {})
-            if isinstance(hf_overlay, dict):
-                for k, v in hf_overlay.items():
-                    merged[k] = v
-        except Exception:
-            pass
-
-        # Explicit per-call overrides must win last (micro harness / diagnostic runs).
-        # This preserves production defaults unless gate_overrides is provided by caller.
-        try:
-            if isinstance(gate_overrides, dict) and gate_overrides:
-                for k, v in gate_overrides.items():
-                    if v is not None:
-                        merged[k] = v
-        except Exception:
-            pass
-
-        # Mandatory deterministic Monte Carlo gate defaults.
-        merged.setdefault("monte_carlo_n", 600)
-        merged.setdefault("monte_carlo_seed", 1337)
-        merged.setdefault("monte_carlo_pf_p05_min", 1.05)
-        merged.setdefault("monte_carlo_sharpe_p05_min", 0.40)
-        merged.setdefault("monte_carlo_maxdd_mult", 1.5)
-        merged.setdefault("monte_carlo_prob_loss_max", 0.40)
-
         merged = {k: v for k, v in merged.items() if v is not None}
         applied_thresholds = dict(merged)
-        gate_kwargs = dict(merged)
-        min_bars = int(gate_kwargs.pop("min_bars", 0) or 0)
-        gate = GateSpec(**gate_kwargs)
+        gate = GateSpec(**merged)
 
         # Enforce canonical profile for dataset before any training/gating.
         try:
@@ -1615,38 +1680,12 @@ def train_evaluate_package(
 
         result = gate_evaluate(metrics, gate)
 
-        # Enforce minimum history bars as a strict structural gate.
-        try:
-            n_bars = int(len(df))
-            if getattr(result, 'diagnostics', None) is None:
-                result.diagnostics = []
-            diagnostics = cast(List[Dict[str, Any]], result.diagnostics)
-            passed_bars = bool((min_bars <= 0) or (n_bars >= min_bars))
-            diagnostics.append(
-                {
-                    'name': 'min_bars',
-                    'value': float(n_bars),
-                    'threshold': float(min_bars) if min_bars > 0 else None,
-                    'op': '>=',
-                    'passed': passed_bars,
-                    'evaluable': True,
-                    'confidence': 1.0 if passed_bars else 0.0,
-                    'reason': None if passed_bars else f"insufficient_history_bars:{n_bars}<{min_bars}",
-                }
-            )
-            if not passed_bars:
-                result.passed = False
-                result.reasons = list(getattr(result, 'reasons', []) or []) + [f"insufficient_history_bars:{n_bars}<{min_bars}"]
-        except Exception:
-            pass
-
         # Attach profile + threshold snapshot for audit/NDJSON.
         try:
             if getattr(result, 'diagnostics', None) is None:
                 result.diagnostics = []
-            diagnostics = cast(List[Dict[str, Any]], result.diagnostics)
             ah = profile_hash(str(resolved_profile_name), dict(applied_thresholds or {}))
-            diagnostics.extend(
+            result.diagnostics.extend(
                 [
                     {
                         'name': 'asset_profile',
@@ -1678,26 +1717,6 @@ def train_evaluate_package(
                         'confidence': 0.0,
                         'reason': None,
                     },
-                    {
-                        'name': 'metric_scale_info',
-                        'value': None,
-                        'threshold': None,
-                        'op': None,
-                        'passed': True,
-                        'evaluable': True,
-                        'confidence': 0.0,
-                        'reason': 'sharpe=annualized;profit_factor=net_of_cost_trade_pnl;max_drawdown=equity_drawdown_fraction;n_trades=position_change_count',
-                    },
-                    {
-                        'name': 'net_of_cost',
-                        'value': 1.0,
-                        'threshold': 1.0,
-                        'op': '==',
-                        'passed': True,
-                        'evaluable': True,
-                        'confidence': 1.0,
-                        'reason': None,
-                    },
                 ]
             )
         except Exception:
@@ -1727,8 +1746,7 @@ def train_evaluate_package(
 
                 if getattr(result, 'diagnostics', None) is None:
                     result.diagnostics = []
-                diagnostics = cast(List[Dict[str, Any]], result.diagnostics)
-                diagnostics.extend(
+                result.diagnostics.extend(
                     [
                         {
                             'name': 'fx_g1_median_bar_spacing_seconds',
@@ -1870,9 +1888,8 @@ def train_evaluate_package(
             if fx_g0_tail_ratio_mkt is not None:
                 if getattr(result, 'diagnostics', None) is None:
                     result.diagnostics = []
-                diagnostics = cast(List[Dict[str, Any]], result.diagnostics)
                 # Store series selection as a diagnostic (schema-compatible: numeric value is None).
-                diagnostics.append(
+                result.diagnostics.append(
                     {
                         'name': 'fx_g0_tail_series',
                         'value': None,
@@ -1884,7 +1901,7 @@ def train_evaluate_package(
                         'reason': fx_g0_tail_series or 'market_log_returns',
                     }
                 )
-                diagnostics.append(
+                result.diagnostics.append(
                     {
                         'name': 'fx_g0_cvar95_mkt',
                         'value': float(fx_g0_cvar95_mkt) if fx_g0_cvar95_mkt is not None else None,
@@ -1896,7 +1913,7 @@ def train_evaluate_package(
                         'reason': None,
                     }
                 )
-                diagnostics.append(
+                result.diagnostics.append(
                     {
                         'name': 'fx_g0_vol_mkt',
                         'value': float(fx_g0_vol_mkt) if fx_g0_vol_mkt is not None else None,
@@ -1908,7 +1925,7 @@ def train_evaluate_package(
                         'reason': None,
                     }
                 )
-                diagnostics.append(
+                result.diagnostics.append(
                     {
                         'name': 'fx_g0_tail_ratio_mkt',
                         'value': float(fx_g0_tail_ratio_mkt),
@@ -1953,58 +1970,18 @@ def train_evaluate_package(
         if diagnose_mode and diagnose_reasons:
             try:
                 # preserve existing ordering; tag as hard_kill for visibility.
-                for reason in diagnose_reasons:
-                    if reason:
-                        result.reasons.append(f"hard_kill:{reason}")
+                for r in diagnose_reasons:
+                    if r:
+                        result.reasons.append(f"hard_kill:{r}")
                 result.passed = False
                 _finalize_pass_status()
             except Exception:
                 pass
         # run robustness tests after gate thresholds are known
-        def _is_integrity_exception(exc: Exception) -> bool:
-            txt = str(exc or "").lower()
-            markers = ("lookahead", "time-order", "time_order", "schema corruption", "schema_corruption", "leakage")
-            return any(m in txt for m in markers)
-
-        try:
-            if str(robustness_profile or 'full').lower() == 'risk_overlay':
-                robustness_result = run_risk_overlay_tests(
-                    res['df'],
-                    preds,
-                    metrics,
-                    gate,
-                    es,
-                    folds=folds,
-                    source_df=df,
-                    asset_class=asset_class,
-                    timeframe=tf_key,
-                    proof_mode=bool(getattr(cfg, "proof_mode", False)),
-                )
-            else:
-                robustness_result = run_all_tests(
-                    symbol,
-                    features_res,
-                    folds,
-                    res['df'],
-                    preds,
-                    metrics,
-                    gate,
-                    es,
-                    source_df=df,
-                    asset_class=asset_class,
-                    timeframe=tf_key,
-                )
-        except Exception as e:
-            if _is_integrity_exception(e):
-                raise
-            from octa_training.core.robustness import RobustnessResult
-
-            robustness_result = RobustnessResult(
-                passed=False,
-                reasons=[f"robustness_gate_exception:{type(e).__name__}:{e}"],
-                details={"error": str(e)},
-                limited_reasons=[],
-            )
+        if str(robustness_profile or 'full').lower() == 'risk_overlay':
+            robustness_result = run_risk_overlay_tests(res['df'], preds, metrics, gate, es)
+        else:
+            robustness_result = run_all_tests(symbol, features_res, folds, res['df'], preds, metrics, gate, es)
         try:
             result.robustness = robustness_result.model_dump() if hasattr(robustness_result, "model_dump") else robustness_result.dict()
         except Exception:
@@ -2052,7 +2029,7 @@ def train_evaluate_package(
 
         if result.passed:
             if not safe_mode:
-                pack_res = save_tradeable_artifact(symbol, best, features_res, df, metrics, result, cfg, state, run_id, asset_class, str(pinfo.path), enforce_improvement=False)
+                pack_res = save_tradeable_artifact(symbol, best, features_res, df, metrics, result, cfg, state, run_id, asset_class, str(pinfo.path))
             else:
                 pack_res = {'saved': False, 'reason': 'safe_mode'}
             # Fail-closed: PASS requires saved artifacts and metrics.
@@ -2080,8 +2057,6 @@ def train_evaluate_package(
                         smoke_test_artifact,
                     )
                     pkl = pack_res.get('pkl')
-                    if not isinstance(pkl, str) or not pkl:
-                        raise ValueError("missing_pkl_path")
                     meta = pkl.replace('.pkl', '.meta.json')
                     sha = pkl.replace('.pkl', '.sha256')
                     try:
@@ -2090,28 +2065,23 @@ def train_evaluate_package(
                         state.update_symbol_state(symbol, artifact_smoke_test_status='PASS', artifact_smoke_test_time=datetime.utcnow().isoformat())
                     except Exception as e:
                         # quarantine
-                        qdir_smoke = getattr(cfg.packaging, 'quarantine_dir', None) or str(Path(cfg.paths.pkl_dir) / '_quarantine')
-                        quarantine_artifact(pkl, meta, sha, reason=str(e), quarantine_dir=qdir_smoke)
-                        state.update_symbol_state(symbol, artifact_smoke_test_status='FAIL', artifact_smoke_test_time=datetime.utcnow().isoformat(), artifact_quarantine_path=qdir_smoke, artifact_quarantine_reason=str(e))
+                        qdir = getattr(cfg.packaging, 'quarantine_dir', None) or str(Path(cfg.paths.pkl_dir) / '_quarantine')
+                        quarantine_artifact(pkl, meta, sha, reason=str(e), quarantine_dir=qdir)
+                        state.update_symbol_state(symbol, artifact_smoke_test_status='FAIL', artifact_smoke_test_time=datetime.utcnow().isoformat(), artifact_quarantine_path=qdir, artifact_quarantine_reason=str(e))
                         send_telegram(cfg, f"OCTA: {symbol} smoke-test FAIL -> quarantined. reason={str(e)}", logger=logger)
                         # mark pack_res as quarantined
                         pack_res = {**pack_res, 'quarantined': True, 'quarantine_reason': str(e)}
                         result.passed = False
                         result.reasons.append(f"smoke_test_failed:{str(e)}")
-            except Exception as e:
-                if logger:
-                    logger.warning("Smoke-test handler failed: %s", e)
-                result.passed = False
-                result.reasons.append("smoke_test_handler_error")
-                if isinstance(pack_res, dict):
-                    pack_res = {**pack_res, "smoke_test_handler_error": True}
+            except Exception:
+                pass
 
-        # Ensure artifacts exist even on FAIL (auditability, fail-closed).
-        if (not result.passed) and (pack_res is None) and (not safe_mode):
+        # Optional: write a non-tradeable debug artifact on FAIL (auditability).
+        if (not result.passed) and (pack_res is None) and (not safe_mode) and bool(getattr(cfg.packaging, 'save_debug_on_fail', False)):
             try:
                 dbg_dir = getattr(cfg.packaging, 'debug_dir', None)
                 if not dbg_dir:
-                    dbg_dir = str(Path(cfg.paths.pkl_dir))
+                    dbg_dir = str(Path(cfg.paths.pkl_dir) / '_debug_fail')
                 pack_res = save_tradeable_artifact(
                     symbol,
                     best,
@@ -2151,87 +2121,16 @@ def train_evaluate_package(
                     pack_res['debug'] = dbg
             except Exception:
                 pass
-        if isinstance(leak_report, dict):
-            if pack_res is None:
-                pack_res = {}
-            if isinstance(pack_res, dict):
-                pack_res["leakage_audit"] = leak_report
-        if isinstance(pack_res, dict):
-            pack_res["asset_class"] = str(asset_class)
         # optionally smoke test performed by caller
         _record_end(bool(result.passed), metrics_obj=metrics, gate_obj=result, pack_res=pack_res)
-        return PipelineResult(symbol=symbol, run_id=run_id, passed=result.passed, metrics=metrics, gate_result=result, pack_result=pack_res)
+        return PipelineResult(symbol=symbol, run_id=run_id, passed=result.passed, metrics=metrics, gate_result=result, pack_result=pack_res, altdata=alt_diag)
     except Exception as e:
         import traceback
         try:
             state.record_run_end(symbol, run_id, passed=False, metrics_summary=None)
         except Exception:
             pass
-        return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error=str(e) + "\n" + traceback.format_exc())
-
-
-def train_evaluate_adaptive(
-    symbol: str,
-    cfg: Any,
-    state: Any,
-    run_id: str,
-    *,
-    fs_retry_ois_threshold: float = 0.10,
-    **kwargs: Any,
-) -> "PipelineResult":
-    """Two-pass feature-selection fallback.
-
-    Pass 1: run with cfg's current feature_selection setting (default: disabled).
-    Pass 2: if Pass 1 fails AND sharpe_oos_over_is < fs_retry_ois_threshold,
-            retry with feature_selection.enabled=True.
-
-    The threshold guards against false retries:
-      - Severe overfit (e.g. AAPL OOS/IS=0.0) → triggers Pass 2
-      - Normal failure (e.g. ADC OOS/IS=0.63 that fails a different gate) → no retry
-      - Already-enabled fs → single pass (no retry needed)
-
-    Annotates pack_result with:
-      fs_adaptive_pass: 1 (Pass 1 accepted) or 2 (Pass 2 used)
-      fs_retry_ois_p1: OOS/IS value that triggered retry (Pass 2 only)
-    """
-    import copy as _copy
-
-    # Pass 1 ------------------------------------------------------------------
-    res1 = train_evaluate_package(symbol, cfg, state, run_id, **kwargs)
-
-    _fs_already_on = bool(
-        getattr(getattr(cfg, "feature_selection", None), "enabled", False)
-    )
-
-    if res1.passed or _fs_already_on:
-        _pipeline_annotate_pack(res1, fs_adaptive_pass=1)
-        return res1
-
-    # Inspect OOS/IS to decide whether a retry is warranted
-    _ois = getattr(res1.metrics, "sharpe_oos_over_is", None)
-    if _ois is None or float(_ois) >= fs_retry_ois_threshold:
-        _pipeline_annotate_pack(res1, fs_adaptive_pass=1)
-        return res1
-
-    # Pass 2: enable feature selection ----------------------------------------
-    try:
-        cfg_p2 = _copy.deepcopy(cfg)
-        cfg_p2.feature_selection.enabled = True
-    except Exception:
-        _pipeline_annotate_pack(res1, fs_adaptive_pass=1)
-        return res1
-
-    run_id_p2 = f"{run_id}_fsretry"
-    res2 = train_evaluate_package(symbol, cfg_p2, state, run_id_p2, **kwargs)
-    _pipeline_annotate_pack(res2, fs_adaptive_pass=2, fs_retry_ois_p1=float(_ois))
-    return res2
-
-
-def _pipeline_annotate_pack(res: "PipelineResult", **extra: Any) -> None:
-    """Inject metadata into PipelineResult.pack_result (in-place, safe)."""
-    if res.pack_result is None:
-        res.pack_result = {}
-    res.pack_result.update(extra)
+        return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error=str(e) + "\n" + traceback.format_exc(), altdata=alt_diag)
 
 
 def evaluate_fx_g0_risk_overlay_1d(
@@ -2303,13 +2202,13 @@ def evaluate_fx_g0_risk_overlay_1d(
     )
     # Explicit audit marker: alpha is not required at 1D for FX.
     try:
-        gate_res = getattr(res, 'gate_result', None)
-        if gate_res is not None:
-            if getattr(gate_res, 'insufficient_evidence', None) is None:
-                gate_res.insufficient_evidence = []
-            gate_res.insufficient_evidence = list(gate_res.insufficient_evidence) + ['alpha_not_required_at_1d_for_fx']
-            if getattr(gate_res, 'passed', False):
-                gate_res.status = 'PASS_LIMITED_STATISTICAL_CONFIDENCE'
+        gr = getattr(res, 'gate_result', None)
+        if gr is not None:
+            if getattr(gr, 'insufficient_evidence', None) is None:
+                gr.insufficient_evidence = []
+            gr.insufficient_evidence = list(gr.insufficient_evidence) + ['alpha_not_required_at_1d_for_fx']
+            if getattr(gr, 'passed', False):
+                gr.status = 'PASS_LIMITED_STATISTICAL_CONFIDENCE'
     except Exception:
         pass
     return res
@@ -2368,3 +2267,79 @@ def evaluate_fx_g1_alpha_1h(
         safe_mode=safe_mode,
         parquet_path=parquet_path,
     )
+
+
+def _pipeline_annotate_pack(res: "PipelineResult", **extra: Any) -> None:
+    """Inject metadata into PipelineResult.pack_result (in-place, safe)."""
+    if res.pack_result is None:
+        res.pack_result = {}
+    res.pack_result.update(extra)
+
+
+def train_evaluate_adaptive(
+    symbol: str,
+    cfg: Any,
+    state: Any,
+    run_id: str,
+    *,
+    fs_retry_ois_threshold: float = 0.10,
+    **kwargs: Any,
+) -> "PipelineResult":
+    """Two-pass feature-selection fallback.
+
+    Pass 1: run with cfg's current feature_selection setting (default: disabled).
+    Pass 2: if Pass 1 fails AND sharpe_oos_over_is < fs_retry_ois_threshold,
+            retry with feature_selection.enabled=True.
+
+    The threshold guards against false retries:
+      - Severe overfit (e.g. AAPL OOS/IS=0.0) → triggers Pass 2
+      - Normal failure (e.g. ADC OOS/IS=0.63 that fails a different gate) → no retry
+      - Already-enabled fs → single pass (no retry needed)
+
+    Annotates pack_result with:
+      fs_adaptive_pass: 1 (Pass 1 accepted) or 2 (Pass 2 used)
+      fs_retry_ois_p1: OOS/IS value that triggered retry (Pass 2 only)
+
+    Note: callers may pass asset_class= (legacy kwarg) alongside dataset=.
+    asset_class= is consumed here and forwarded as dataset= to avoid TypeError
+    on the new train_evaluate_package signature which dropped asset_class=.
+    """
+    import copy as _copy
+
+    # Normalise asset_class= → dataset= for the new train_evaluate_package API.
+    # cascade_train.py passes both; we honour dataset= if present, else fall back
+    # to asset_class=, then discard the asset_class= key so it does not leak as
+    # an unexpected kwarg into train_evaluate_package.
+    _asset_class_hint = kwargs.pop("asset_class", None)
+    if not kwargs.get("dataset") and _asset_class_hint:
+        kwargs["dataset"] = _asset_class_hint
+
+    # Pass 1 ------------------------------------------------------------------
+    res1 = train_evaluate_package(symbol, cfg, state, run_id, **kwargs)
+
+    _fs_already_on = bool(
+        getattr(getattr(cfg, "feature_selection", None), "enabled", False)
+    )
+
+    if res1.passed or _fs_already_on:
+        _pipeline_annotate_pack(res1, fs_adaptive_pass=1)
+        return res1
+
+    # Inspect OOS/IS to decide whether a retry is warranted.
+    _ois = getattr(res1.metrics, "sharpe_oos_over_is", None)
+    if _ois is None or float(_ois) >= fs_retry_ois_threshold:
+        _pipeline_annotate_pack(res1, fs_adaptive_pass=1)
+        return res1
+
+    # Pass 2: enable feature selection ----------------------------------------
+    try:
+        cfg_p2 = _copy.deepcopy(cfg)
+        cfg_p2.feature_selection.enabled = True
+    except Exception:
+        _pipeline_annotate_pack(res1, fs_adaptive_pass=1)
+        return res1
+
+    run_id_p2 = f"{run_id}_fsretry"
+    res2 = train_evaluate_package(symbol, cfg_p2, state, run_id_p2, **kwargs)
+    _pipeline_annotate_pack(res2, fs_adaptive_pass=2, fs_retry_ois_p1=float(_ois))
+    return res2

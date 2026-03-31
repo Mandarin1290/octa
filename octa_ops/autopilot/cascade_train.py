@@ -554,6 +554,21 @@ def run_cascade_training(
                 training_window = pack.get("training_window")
                 altdata_meta = pack.get("altdata_meta")
                 leakage_audit = pack.get("leakage_audit")
+                asset_profile = pack.get("asset_profile")
+                asset_profile_kind = pack.get("asset_profile_kind")
+                asset_profile_hash = pack.get("asset_profile_hash")
+                asset_profile_source = pack.get("asset_profile_source")
+                asset_profile_legacy_fallback = pack.get("asset_profile_legacy_fallback")
+                training_policy = pack.get("training_policy")
+                training_policy_source = pack.get("training_policy_source")
+            else:
+                asset_profile = None
+                asset_profile_kind = None
+                asset_profile_hash = None
+                asset_profile_source = None
+                asset_profile_legacy_fallback = None
+                training_policy = None
+                training_policy_source = None
             try:
                 if isinstance(gate_dump, dict):
                     rob = gate_dump.get("robustness")
@@ -594,6 +609,13 @@ def run_cascade_training(
                 "leakage_audit": leakage_audit,
                 "parquet_path": str(pq),
                 "asset_class": str(asset_class),
+                "asset_profile": asset_profile,
+                "asset_profile_kind": asset_profile_kind,
+                "asset_profile_hash": asset_profile_hash,
+                "asset_profile_source": asset_profile_source,
+                "asset_profile_legacy_fallback": asset_profile_legacy_fallback,
+                "training_policy": training_policy,
+                "training_policy_source": training_policy_source,
                 "pkl_dir": str(getattr(getattr(cfg_layer, "paths", None), "pkl_dir", "")),
             }
             fail_reason = None

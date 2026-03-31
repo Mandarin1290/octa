@@ -3,6 +3,32 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-03-31 07:26:37] TEST
+Code-Änderungen - 8 Code-Dateien - 1 Test-Dateien - (+906/-599 Zeilen)
+
+**Statistics:**
+- Files Changed: 12
+- Lines Added: +906
+- Lines Deleted: -599
+- Net Change: +307
+
+**File-Level Changes:**
+```
++    1 -    0  configs/asset/etf.yaml
++    1 -    0  configs/asset/stock.yaml
++   54 -    0  configs/p03_research.yaml
++    6 -    0  octa/core/data/storage/artifact_io.py
++   36 -    0  octa/core/features/features.py
++   91 -    1  octa/support/ops/run_full_cascade_training_from_parquets.py
++   22 -    0  octa_ops/autopilot/cascade_train.py
++  148 -   75  octa_training/core/asset_profiles.py
++   54 -   36  octa_training/core/config.py
++   28 -    0  octa_training/core/packaging.py
++  460 -  485  octa_training/core/pipeline.py
++    5 -    2  tests/test_adaptive_feature_selection.py
+```
+
+
 ## [2026-03-28 22:01:50] FEATURE
 Neue Funktionalität hinzugefügt - 6 Code-Dateien - 10 Test-Dateien - (+789/-22 Zeilen)
 

@@ -12,6 +12,7 @@ broker:
 
 features:
   horizons: [1, 3, 5]
+  min_return_filter_vol_mult: 0.5
 
 session:
   enabled: true

@@ -21,6 +21,10 @@ from octa import __version__ as OCTA_VERSION
 from octa.core.cascade.policies import DEFAULT_TIMEFRAMES
 from octa_training.core.institutional_gates import evaluate_cross_timeframe_consistency
 from octa_training.core.config import load_config
+from octa_training.core.training_policy import (
+    prototype_allowed_asset_classes,
+    resolve_active_prototype_policy,
+)
 from octa_ops.autopilot.cascade_train import CascadePolicy, run_cascade_training
 from octa.core.data.sources.altdata.orchestrator import load_altdat_config
 from octa.core.data.sources.altdata.cache import resolve_cache_root
@@ -314,6 +318,7 @@ def _build_symbol_request_report(
     *,
     trainable_symbols: Sequence[str],
     inventory: Dict[str, Dict[str, Any]],
+    allowed_asset_classes: Optional[Sequence[str]] = None,
 ) -> Tuple[List[str], Dict[str, Any], List[Dict[str, Any]]]:
     accepted: List[str] = []
     rejected: List[Dict[str, Any]] = []
@@ -323,6 +328,7 @@ def _build_symbol_request_report(
     seen: set[str] = set()
     trainable_set = {str(sym).upper() for sym in trainable_symbols}
     inventory_set = {str(sym).upper() for sym in inventory.keys()}
+    allowed_asset_class_set = {str(v).strip().lower() for v in (allowed_asset_classes or []) if str(v).strip()}
 
     for raw in requested_symbols:
         sym = str(raw or "").strip().upper()
@@ -348,6 +354,17 @@ def _build_symbol_request_report(
                 }
             )
             continue
+        if allowed_asset_class_set:
+            sym_asset_class = str((inventory.get(sym) or {}).get("asset_class", "unknown")).strip().lower()
+            if sym_asset_class not in allowed_asset_class_set:
+                rejected.append(
+                    {
+                        "symbol": sym,
+                        "reason": "symbol_excluded_by_training_policy",
+                        "detail": {"asset_class": sym_asset_class, "allowed_asset_classes": sorted(allowed_asset_class_set)},
+                    }
+                )
+                continue
         accepted.append(sym)
 
     report = {
@@ -662,6 +679,13 @@ def _normalize_decisions(
         leakage_audit = None
         artifact_validation: Dict[str, Any] = {"valid": False, "reason": "missing_model_artifacts", "checked_pkls": [], "valid_tradeable_pkls": [], "invalid_details": []}
         stage_asset_class = str(default_asset_class or "unknown").strip().lower() or "unknown"
+        stage_asset_profile = None
+        stage_asset_profile_kind = None
+        stage_asset_profile_hash = None
+        stage_asset_profile_source = None
+        stage_asset_profile_legacy_fallback = None
+        stage_training_policy = None
+        stage_training_policy_source = None
         if tf in metrics_by_tf:
             metrics = (metrics_by_tf.get(tf) or {}).get("metrics")
             model_artifacts = (metrics_by_tf.get(tf) or {}).get("model_artifacts")
@@ -678,6 +702,13 @@ def _normalize_decisions(
             liquidity = (metrics_by_tf.get(tf) or {}).get("liquidity")
             leakage_audit = (metrics_by_tf.get(tf) or {}).get("leakage_audit")
             stage_asset_class = str((metrics_by_tf.get(tf) or {}).get("asset_class", "unknown")).strip().lower() or "unknown"
+            stage_asset_profile = (metrics_by_tf.get(tf) or {}).get("asset_profile")
+            stage_asset_profile_kind = (metrics_by_tf.get(tf) or {}).get("asset_profile_kind")
+            stage_asset_profile_hash = (metrics_by_tf.get(tf) or {}).get("asset_profile_hash")
+            stage_asset_profile_source = (metrics_by_tf.get(tf) or {}).get("asset_profile_source")
+            stage_asset_profile_legacy_fallback = (metrics_by_tf.get(tf) or {}).get("asset_profile_legacy_fallback")
+            stage_training_policy = (metrics_by_tf.get(tf) or {}).get("training_policy")
+            stage_training_policy_source = (metrics_by_tf.get(tf) or {}).get("training_policy_source")
             artifact_validation = _validate_tradeable_artifacts(
                 model_artifacts,
                 expected_symbol=expected_symbol,
@@ -744,6 +775,13 @@ def _normalize_decisions(
             {
                 "timeframe": tf,
                 "asset_class": stage_asset_class,
+                "asset_profile": stage_asset_profile,
+                "asset_profile_kind": stage_asset_profile_kind,
+                "asset_profile_hash": stage_asset_profile_hash,
+                "asset_profile_source": stage_asset_profile_source,
+                "asset_profile_legacy_fallback": stage_asset_profile_legacy_fallback,
+                "training_policy": stage_training_policy,
+                "training_policy_source": stage_training_policy_source,
                 "status": status,
                 "reason": reason,
                 "metrics_summary": _metrics_summary(metrics),
@@ -1093,8 +1131,12 @@ def run_full_cascade(
         cfg_for_policy = load_config(settings.config_path or "octa_training/config/training.yaml")
         training_regime = str(getattr(cfg_for_policy, "regime", "institutional_production") or "institutional_production").strip() or "institutional_production"
         promotion_allowed = training_regime != "foundation_validation"
+        active_prototype_policy = resolve_active_prototype_policy(cfg_for_policy)
+        prototype_asset_classes = prototype_allowed_asset_classes(cfg_for_policy)
     except Exception:
         cfg_for_policy = None
+        active_prototype_policy = None
+        prototype_asset_classes = None
 
     try:
         if not settings.skip_preflight:
@@ -1104,6 +1146,14 @@ def run_full_cascade(
         symbols = _load_trainable_symbols(files["trainable"])
         inventory = _load_inventory(files["inventory"])
         selected_asset_classes = _normalize_asset_class_filter(settings.asset_classes)
+        if prototype_asset_classes:
+            prototype_allowed_set = set(str(v).strip().lower() for v in prototype_asset_classes if str(v).strip())
+            before_count = len(symbols)
+            symbols = [s for s in symbols if str((inventory.get(s) or {}).get("asset_class", "unknown")).lower() in prototype_allowed_set]
+            _log(
+                log_path,
+                f"[info] active_prototype_policy={active_prototype_policy.name if active_prototype_policy else 'unknown'} allowed_asset_classes={sorted(prototype_allowed_set)} before_count={before_count} after_count={len(symbols)}",
+            )
         if selected_asset_classes:
             before_count = len(symbols)
             selected_set = set(selected_asset_classes)
@@ -1117,6 +1167,7 @@ def run_full_cascade(
                 requested,
                 trainable_symbols=symbols,
                 inventory=inventory,
+                allowed_asset_classes=prototype_asset_classes,
             )
             input_symbols_report = {**input_symbols_report, **request_report}
             results_dir.mkdir(parents=True, exist_ok=True)
@@ -1461,6 +1512,25 @@ def run_full_cascade(
                 result = {
                     "symbol": sym,
                     "asset_class": symbol_asset_class,
+                    "asset_profiles": {
+                        str(stage.get("timeframe")): {
+                            "asset_profile": stage.get("asset_profile"),
+                            "asset_profile_kind": stage.get("asset_profile_kind"),
+                            "asset_profile_hash": stage.get("asset_profile_hash"),
+                            "asset_profile_source": stage.get("asset_profile_source"),
+                            "asset_profile_legacy_fallback": stage.get("asset_profile_legacy_fallback"),
+                            "training_policy": stage.get("training_policy"),
+                            "training_policy_source": stage.get("training_policy_source"),
+                        }
+                        for stage in stages
+                    },
+                    "training_policy": {
+                        str(stage.get("timeframe")): {
+                            "name": stage.get("training_policy"),
+                            "source": stage.get("training_policy_source"),
+                        }
+                        for stage in stages
+                    },
                     "training_regime": training_regime,
                     "status": status,
                     "reason": reason,
@@ -1488,7 +1558,17 @@ def run_full_cascade(
                 result["training_outcome"] = _classify_symbol_outcome(result)
                 results_dir.mkdir(parents=True, exist_ok=True)
                 _write_json(results_dir / f"{sym}.json", result)
-                _append_jsonl(manifest_path, {"symbol": sym, "status": status, "reason": reason})
+                _append_jsonl(
+                    manifest_path,
+                    {
+                        "symbol": sym,
+                        "asset_class": symbol_asset_class,
+                        "status": status,
+                        "reason": reason,
+                        "asset_profiles": result.get("asset_profiles"),
+                        "training_policy": result.get("training_policy"),
+                    },
+                )
                 finalized_symbols.add(sym)
                 current_symbol = None
                 current_symbol_started_at = None
@@ -1664,6 +1744,16 @@ def main() -> None:
             "pipeline_version": OCTA_VERSION,
             "promote_required_tfs": list(settings.promote_required_tfs),
             "paper_registry_dir": str(settings.paper_registry_dir),
+            "asset_profile_routing": {
+                "default_profile": str((getattr(cfg, "asset_defaults", {}) or {}).get("default_profile", "legacy")),
+                "by_asset_class": dict((getattr(cfg, "asset_defaults", {}) or {}).get("by_asset_class", {}) or {}),
+                "configured_profiles": sorted(list((getattr(cfg, "asset_profiles", {}) or {}).keys())),
+            },
+            "training_policy": {
+                "prototype_enabled": bool(resolve_active_prototype_policy(cfg) is not None),
+                "active_prototype_policy": getattr(resolve_active_prototype_policy(cfg), "name", None),
+                "prototype_allowed_asset_classes": list(prototype_allowed_asset_classes(cfg) or ()),
+            },
         },
     }
     _write_json(settings.evidence_dir / "run_manifest.json", manifest)

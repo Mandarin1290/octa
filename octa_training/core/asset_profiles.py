@@ -203,7 +203,16 @@ def ensure_canonical_profile_for_dataset(dataset: Optional[str], resolved: Asset
     canonical `STOCKS_PROFILE_NAME`. Raises AssetProfileMismatchError on violation.
     """
     try:
+        _DATASET_ALIASES: dict = {
+            'stock':   'stocks',
+            'etf':     'etfs',
+            'future':  'futures',
+            'futures': 'futures',
+            'crypto':  'cryptos',
+            'bond':    'bonds',
+        }
         ds = str(dataset or "").strip().lower()
+        ds = _DATASET_ALIASES.get(ds, ds)
         if ds != "stocks":
             return
     except Exception:
@@ -226,30 +235,7 @@ def ensure_canonical_profile_for_dataset(dataset: Optional[str], resolved: Asset
         )
 
 
-def resolve_asset_profile(
-    *,
-    symbol: str,
-    dataset: Optional[str],
-    asset_class: Optional[str],
-    parquet_path: Optional[str],
-    cfg: Any,
-) -> AssetProfile:
-    """Resolve the asset profile to use for this symbol.
-
-    Backwards-compatible behavior:
-    - If cfg.asset_profiles is missing/empty, returns a synthesized 'legacy' profile.
-
-    Resolution order:
-    1) cfg.asset_defaults.by_dataset[dataset]
-    2) cfg.asset_defaults.by_asset_class[asset_class]
-    3) cfg.asset_defaults.default_profile
-    4) Heuristic fallback by dataset/asset_class
-    """
-
-    ds = str(dataset or "").strip().lower() or None
-    ac = str(asset_class or "").strip().lower() or None
-
-    # Read raw config fragments safely.
+def _load_profile_config(cfg: Any) -> tuple[Optional[AssetDefaults], Dict[str, AssetProfile]]:
     raw_profiles = getattr(cfg, "asset_profiles", None)
     raw_defaults = getattr(cfg, "asset_defaults", None)
 
@@ -277,66 +263,153 @@ def resolve_asset_profile(
     except Exception:
         profiles = {}
 
-    def _pick_name() -> str:
-        if defaults is not None:
-            if ds and ds in (defaults.by_dataset or {}):
-                return str(defaults.by_dataset[ds])
-            if ac and ac in (defaults.by_asset_class or {}):
-                return str(defaults.by_asset_class[ac])
-            if defaults.default_profile:
-                return str(defaults.default_profile)
+    return defaults, profiles
 
-        # Heuristic fallback
-        if ds in {"fx", "forex"} or ac in {"fx", "forex"}:
-            return "fx"
-        if ds in {"indices", "index"} or ac in {"index", "indices"}:
-            return "index"
-        if ds in {"stocks", "stock", "equities", "equity"} or ac in {"stock", "equity"}:
-            return "stock"
-        if ac in {"crypto"}:
-            return "crypto"
-        if ac in {"future", "futures"}:
-            return "future"
-        if ac in {"option", "options"}:
-            return "option"
-        return "legacy"
 
-    name = _pick_name()
+def _pick_profile_name(
+    *,
+    dataset: Optional[str],
+    asset_class: Optional[str],
+    defaults: Optional[AssetDefaults],
+) -> tuple[str, str]:
+    ds = str(dataset or "").strip().lower() or None
+    ac = str(asset_class or "").strip().lower() or None
 
-    # If profiles are not configured, synthesize a legacy profile.
+    if defaults is not None:
+        if ds and ds in (defaults.by_dataset or {}):
+            return str(defaults.by_dataset[ds]), "dataset"
+        if ac and ac in (defaults.by_asset_class or {}):
+            return str(defaults.by_asset_class[ac]), "asset_class"
+        if defaults.default_profile:
+            return str(defaults.default_profile), "default"
+
+    if ds in {"fx", "forex"} or ac in {"fx", "forex"}:
+        return "fx", "heuristic"
+    if ds in {"indices", "index"} or ac in {"index", "indices"}:
+        return "index", "heuristic"
+    if ds in {"stocks", "stock", "equities", "equity"} or ac in {"stock", "equity"}:
+        return "stock", "heuristic"
+    if ac in {"crypto"}:
+        return "crypto", "heuristic"
+    if ac in {"future", "futures"}:
+        return "future", "heuristic"
+    if ac in {"option", "options"}:
+        return "option", "heuristic"
+    return "legacy", "heuristic"
+
+
+def resolve_asset_profile_details(
+    *,
+    symbol: str,
+    dataset: Optional[str],
+    asset_class: Optional[str],
+    parquet_path: Optional[str],
+    cfg: Any,
+) -> Dict[str, Any]:
+    ds = str(dataset or "").strip().lower() or None
+    ac = str(asset_class or "").strip().lower() or None
+    defaults, profiles = _load_profile_config(cfg)
+    requested_name, source = _pick_profile_name(dataset=ds, asset_class=ac, defaults=defaults)
+
     if not profiles:
-        kind = name
-        if kind == "legacy":
-            # best-effort kind inference for audit clarity
-            if ds:
-                kind = ds
-            elif ac:
-                kind = ac
-        # For stocks, never synthesize a legacy profile — prefer canonical stock profile.
         if ds == "stocks":
-            return _apply_calendar_defaults(
+            prof = _apply_calendar_defaults(
                 AssetProfile(name=STOCKS_PROFILE_NAME, kind=STOCKS_PROFILE_NAME, gates={})
             )
-        return _apply_calendar_defaults(AssetProfile(name="legacy", kind=str(kind), gates={}))
+            final_source = "canonical_dataset"
+            fallback = False
+        else:
+            kind = requested_name
+            if kind == "legacy":
+                if ds:
+                    kind = ds
+                elif ac:
+                    kind = ac
+            prof = _apply_calendar_defaults(AssetProfile(name="legacy", kind=str(kind), gates={}))
+            final_source = f"{source}_legacy_synth"
+            fallback = True
+    else:
+        prof = profiles.get(requested_name)
+        if prof is not None:
+            prof = _apply_calendar_defaults(prof)
+            final_source = source
+            fallback = False
+        elif ds == "stocks":
+            prof = _apply_calendar_defaults(
+                AssetProfile(name=STOCKS_PROFILE_NAME, kind=STOCKS_PROFILE_NAME, gates={})
+            )
+            final_source = f"{source}_canonical_fallback"
+            fallback = True
+        else:
+            kind = requested_name
+            if kind == "legacy":
+                if ds:
+                    kind = ds
+                elif ac:
+                    kind = ac
+            prof = _apply_calendar_defaults(AssetProfile(name="legacy", kind=str(kind), gates={}))
+            final_source = f"{source}_legacy_fallback"
+            fallback = True
 
+    return {
+        "symbol": str(symbol),
+        "dataset": ds,
+        "asset_class": ac,
+        "parquet_path": str(parquet_path) if parquet_path is not None else None,
+        "requested_profile_name": str(requested_name),
+        "profile_name": str(getattr(prof, "name", "legacy") or "legacy"),
+        "profile_kind": str(getattr(prof, "kind", "legacy") or "legacy"),
+        "profile_source": final_source,
+        "legacy_fallback": bool(fallback),
+        "configured_profiles_present": bool(profiles),
+        "configured_defaults_present": defaults is not None,
+    }
+
+
+def resolve_asset_profile(
+    *,
+    symbol: str,
+    dataset: Optional[str],
+    asset_class: Optional[str],
+    parquet_path: Optional[str],
+    cfg: Any,
+) -> AssetProfile:
+    """Resolve the asset profile to use for this symbol.
+
+    Backwards-compatible behavior:
+    - If cfg.asset_profiles is missing/empty, returns a synthesized 'legacy' profile.
+
+    Resolution order:
+    1) cfg.asset_defaults.by_dataset[dataset]
+    2) cfg.asset_defaults.by_asset_class[asset_class]
+    3) cfg.asset_defaults.default_profile
+    4) Heuristic fallback by dataset/asset_class
+    """
+
+    details = resolve_asset_profile_details(
+        symbol=symbol,
+        dataset=dataset,
+        asset_class=asset_class,
+        parquet_path=parquet_path,
+        cfg=cfg,
+    )
+    return _apply_profile_from_details(details=details, cfg=cfg)
+
+
+def _apply_profile_from_details(*, details: Dict[str, Any], cfg: Any) -> AssetProfile:
+    defaults, profiles = _load_profile_config(cfg)
+    del defaults
+    name = str(details.get("profile_name") or "legacy")
     prof = profiles.get(name)
     if prof is not None:
         return _apply_calendar_defaults(prof)
-
-    # If a named profile is missing, fail-closed by falling back to legacy.
-    # (We do not raise here because we want diagnose flows to continue.)
-    kind = name
-    if kind == "legacy":
-        if ds:
-            kind = ds
-        elif ac:
-            kind = ac
-    # If dataset is stocks, prefer the canonical stock profile instead of legacy.
-    if ds == "stocks":
-        return _apply_calendar_defaults(
-            AssetProfile(name=STOCKS_PROFILE_NAME, kind=STOCKS_PROFILE_NAME, gates={})
+    return _apply_calendar_defaults(
+        AssetProfile(
+            name=name,
+            kind=str(details.get("profile_kind") or name or "legacy"),
+            gates={},
         )
-    return _apply_calendar_defaults(AssetProfile(name="legacy", kind=str(kind), gates={}))
+    )
 
 
 def _apply_calendar_defaults(profile: AssetProfile) -> AssetProfile:

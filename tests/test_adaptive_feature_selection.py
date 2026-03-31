@@ -225,7 +225,9 @@ class TestAdaptiveTwoPass:
         assert mock_tep2.call_count == 2
 
     def test_kwargs_forwarded_to_both_passes(self):
-        """Extra kwargs (parquet_path, asset_class, …) must reach both passes."""
+        """Extra kwargs (parquet_path, dataset, …) must reach both passes.
+        asset_class= is a legacy alias that is normalised to dataset= before forwarding.
+        """
         cfg = _FakeCfg()
         captured: List[dict] = []
 
@@ -242,4 +244,5 @@ class TestAdaptiveTwoPass:
 
         for call_kwargs in captured:
             assert call_kwargs["parquet_path"] == "/tmp/foo.parquet"
-            assert call_kwargs["asset_class"] == "stock"
+            # asset_class= is normalised → dataset= (new train_evaluate_package API)
+            assert call_kwargs["dataset"] == "stock"

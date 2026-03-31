@@ -64,6 +64,12 @@ class ArtifactMeta(BaseModel):
     schema_version: int = 1
     symbol: str
     asset_class: Optional[str]
+    asset_profile: Optional[str] = None
+    asset_profile_kind: Optional[str] = None
+    asset_profile_hash: Optional[str] = None
+    asset_profile_source: Optional[str] = None
+    training_policy: Optional[str] = None
+    training_policy_source: Optional[str] = None
     run_id: str
     created_at: dt
     artifact_kind: str = "tradeable"
@@ -296,6 +302,12 @@ def save_tradeable_artifact(
     run_id: str,
     asset_class: Optional[str],
     parquet_path: str,
+    asset_profile: Optional[str] = None,
+    asset_profile_kind: Optional[str] = None,
+    asset_profile_hash: Optional[str] = None,
+    asset_profile_source: Optional[str] = None,
+    training_policy: Optional[str] = None,
+    training_policy_source: Optional[str] = None,
     pkl_dir_override: Optional[str] = None,
     update_state: bool = True,
     artifact_kind: str = "tradeable",
@@ -421,6 +433,12 @@ def save_tradeable_artifact(
         'asset': {
             'symbol': symbol,
             'asset_class': asset_class,
+            'asset_profile': asset_profile,
+            'asset_profile_kind': asset_profile_kind,
+            'asset_profile_hash': asset_profile_hash,
+            'asset_profile_source': asset_profile_source,
+            'training_policy': training_policy,
+            'training_policy_source': training_policy_source,
             'bar_size': features_res.meta.get('bar_size') if hasattr(features_res, 'meta') and isinstance(features_res.meta, dict) else None,
             'sample_start': str(features_res.X.index.min()) if len(features_res.X.index) else None,
             'sample_end': str(features_res.X.index.max()) if len(features_res.X.index) else None,
@@ -473,6 +491,12 @@ def save_tradeable_artifact(
         schema_version=1,
         symbol=symbol,
         asset_class=asset_class,
+        asset_profile=asset_profile,
+        asset_profile_kind=asset_profile_kind,
+        asset_profile_hash=asset_profile_hash,
+        asset_profile_source=asset_profile_source,
+        training_policy=training_policy,
+        training_policy_source=training_policy_source,
         run_id=run_id,
         created_at=dt.utcnow(),
         artifact_kind=artifact_kind,
@@ -530,6 +554,10 @@ def save_tradeable_artifact(
         "artifact_kind": artifact_kind,
         "model_artifacts": model_artifacts,
         "feature_schema_path": feature_schema_path,
+        "asset_profile": asset_profile,
+        "asset_profile_kind": asset_profile_kind,
+        "asset_profile_hash": asset_profile_hash,
+        "asset_profile_source": asset_profile_source,
         "features_used": feat_names,
         "altdata_sources_used": (features_res.meta or {}).get("altdata_sources_used") if hasattr(features_res, "meta") else None,
         "altdata_enabled": (features_res.meta or {}).get("altdata_enabled") if hasattr(features_res, "meta") else False,

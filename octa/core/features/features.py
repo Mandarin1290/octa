@@ -892,12 +892,14 @@ def build_features(raw: pd.DataFrame, settings, asset_class: str, build_targets:
         except Exception:
             horizons = [1, 3, 5]
         y_dict: Dict[str, pd.Series] = {}
+        fwd_dict: Dict[int, pd.Series] = {}
         for h in horizons:
             # forward returns using close (not shifted) -> fwd_return at time t is (close.shift(-h) / close) -1
             fwd = (df["close"].shift(-h) / df["close"]) - 1.0
             _safe_close = df["close"].where(df["close"] > 0, np.nan).ffill().bfill()
             y_reg = np.log(_safe_close.shift(-h)) - np.log(_safe_close)
             y_cls = (fwd > 0).astype(int)
+            fwd_dict[int(h)] = fwd
             y_dict[f"y_reg_{h}"] = y_reg
             y_dict[f"y_cls_{h}"] = y_cls
 
@@ -915,6 +917,37 @@ def build_features(raw: pd.DataFrame, settings, asset_class: str, build_targets:
         valid_mask = ~target_df.isna().any(axis=1)
         feature_nonnull = combined[X.columns].notna().any(axis=1)
         keep_idx = valid_mask & feature_nonnull
+        pre_filter_keep_idx = keep_idx.copy()
+
+        sample_filter_meta: dict[str, Any] = {
+            "enabled": False,
+            "basis_horizon": None,
+            "vol_multiplier": None,
+            "rows_before_filter": int(pre_filter_keep_idx.sum()),
+            "rows_after_filter": int(pre_filter_keep_idx.sum()),
+            "dropped_rows": 0,
+        }
+        raw_filter_mult = feat_cfg.get("min_return_filter_vol_mult", None)
+        if raw_filter_mult is not None:
+            try:
+                filter_mult = float(raw_filter_mult)
+            except Exception:
+                filter_mult = None
+            if filter_mult is not None:
+                basis_h = int(horizons[0]) if horizons else 1
+                fwd_basis = fwd_dict.get(basis_h)
+                if isinstance(fwd_basis, pd.Series):
+                    info_mask = fwd_basis.abs().ge(vol.abs() * filter_mult).fillna(False)
+                    keep_idx = keep_idx & info_mask.reindex(keep_idx.index, fill_value=False)
+                    sample_filter_meta = {
+                        "enabled": True,
+                        "basis_horizon": basis_h,
+                        "vol_multiplier": filter_mult,
+                        "rows_before_filter": int(pre_filter_keep_idx.sum()),
+                        "rows_after_filter": int(keep_idx.sum()),
+                        "dropped_rows": int(pre_filter_keep_idx.sum() - keep_idx.sum()),
+                    }
+
         X_clean = X.loc[keep_idx]
         y_clean = {k: v.loc[keep_idx] for k, v in y_dict.items()}
 
@@ -932,8 +965,11 @@ def build_features(raw: pd.DataFrame, settings, asset_class: str, build_targets:
             "window_long": int(feat_cfg.get("window_long", getattr(settings, "window_long", 60))),
             "vol_window": int(feat_cfg.get("vol_window", getattr(settings, "vol_window", 20))),
             "horizons": horizons,
+            "min_return_filter_vol_mult": feat_cfg.get("min_return_filter_vol_mult", None),
         },
     }
+    if build_targets:
+        meta["sample_filter"] = sample_filter_meta
     try:
         if altdat_meta is not None:
             meta["altdat"] = altdat_meta

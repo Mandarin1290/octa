@@ -1,17 +1,17 @@
 from __future__ import annotations
 
 import os
+import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import yaml
 
-from octa.core.utils.typing_safe import as_float
-
 try:
     from pydantic.v1 import BaseModel, Field, validator
 except Exception:  # pragma: no cover
-    from pydantic.v1 import BaseModel, Field, validator
+    from pydantic import BaseModel, Field, validator
 
 
 class PathsConfig(BaseModel):
@@ -77,11 +77,6 @@ class SignalConfig(BaseModel):
     causal_quantiles: bool = False
     # Rolling lookback window for causal quantiles. If None, uses an expanding window.
     quantile_window: Optional[int] = 252
-    # Optional causal threshold relaxation when realized signal density is too low.
-    adaptive_density_quantiles: bool = False
-    density_target: float = 0.10
-    density_window: Optional[int] = 63
-    density_relax_max: float = 0.0
     leverage_cap: float = 3.0
     vol_target: float = 0.1
     realized_vol_window: int = 20
@@ -170,6 +165,17 @@ class DataConfig(BaseModel):
     require_parquet_for_tf: Dict[str, bool] = Field(default_factory=dict)
 
 
+class TimeWindowConfig(BaseModel):
+    """Deterministic time window policy for cascade training."""
+
+    # Optional fixed anchors (ISO timestamps). If unset, computed from data.
+    global_end: Optional[str] = None
+    global_start_anchor: Optional[str] = None
+    # Per-timeframe rolling lookbacks (e.g., {"1D": "15Y", "1H": "5Y"}).
+    lookback_by_tf: Dict[str, str] = Field(default_factory=dict)
+    policy_id: str = "rolling_tf_v1"
+
+
 class RegexRule(BaseModel):
     pattern: str
     asset_class: str
@@ -222,6 +228,7 @@ class TrainingConfig(BaseModel):
     tuning: TuningConfig = Field(default_factory=TuningConfig)
     parquet: ParquetConfig = Field(default_factory=ParquetConfig)
     data: DataConfig = Field(default_factory=DataConfig)
+    time_window: TimeWindowConfig = Field(default_factory=TimeWindowConfig)
     asset_class_overrides: AssetClassOverrides = Field(default_factory=AssetClassOverrides)
     compute: ComputeConfig = Field(default_factory=ComputeConfig)
     kvp: KvpConfig = Field(default_factory=KvpConfig)
@@ -243,9 +250,6 @@ class TrainingConfig(BaseModel):
         "window_long": 60,
         "vol_window": 20,
         "horizons": [1, 3, 5],
-        # Leakage audit tolerance for deterministic numeric drift checks.
-        "leakage_audit_rtol": 2e-2,
-        "leakage_audit_atol": 1e-5,
         # Optional macro features (FRED) - disabled by default.
         # Enable by setting features.macro.enabled=true and providing FRED_API_KEY env var.
         "macro": {
@@ -287,10 +291,8 @@ class TrainingConfig(BaseModel):
         "min_folds_required": 1,
         "expanding": True
     })
-    # Per-timeframe split overrides (keys: 1D, 4H, 1H, 30M, 5M, 1M).
-    # Each entry merges on top of `splits` for that timeframe only.
-    # Required so the OOF window (n_folds * test_window) meets the
-    # institutional gate minimum (train_bars + 2*oos_bars) per TF.
+    # Per-timeframe split overrides — each entry merges on top of `splits` for that TF only.
+    # Keys are canonical timeframe strings (e.g. "1D", "1H", "30M", "5M", "1M").
     splits_by_timeframe: Dict[str, Any] = Field(default_factory=dict)
     # Optional cascade timeframe order override. If set, replaces DEFAULT_TIMEFRAMES
     # for this training run. Must be an ordered list of known TF strings.
@@ -310,17 +312,6 @@ class TrainingConfig(BaseModel):
     cat_params: Dict[str, Any] = Field(default_factory=lambda: {"loss_function": "Logloss"})
     early_stopping_rounds: int = 50
     num_boost_round: int = 1000
-
-    # Feature selection — disabled by default; enable per-config to reduce redundancy.
-    class FeatureSelectionConfig(BaseModel):
-        enabled: bool = False
-        # Drop features with |Pearson corr| > this with any already-accepted feature.
-        corr_threshold: float = 0.95
-        # Final cap: keep at most this many features (ranked by target corr when y available).
-        max_features: int = 35
-
-    feature_selection: FeatureSelectionConfig = Field(default_factory=FeatureSelectionConfig)
-
     retrain: RetrainConfig = Field(default_factory=RetrainConfig)
     costs: CostConfig = Field(default_factory=CostConfig)
     training_command: str = ""
@@ -393,7 +384,6 @@ try:  # pragma: no cover
         PackagingPolicy=TrainingConfig.PackagingPolicy,
         AssuranceConfig=TrainingConfig.AssuranceConfig,
         RobustnessDefaults=TrainingConfig.RobustnessDefaults,
-        FeatureSelectionConfig=TrainingConfig.FeatureSelectionConfig,
     )
 except Exception:
     pass
@@ -443,12 +433,10 @@ def load_config(path: Optional[str] = None) -> TrainingConfig:
         def _apply_overlay(hf: dict, overlay: dict) -> None:
             if not isinstance(hf, dict) or not isinstance(overlay, dict):
                 return
-            ov_raw = overlay.get("overlay")
-            ov: dict[str, Any] = dict(ov_raw) if isinstance(ov_raw, dict) else {}
-            relax_raw = ov.get("relax")
-            relax: dict[str, Any] = dict(relax_raw) if isinstance(relax_raw, dict) else {}
+            ov = overlay.get("overlay") if isinstance(overlay.get("overlay"), dict) else {}
+            relax = ov.get("relax") if isinstance(ov.get("relax"), dict) else {}
             gate_v = str(ov.get("gate_version") or "")
-            sharpe_factor = as_float(relax.get("sharpe_min_factor", 1.0), default=1.0)
+            sharpe_factor = float(relax.get("sharpe_min_factor", 1.0) or 1.0)
             if sharpe_factor <= 0:
                 sharpe_factor = 1.0
 
@@ -473,11 +461,8 @@ def load_config(path: Optional[str] = None) -> TrainingConfig:
                 for k in list(conf.keys()):
                     if k not in relax_keys:
                         continue
-                    raw_value = conf.get(k)
-                    if raw_value is None:
-                        continue
                     try:
-                        v = float(raw_value)
+                        v = float(conf.get(k))
                     except Exception:
                         continue
                     conf[k] = v * sharpe_factor
@@ -506,6 +491,39 @@ def load_config(path: Optional[str] = None) -> TrainingConfig:
     merged_raw = dict(hf_raw) if isinstance(hf_raw, dict) else {}
     if isinstance(raw, dict):
         _deep_merge(merged_raw, raw)
+
+    def _force_altdata_enabled() -> None:
+        cfg_path = os.getenv("OKTA_ALTDATA_CONFIG") or str(Path("config") / "altdat.yaml")
+        prev_enabled = None
+        cfg_file = Path(cfg_path)
+        if cfg_file.exists():
+            try:
+                raw_cfg = yaml.safe_load(cfg_file.read_text(encoding="utf-8")) or {}
+                if isinstance(raw_cfg, dict):
+                    prev_enabled = raw_cfg.get("enabled")
+            except Exception:
+                prev_enabled = None
+        os.environ.setdefault("OKTA_ALTDATA_CONFIG", str(cfg_file))
+        os.environ["OKTA_ALTDATA_ENABLED"] = "1"
+        if prev_enabled is not True:
+            try:
+                run_id = os.getenv("OCTA_RUN_ID") or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+                out_dir = Path("octa") / "var" / "audit" / "altdata_enforcement"
+                out_dir.mkdir(parents=True, exist_ok=True)
+                payload = {
+                    "ts_utc": datetime.now(timezone.utc).isoformat(),
+                    "run_id": run_id,
+                    "config_path": str(cfg_file),
+                    "prev_enabled": prev_enabled,
+                    "new_enabled": True,
+                    "reason": "AltData is mandatory",
+                }
+                out_path = out_dir / f"altdata_forced_{run_id}.json"
+                out_path.write_text(json.dumps(payload, indent=2, default=str) + "\n", encoding="utf-8")
+            except Exception:
+                pass
+
+    _force_altdata_enabled()
 
     cfg = TrainingConfig(**(merged_raw or {}))
     # ensure directories exist
