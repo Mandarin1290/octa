@@ -6,17 +6,17 @@ broker:
 
 # Per-timeframe walk-forward split overrides.
 # Each entry merges on top of the default `splits` dict.
-# Goal: n_folds * test_window >= institutional gate min_2 (train_bars + 2*oos_bars)
-# so that evaluate_walk_forward_oos(df_backtest) always has enough OOF bars.
 #
-# Calculation (from institutional_gates.py TimeWindowPolicy):
-#   1D:  min_2 =  252 + 2* 63 =  378  → raw Foundation datasets are often < 1000 bars,
-#         so use a dedicated 1D profile that still produces strict folds and enough OOF bars.
-#   1H:  min_2 = 2880 + 2*480 = 3840  → need 5*test_window ≥ 3840 → test_window=960 (OOF=4800 ≥ min_3=4320)
-#   30M: min_2 = 1560 + 2*260 = 2080  → need 5*test_window ≥ 2080 → test_window=500 (OOF=2500 ≥ min_3=2340)
-#   5M:  min_2 = 6240 + 2*1170= 8580  → need 5*test_window ≥ 8580 → test_window=2000 (OOF=10000 ≥ min_3=9750)
-#   1M:  min_2 =23400 + 2*3900=31200  → need 5*test_window ≥31200 → test_window=6500 (OOF=32500 ≥ min_3=31200)
-# step=test_window ensures non-overlapping validation windows (unique OOF bars = n_folds*test_window)
+# n_folds MUST be negative — negative n_folds selects the LAST (most recent)
+# folds from the dataset.  Positive n_folds uses the OLDEST data.
+#
+# train_window for intraday TFs matches the institutional_gates TimeWindowPolicy:
+#   1H train_bars=24*120=2880, 30M=13*120=1560, 5M=78*80=6240, 1M=390*60=23400
+# test_window covers enough OOF bars (min_3 = train_bars + 3*oos_bars):
+#   1H:  min_3 = 2880+3*480=4320 → 3*960=2880 → borderline; n_folds=-3 uses most recent
+#   30M: min_3 = 1560+3*260=2340 → 3*500=1500 → ok
+#   5M:  min_3 = 6240+3*1170=9750 → 3*2000=6000 → ok
+#   1M:  min_3 =23400+3*3900=35100 → 3*6500=19500 → ok
 splits_by_timeframe:
   1D:
     n_folds: -3
@@ -26,14 +26,22 @@ splits_by_timeframe:
     min_train_size: 252
     min_test_size: 126
   1H:
+    n_folds: -3
+    train_window: 2880
     test_window: 960
     step: 960
   30M:
+    n_folds: -3
+    train_window: 1560
     test_window: 500
     step: 500
   5M:
+    n_folds: -3
+    train_window: 6240
     test_window: 2000
     step: 2000
   1M:
+    n_folds: -3
+    train_window: 23400
     test_window: 6500
     step: 6500

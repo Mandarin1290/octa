@@ -80,7 +80,10 @@ def test_dev_yaml_splits_by_timeframe_present():
 
 
 def test_dev_yaml_1h_oof_sufficient_for_institutional_gate():
-    """After applying 1H splits_by_timeframe, n_folds*test_window >= institutional min_2=3840."""
+    """After applying 1H splits_by_timeframe, the total backtest df length must be >= institutional min_2=3840.
+    Total df length = train_window + abs(n_folds)*test_window (train for first fold + all OOS windows).
+    n_folds MUST be negative so the pipeline uses most-recent data, not year-2000 history.
+    """
     from octa_training.core.config import load_config
 
     cfg = load_config("configs/dev.yaml")
@@ -88,18 +91,27 @@ def test_dev_yaml_1h_oof_sufficient_for_institutional_gate():
     tf_override = cfg.splits_by_timeframe.get("1H", {})
     effective = {**base, **tf_override}
 
-    n_folds = effective.get("n_folds", 5)
-    test_window = effective.get("test_window", 200)
-    oof_bars = n_folds * test_window
+    n_folds_raw = int(effective.get("n_folds", 5))
+    assert n_folds_raw < 0, (
+        f"1H n_folds must be negative (use most-recent data), got {n_folds_raw}. "
+        "Positive n_folds trains on year-2000 history and all gates fail on modern data."
+    )
+    n_folds = abs(n_folds_raw)
+    train_window = int(effective.get("train_window", 1000))
+    test_window = int(effective.get("test_window", 200))
+    # Total backtest length: training window of first fold + all OOS windows
+    total_backtest_bars = train_window + n_folds * test_window
     institutional_min_2_1h = 2880 + 2 * 480  # = 3840
-    assert oof_bars >= institutional_min_2_1h, (
-        f"1H OOF bars ({oof_bars}) < institutional min_2 ({institutional_min_2_1h}). "
-        f"evaluate_walk_forward_oos will always fail for 1H."
+    assert total_backtest_bars >= institutional_min_2_1h, (
+        f"1H total backtest bars ({total_backtest_bars}) < institutional min_2 ({institutional_min_2_1h}). "
+        f"evaluate_walk_forward_oos will fail for 1H."
     )
 
 
 def test_dev_yaml_30m_oof_sufficient_for_institutional_gate():
-    """After applying 30M splits_by_timeframe, n_folds*test_window >= institutional min_2=2080."""
+    """After applying 30M splits_by_timeframe, total backtest df >= institutional min_2=2080.
+    n_folds MUST be negative so the pipeline uses most-recent data, not year-2000 history.
+    """
     from octa_training.core.config import load_config
 
     cfg = load_config("configs/dev.yaml")
@@ -107,12 +119,17 @@ def test_dev_yaml_30m_oof_sufficient_for_institutional_gate():
     tf_override = cfg.splits_by_timeframe.get("30M", {})
     effective = {**base, **tf_override}
 
-    n_folds = effective.get("n_folds", 5)
-    test_window = effective.get("test_window", 200)
-    oof_bars = n_folds * test_window
+    n_folds_raw = int(effective.get("n_folds", 5))
+    assert n_folds_raw < 0, (
+        f"30M n_folds must be negative (use most-recent data), got {n_folds_raw}."
+    )
+    n_folds = abs(n_folds_raw)
+    train_window = int(effective.get("train_window", 1000))
+    test_window = int(effective.get("test_window", 200))
+    total_backtest_bars = train_window + n_folds * test_window
     institutional_min_2_30m = 1560 + 2 * 260  # = 2080
-    assert oof_bars >= institutional_min_2_30m, (
-        f"30M OOF bars ({oof_bars}) < institutional min_2 ({institutional_min_2_30m})."
+    assert total_backtest_bars >= institutional_min_2_30m, (
+        f"30M total backtest bars ({total_backtest_bars}) < institutional min_2 ({institutional_min_2_30m})."
     )
 
 
