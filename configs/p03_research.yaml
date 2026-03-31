@@ -186,6 +186,7 @@ gates:
       cvar_95_over_daily_vol_max: 5.0
       walkforward_min_fold_pass_ratio: 0.6666666666
       monte_carlo_maxdd_mult: 4.0
+      monte_carlo_maxdd_floor: 0.10
       regime_sharpe_collapse_ratio: 0.10
       sharpe_oos_over_is_min: 0.35
       # REITs (and other regime-selective equities) are structurally weak in

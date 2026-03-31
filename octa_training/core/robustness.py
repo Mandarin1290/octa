@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict, List, Optional, Tuple
+
+logger = logging.getLogger(__name__)
 
 import numpy as np
 import pandas as pd
@@ -143,7 +146,15 @@ def mandatory_monte_carlo_gate(
 
     hist_dd = float(getattr(metrics, "max_drawdown", 0.0) or 0.0)
     dd_mult = float(getattr(gate, "monte_carlo_maxdd_mult", 1.5) or 1.5)
-    allowed_dd = float(hist_dd * dd_mult)
+    mc_dd_floor = float(getattr(gate, "monte_carlo_maxdd_floor", 0.0) or 0.0)
+    dynamic_dd = float(hist_dd * dd_mult)
+    allowed_dd = max(dynamic_dd, mc_dd_floor)
+    if mc_dd_floor > 0.0 and dynamic_dd < mc_dd_floor:
+        logger.debug(
+            "MC DD threshold floored: %.4f → %.4f "
+            "(IS_dd=%.4f too small for meaningful multiplier)",
+            dynamic_dd, mc_dd_floor, hist_dd,
+        )
 
     pf_thr = float(getattr(gate, "monte_carlo_pf_p05_min", 1.05) or 1.05)
     sh_thr = float(getattr(gate, "monte_carlo_sharpe_p05_min", 0.40) or 0.40)

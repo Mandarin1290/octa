@@ -67,6 +67,7 @@ class GateSpec(BaseModel):
     monte_carlo_pf_p05_min: float = 1.05
     monte_carlo_sharpe_p05_min: float = 0.40
     monte_carlo_maxdd_mult: float = 1.5
+    monte_carlo_maxdd_floor: float = 0.0
     monte_carlo_prob_loss_max: float = 0.40
 
     # Mandatory walk-forward OOS gate
