@@ -141,11 +141,16 @@ def test_paper_runner_is_unblocked_v0_0_1():
     assert "paper_execution_blocked_in_v0_0_0_foundation_scope" not in str(excinfo.value)
 
 
-def test_run_paper_live_script_is_blocked():
+def test_run_paper_live_script_is_functional():
+    # v0.0.1+: run_paper_live.py is unblocked and wires to run_paper().
+    # It must NOT raise SystemExit with the old foundation-block message.
+    # In a test environment (no real broker, no promoted artifacts) it returns 0
+    # (no errors key in result) or 1 (exception caught); either is valid.
     module = _load_module(Path("scripts/run_paper_live.py"), "run_paper_live_test")
-    with pytest.raises(SystemExit) as excinfo:
-        module.main()
-    assert "non_canonical_foundation_entrypoint:scripts/run_paper_live.py" in str(excinfo.value)
+    rc = module.main()
+    assert isinstance(rc, int), "main() must return an int exit code"
+    # Confirm the old foundation block is gone
+    assert rc in (0, 1), f"unexpected return code {rc}"
 
 
 def test_legacy_core_runner_is_blocked():

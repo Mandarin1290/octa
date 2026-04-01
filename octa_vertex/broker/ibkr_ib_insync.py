@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import time
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
@@ -67,6 +68,8 @@ class IBKRIBInsyncAdapter(BrokerAdapter):
             raise RuntimeError("ib_insync not installed") from exc
         self.ib = IB()
         self.ib.connect(cfg.host, cfg.port, clientId=cfg.client_id)
+        # How long to wait for a fill after placeOrder (seconds). Configurable via env.
+        self.fill_timeout_s: int = int(os.getenv("OCTA_FILL_TIMEOUT_S", "30"))
 
     def submit_order(self, order: Dict[str, Any]) -> Dict[str, Any]:
         from ib_insync import MarketOrder  # type: ignore
@@ -88,9 +91,35 @@ class IBKRIBInsyncAdapter(BrokerAdapter):
         o = MarketOrder(action, qty)
         trade = self.ib.placeOrder(contract, o)
 
-        # best-effort immediate status
-        status = getattr(getattr(trade, "orderStatus", None), "status", None)
-        return {"order_id": str(order.get("order_id")), "status": str(status or "SUBMITTED")}
+        # Wait for fill confirmation (up to fill_timeout_s).
+        # Market orders on paper/live accounts typically fill within seconds.
+        # Outside market hours the status stays Submitted; we return fill_price=None.
+        fill_price: Optional[float] = None
+        fill_qty: Optional[float] = None
+        deadline = time.time() + self.fill_timeout_s
+        while time.time() < deadline:
+            self.ib.sleep(0.5)
+            current_status = str(getattr(getattr(trade, "orderStatus", None), "status", None) or "")
+            if current_status == "Filled":
+                fills = getattr(trade, "fills", None) or []
+                if fills:
+                    exec_obj = getattr(fills[-1], "execution", None)
+                    if exec_obj is not None:
+                        raw_price = getattr(exec_obj, "avgPrice", None)
+                        raw_shares = getattr(exec_obj, "shares", None)
+                        fill_price = float(raw_price) if raw_price is not None else None
+                        fill_qty = float(raw_shares) if raw_shares is not None else None
+                break
+            if current_status in ("Cancelled", "Inactive", "ApiCancelled", "ApiPendingCancel"):
+                break
+
+        final_status = str(getattr(getattr(trade, "orderStatus", None), "status", None) or "SUBMITTED")
+        return {
+            "order_id": str(order.get("order_id")),
+            "status": final_status,
+            "fill_price": fill_price,
+            "fill_qty": fill_qty,
+        }
 
     def cancel_order(self, order_id: str) -> Dict[str, Any]:
         # Without holding Trade references, we can only ack the request.
@@ -98,6 +127,26 @@ class IBKRIBInsyncAdapter(BrokerAdapter):
 
     def get_order_status(self, order_id: str) -> Dict[str, Any]:
         return {"order_id": str(order_id), "status": "UNKNOWN"}
+
+    def get_positions(self) -> Dict[str, Any]:
+        """Return current broker positions as {symbol: {qty, avg_cost}}.
+
+        Uses account_snapshot() positions list as source of truth.
+        Returns empty dict on any error (caller should treat as unavailable).
+        """
+        try:
+            snap = self.account_snapshot()
+            result: Dict[str, Any] = {}
+            for p in snap.get("positions") or []:
+                sym = str(p.get("symbol") or "")
+                if sym:
+                    result[sym] = {
+                        "qty": float(p.get("qty", 0.0)),
+                        "avg_cost": float(p.get("avg_cost", 0.0)),
+                    }
+            return result
+        except Exception:
+            return {}
 
     def account_snapshot(self) -> Dict[str, Any]:
         out: Dict[str, Any] = {"summary": [], "positions": []}

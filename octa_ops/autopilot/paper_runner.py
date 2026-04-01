@@ -22,6 +22,36 @@ from .registry import ArtifactRegistry
 from .types import PaperOrderIntent, now_utc_iso, stable_hash
 from octa.core.risk.overlay import apply_overlay
 from octa.core.governance.drift_monitor import evaluate_drift
+from octa_accounting.nav_engine import NAVEngine
+
+
+_POSITION_STATE_FILE = "position_state.json"
+
+
+def _load_position_state(state_dir: Path) -> Dict[str, Any]:
+    """Load persistent position state from state_dir/position_state.json.
+
+    Returns default empty state if file missing or corrupt.
+    The returned dict always has keys: positions (dict), exposure_used (float), last_updated.
+    """
+    p = Path(state_dir) / _POSITION_STATE_FILE
+    if p.exists():
+        try:
+            s = json.loads(p.read_text(encoding="utf-8"))
+            if isinstance(s.get("positions"), dict) and isinstance(s.get("exposure_used"), (int, float)):
+                return s
+        except Exception:
+            pass
+    return {"positions": {}, "exposure_used": 0.0, "last_updated": None}
+
+
+def _save_position_state(state: Dict[str, Any], state_dir: Path) -> None:
+    """Atomically write position state to state_dir/position_state.json via tmp rename."""
+    Path(state_dir).mkdir(parents=True, exist_ok=True)
+    p = Path(state_dir) / _POSITION_STATE_FILE
+    tmp = p.with_suffix(".tmp")
+    tmp.write_text(json.dumps(state, indent=2, default=str), encoding="utf-8")
+    tmp.rename(p)
 
 
 def _load_broker_adapter(*, mode: str, instruments: List[str], rate_limit_per_minute: int = 60):
@@ -293,8 +323,15 @@ def run_paper(
     placed: List[Dict[str, Any]] = []
     skipped: List[Dict[str, Any]] = []
 
-    # Basic portfolio exposure tracking (positions are fractional sizing from SafeInference).
-    exposure_used = 0.0
+    # Load persistent position state — exposure_used must NOT reset between runs.
+    # Stored alongside ledger so ledger_dir parameterisation also isolates state in tests.
+    _pstate = _load_position_state(Path(ledger_dir))
+    exposure_used = float(_pstate.get("exposure_used", 0.0))
+    open_positions: Dict[str, Any] = dict(_pstate.get("positions") or {})
+
+    # NAVEngine tracks per-trade P&L for fills received this run.
+    # Fresh instance each run; historical fills live in the ledger (paper.order_filled events).
+    nav_engine = NAVEngine()
 
     # Build broker adapter once (fail-closed if cannot initialize).
     symbols = [str(r.get("symbol")) for r in promoted if r.get("symbol")]
@@ -534,6 +571,45 @@ def run_paper(
             placed.append({"symbol": symbol, "timeframe": timeframe, "order_key": order_key, "order": order, "broker_res": res})
             exposure_used += qty
             ledger.append(AuditEvent.create(actor="paper_runner", action="paper.order_submitted", payload={"ts": now_utc_iso(), "order_key": order_key, "order": order, "broker_res": res}, severity="INFO"))
+
+            # Fill tracking: if broker returned a fill price, record it.
+            fill_price_val = res.get("fill_price")
+            fill_price_val = float(fill_price_val) if fill_price_val is not None else None
+            if fill_price_val:
+                ledger.append(AuditEvent.create(
+                    actor="paper_runner",
+                    action="paper.order_filled",
+                    payload={
+                        "ts": now_utc_iso(),
+                        "run_id": run_id,
+                        "symbol": symbol,
+                        "side": side,
+                        "qty": float(res.get("fill_qty") or qty),
+                        "fill_price": fill_price_val,
+                        "order_id": res.get("order_id"),
+                        "model_id": sha,
+                    },
+                    severity="INFO",
+                ))
+                signed_qty = qty if side == "BUY" else -qty
+                try:
+                    nav_engine.record_trade(symbol, signed_qty, fill_price_val)
+                except Exception:
+                    pass  # NAVEngine tracking is best-effort; ledger event is the primary record
+
+            # Persist position state after each successful order so exposure_used
+            # survives across runs and is never reset to 0.
+            open_positions[symbol] = {
+                "side": side,
+                "exposure": qty,
+                "fill_price": fill_price_val,
+                "order_key": order_key,
+                "ts": now_utc_iso(),
+            }
+            _save_position_state(
+                {"positions": open_positions, "exposure_used": exposure_used, "last_updated": now_utc_iso()},
+                Path(ledger_dir),
+            )
         except Exception as e:
             try:
                 reg.set_order_status(order_key, "SUBMIT_FAILED")
@@ -541,5 +617,18 @@ def run_paper(
                 pass
             skipped.append({"symbol": symbol, "timeframe": timeframe, "reason": "broker_submit_failed", "error": str(e), "order_key": order_key})
             ledger.append(AuditEvent.create(actor="paper_runner", action="paper.order_rejected", payload={"ts": now_utc_iso(), "order_key": order_key, "error": str(e)}, severity="ERROR"))
+
+    # Write NAV snapshot for drift monitor — only when we have fills to report.
+    try:
+        if nav_engine.positions:
+            nav_report = nav_engine.compute_nav()
+            ledger.append(AuditEvent.create(
+                actor="paper_runner",
+                action="performance.nav",
+                payload={"ts": now_utc_iso(), "run_id": run_id, "nav": nav_report["nav"]},
+                severity="INFO",
+            ))
+    except Exception:
+        pass
 
     return {"run_id": run_id, "placed": placed, "skipped": skipped, "promoted_count": len(promoted)}
