@@ -56,10 +56,20 @@ STOP_KILL_WAIT_SEC="${STOP_KILL_WAIT_SEC:-2}"
 # ----------------------------
 # Popup patterns (strict but complete)
 # ----------------------------
-POPUP_PAT='Warnhinweis|Risikohinweis|Disclaimer|Login Messages|Login Message|IBKR Login|install4j|jclient|Message Center|Dow Jones|Top 10|Börsenspiegel|Boersenspiegel|Hinweis|Agreement|Notice|Information|Haftung|Risk Disclosure'
+POPUP_PAT='Warnung|Warnhinweis|Risikohinweis|Disclaimer|Login Messages|Login Message|IBKR Login|install4j|jclient|Message Center|Dow Jones|Top 10|Börsenspiegel|Boersenspiegel|Hinweis|Agreement|Notice|Information|Haftung|Risk Disclosure'
 
 # Closing dialogs only during shutdown
 CLOSING_PAT='Programm wird geschlossen|Program is closing'
+
+# News/info popups that do not block the API and cannot always be closed via keyboard/wmctrl
+NEWS_ONLY_PAT='Dow Jones|Heutige Top 10|Top 10 Today|Börsenspiegel|Boersenspiegel'
+
+# True if there are FATAL popups (ones that block API or must be dismissed).
+# News-only popups are excluded — they don't prevent API connections.
+fatal_popups_present() {
+  popups_present || return 1
+  wmctrl -l 2>/dev/null | grep -Ei "$POPUP_PAT" | grep -vEi "$NEWS_ONLY_PAT" | grep -q .
+}
 
 # ----------------------------
 # GUI session detect + auto-fix (Wayland+Xwayland friendly)
@@ -261,7 +271,7 @@ drain_once() {
 
   while IFS='|' read -r id title; do
     [[ -z "${id:-}" ]] && continue
-    if echo "$title" | grep -Eiq "Warnhinweis|Risikohinweis|Disclaimer|Agreement|Haftung|Risk"; then
+    if echo "$title" | grep -Eiq "Warnung|Warnhinweis|Risikohinweis|Disclaimer|Agreement|Haftung|Risk"; then
       accept_warnhinweis "$id" || true
     else
       close_generic "$id" || true
@@ -434,15 +444,17 @@ PY
 
 api_handshake() {
   # quick retries inside READY window
-  # handshake should be attempted only when no popups are present
+  # Block only on FATAL popups (disclaimers etc.); news popups don't prevent API connections.
   local end=$(( $(date +%s) + 20 ))
   while [[ $(date +%s) -lt $end ]]; do
-    # if disclaimer/popup is still there, don't handshake yet
-    if popups_present; then
+    # if a fatal popup (disclaimer/warning) is still there, drain and wait
+    if fatal_popups_present; then
       drain_once || true
       sleep 0.25
       continue
     fi
+    # non-fatal (news) popups may still be present; drain best-effort but proceed
+    popups_present && drain_once || true
 
     # Try handshake, capture output for 10141 detection
     local tmp rc
@@ -479,19 +491,18 @@ fast_path_popup_then_main() {
   log "FAST-PATH: quick main wait ${FAST_MAIN_WAIT_SEC}s..."
   local quick_end=$(( $(date +%s) + FAST_MAIN_WAIT_SEC ))
   while [[ $(date +%s) -lt $quick_end ]]; do
-    if ! popups_present; then
+    popups_present && drain_once || true
+    if ! fatal_popups_present; then
       local mid
       mid="$(main_window_id)"
       if [[ -n "$mid" ]]; then
-        log "FAST-PATH: popups cleared + main window present ($mid)."
+        log "FAST-PATH: no fatal popups + main window present ($mid)."
         if [[ "$API_PORT_TEST" == "1" ]]; then
           wait_api_port 40 || return 1
         fi
         log "SUCCESS: TWS ready (FAST-PATH)."
         exit 0
       fi
-    else
-      popups_present && drain_once || true
     fi
     sleep "$POLL_SEC"
   done
@@ -504,6 +515,25 @@ fast_path_popup_then_main() {
 # MAIN
 # ----------------------------
 load_env_file
+
+# Short-circuit: if TWS is already running and API port is open, skip login entirely.
+if tws_running_strict && { api_port_listening "$API_PORT_PRIMARY" || api_port_listening "$API_PORT_FALLBACK"; }; then
+  log "TWS already running and API port open. Skipping login — proceeding to handshake."
+  if api_handshake; then
+    log "SUCCESS: handshake OK (reuse existing session)."
+    exit 0
+  else
+    log "Existing session handshake failed. Proceeding with full restart."
+  fi
+fi
+
+# Disable AutoRestart BEFORE killing so TWS does not re-launch itself (would race with chain login)
+if [[ -f "${HOME}/Jts/jts.ini" ]]; then
+  sed -i 's/^AutoRestart=1$/AutoRestart=0/' "${HOME}/Jts/jts.ini" 2>/dev/null || true
+  # Restore AutoRestart on any exit (success or failure)
+  trap 'sed -i "s/^AutoRestart=0\$/AutoRestart=1/" "${HOME}/Jts/jts.ini" 2>/dev/null || true' EXIT
+fi
+
 stop_existing_tws
 
 log "[CHAIN] python $CHAIN_PY --config $CFG_FILE --timeout-sec $CHAIN_TIMEOUT_SEC"
@@ -595,8 +625,8 @@ guard_end=$(( $(date +%s) + GUARD_MAX_SEC ))
 last_dirty_ts=$(date +%s)
 
 while [[ $(date +%s) -lt $guard_end ]]; do
-  if popups_present; then
-    drain_once || true
+  popups_present && drain_once || true
+  if fatal_popups_present; then
     last_dirty_ts=$(date +%s)
   else
     now=$(date +%s)
@@ -612,6 +642,6 @@ while [[ $(date +%s) -lt $guard_end ]]; do
   sleep "$POLL_SEC"
 done
 
-log "FAIL: guard expired; popups still appear."
+log "FAIL: guard expired; fatal popups still appear."
 wmctrl -l 2>/dev/null | grep -Ei "$POPUP_PAT" | tee -a "$RUN_LOG" || true
 exit 1

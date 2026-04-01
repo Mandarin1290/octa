@@ -25,6 +25,16 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `config/risk_overlay.yaml`
 
 
+### [2026-04-01 20:53:05] CHANGE
+**Beschreibung:** Code-Änderungen - (+95/-17 Zeilen)
+
+**Geänderte Dateien:**
+- **SCRIPTS:** 3 Dateien
+  - `scripts/run_paper_live.py`
+  - `scripts/tws_e2e.sh`
+  - `scripts/tws_x11_autologin_chain.py`
+
+
 ## 2026-03-31
 
 

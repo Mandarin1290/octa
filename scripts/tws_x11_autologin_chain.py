@@ -53,6 +53,7 @@ BLOCKING_TOKENS = [
     "Boersenspiegel",
     "Warnhinweis",
     "Risikohinweis",
+    "Warnung",          # German "Warning!" — API confirmation / startup modal
     "Disclaimer",
     "Login Messages",
     "Login Message",
@@ -555,7 +556,7 @@ def _classify_window(window: WindowInfo, cfg: ChainConfig, main_tokens: list[str
         return WIN_MAIN
     if str(cfg.login_title_contains).lower() in t:
         return WIN_LOGIN
-    if "warnhinweis" in t:
+    if "warnhinweis" in t or "warnung" in t:
         return WIN_POPUP_WARN
     if "disclaimer" in t:
         return WIN_POPUP_DISCLAIMER
@@ -867,6 +868,7 @@ def _load_config(path: Path) -> ChainConfig:
     required_tokens = [
         "Warnhinweis",
         "Risikohinweis",
+        "Warnung",              # German "Warning!" — API confirmation / startup modal
         "Disclaimer",
         "Agreement",
         "Important",
@@ -897,6 +899,7 @@ def _load_config(path: Path) -> ChainConfig:
             popup_whitelist.append(tok)
             seen_tokens.add(tok.lower())
     popup_action_map.setdefault("Warnhinweis", "CLICK_WARNHINWEIS")
+    popup_action_map.setdefault("Warnung", "CLICK_WARNHINWEIS")
     popup_action_map.setdefault("Disclaimer", "CLICK_WARNHINWEIS")
     popup_action_map.setdefault("Börsenspiegel", "ALT+F4")
     popup_action_map.setdefault("Boersenspiegel", "ALT+F4")

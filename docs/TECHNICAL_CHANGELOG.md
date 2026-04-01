@@ -3,6 +3,23 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-04-01 20:53:05] CHANGE
+Code-Änderungen - (+95/-17 Zeilen)
+
+**Statistics:**
+- Files Changed: 3
+- Lines Added: +95
+- Lines Deleted: -17
+- Net Change: +78
+
+**File-Level Changes:**
+```
++   49 -    4  scripts/run_paper_live.py
++   42 -   12  scripts/tws_e2e.sh
++    4 -    1  scripts/tws_x11_autologin_chain.py
+```
+
+
 ## [2026-04-01 20:27:58] CONFIG
 Code-Änderungen - 3 Code-Dateien - (+25/-13 Zeilen)
 
