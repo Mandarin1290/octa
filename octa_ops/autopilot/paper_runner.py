@@ -56,7 +56,7 @@ def _load_broker_adapter(*, mode: str, instruments: List[str], rate_limit_per_mi
 
 @dataclass
 class PaperRiskPolicy:
-    max_risk_per_position: float = 0.005
+    max_risk_per_position: float = 0.05
     max_portfolio_exposure: float = 0.35
     daily_loss_limit: float = 0.01
     max_drawdown_stop: float = 0.05

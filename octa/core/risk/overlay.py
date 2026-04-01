@@ -106,19 +106,31 @@ def _apply_single(
     require_borrowable = bool(overlay_cfg.get("require_borrowable", False))
     borrowable = market_state.get("borrowable", True)
 
-    if qty > max_pos:
-        return OverlayDecision(False, 0.0, "max_position", {"qty": qty, "max_pos": max_pos})
-    if exposure_used + qty > max_port:
+    # Soft caps: reduce qty to fit within limits rather than blocking outright.
+    # Hard blocks are reserved for true kill conditions (regime halt, borrow unavailable).
+    qty = min(qty, max_pos)
+    qty = min(qty, max_single)
+
+    available_port = max_port - exposure_used
+    if available_port <= 0.0:
         return OverlayDecision(False, 0.0, "max_portfolio", {"exposure_used": exposure_used, "max_port": max_port})
-    if per_bucket.get(bucket, 0.0) + qty > max_bucket:
+    qty = min(qty, available_port)
+
+    available_bucket = max_bucket - per_bucket.get(bucket, 0.0)
+    if available_bucket <= 0.0:
         return OverlayDecision(False, 0.0, "max_bucket", {"bucket": bucket, "max_bucket": max_bucket})
-    if qty > max_single:
-        return OverlayDecision(False, 0.0, "max_single_asset", {"qty": qty, "max_single": max_single})
+    qty = min(qty, available_bucket)
+
     if side == "SELL":
         if require_borrowable and not borrowable:
             return OverlayDecision(False, 0.0, "borrow_unavailable", {})
-        if gross_short + qty > max_gross_short:
+        available_short = max_gross_short - gross_short
+        if available_short <= 0.0:
             return OverlayDecision(False, 0.0, "max_gross_short", {"gross_short": gross_short, "max": max_gross_short})
+        qty = min(qty, available_short)
+
+    if qty <= 0.0:
+        return OverlayDecision(False, 0.0, "capped_to_zero", {"max_pos": max_pos, "max_single": max_single})
     return OverlayDecision(True, qty, "ok", {})
 
 

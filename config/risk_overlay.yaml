@@ -6,7 +6,7 @@ paper:
   max_position_pct: 0.05
   max_portfolio_exposure: 0.5
   max_sector_pct: 0.2
-  max_single_asset_risk: 0.02
+  max_single_asset_risk: 0.05
   max_gross_short: 0.3
   require_borrowable: true
 live_shadow:
@@ -17,6 +17,6 @@ live_shadow:
   max_position_pct: 0.05
   max_portfolio_exposure: 0.5
   max_sector_pct: 0.2
-  max_single_asset_risk: 0.02
+  max_single_asset_risk: 0.05
   max_gross_short: 0.4
   require_borrowable: false

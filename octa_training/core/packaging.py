@@ -105,11 +105,11 @@ class SafeInference:
             return {"signal": 0.0, "position": 0.0, "confidence": 0.0, "diagnostics": {"error": f"missing_features:{missing}"}}
         if self.scaler is not None:
             try:
-                Xvals = self.scaler.transform(Xf)
+                Xvals = self.scaler.transform(Xf.fillna(0))
             except Exception:
-                Xvals = Xf.values
+                Xvals = Xf.fillna(0).values
         else:
-            Xvals = Xf.values
+            Xvals = Xf.fillna(0).values
 
         # infer probabilities or scores
         try:

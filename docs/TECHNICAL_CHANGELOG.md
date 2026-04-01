@@ -3,6 +3,24 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-04-01 20:27:58] CONFIG
+Code-Änderungen - 3 Code-Dateien - (+25/-13 Zeilen)
+
+**Statistics:**
+- Files Changed: 4
+- Lines Added: +25
+- Lines Deleted: -13
+- Net Change: +12
+
+**File-Level Changes:**
+```
++    2 -    2  config/risk_overlay.yaml
++   19 -    7  octa/core/risk/overlay.py
++    1 -    1  octa_ops/autopilot/paper_runner.py
++    3 -    3  octa_training/core/packaging.py
+```
+
+
 ## [2026-04-01 17:25:39] CHANGE
 Code-Änderungen - 1 Code-Dateien - (+11/-1 Zeilen)
 

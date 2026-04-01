@@ -13,6 +13,18 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `octa_vertex/broker/ibkr_ib_insync.py`
 
 
+### [2026-04-01 20:27:58] CONFIG
+**Beschreibung:** Code-Änderungen - 3 Code-Dateien - (+25/-13 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 3 Dateien
+  - `octa/core/risk/overlay.py`
+  - `octa_ops/autopilot/paper_runner.py`
+  - `octa_training/core/packaging.py`
+- **CONFIG:** 1 Dateien
+  - `config/risk_overlay.yaml`
+
+
 ## 2026-03-31
 
 
