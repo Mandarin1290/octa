@@ -56,7 +56,17 @@ class IBKRIBInsyncAdapter(BrokerAdapter):
 
     def __init__(self, cfg: IBKRIBInsyncConfig):
         self.cfg = cfg
-        raise RuntimeError(_FOUNDATION_SCOPE_BLOCK_REASON)
+        if os.getenv("OCTA_ALLOW_PAPER_ORDERS", "").lower() not in ("1", "true", "yes"):
+            raise RuntimeError(
+                f"{_FOUNDATION_SCOPE_BLOCK_REASON} — "
+                "set OCTA_ALLOW_PAPER_ORDERS=1 to enable paper trading"
+            )
+        try:
+            from ib_insync import IB  # type: ignore
+        except ImportError as exc:
+            raise RuntimeError("ib_insync not installed") from exc
+        self.ib = IB()
+        self.ib.connect(cfg.host, cfg.port, clientId=cfg.client_id)
 
     def submit_order(self, order: Dict[str, Any]) -> Dict[str, Any]:
         from ib_insync import MarketOrder  # type: ignore
