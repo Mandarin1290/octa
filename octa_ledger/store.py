@@ -164,6 +164,8 @@ class LedgerStore:
         )
         rows = cur.fetchall()
         res: List[Dict] = []
+        if not rows:
+            return res
         with open(self.log_path, "rb") as fh:
             for _eid, offset, size in rows:
                 fh.seek(offset)
@@ -179,6 +181,8 @@ class LedgerStore:
         )
         rows = cur.fetchall()
         res: List[Dict] = []
+        if not rows:
+            return res
         with open(self.log_path, "rb") as fh:
             for _eid, offset, size in rows:
                 fh.seek(offset)
@@ -194,6 +198,8 @@ class LedgerStore:
         )
         rows = cur.fetchall()
         res: List[Dict] = []
+        if not rows:
+            return res
         with open(self.log_path, "rb") as fh:
             for _eid, offset, size in rows:
                 fh.seek(offset)

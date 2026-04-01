@@ -391,10 +391,17 @@ def run_paper(
             continue
 
         # Circuit breaker: stale data
+        _last_close: Optional[float] = None
         try:
             df_check = load_parquet(Path(pq))
             if isinstance(df_check.index, pd.DatetimeIndex) and len(df_check.index):
                 last_ts = df_check.index.max()
+                # Capture last close for slippage tracking (zero overhead — parquet already loaded).
+                try:
+                    if "close" in df_check.columns and len(df_check):
+                        _last_close = float(df_check["close"].iloc[-1])
+                except Exception:
+                    pass
                 # tolerance: 3 bars by default
                 tf_s = 3600
                 try:
@@ -550,6 +557,13 @@ def run_paper(
         }
         _ndjson_append(out_log, evt)
         ledger.append(AuditEvent.create(actor="paper_runner", action="paper.order_intent", payload=evt, severity="INFO"))
+        # Slippage forecast: paper orders assume zero slippage (basis for gate comparison).
+        ledger.append(AuditEvent.create(
+            actor="paper_runner",
+            action="slippage.forecast",
+            payload={"ts": now_utc_iso(), "symbol": symbol, "slippage": 0.0},
+            severity="INFO",
+        ))
 
         # Fail-closed: broker must be available
         if broker is None:
@@ -596,6 +610,27 @@ def run_paper(
                     nav_engine.record_trade(symbol, signed_qty, fill_price_val)
                 except Exception:
                     pass  # NAVEngine tracking is best-effort; ledger event is the primary record
+                # Slippage tracking: compare fill price to last close (signal price).
+                # Units: decimal fraction (0.002 = 20bps). Warning threshold: 20bps.
+                if _last_close is not None and _last_close > 0.0:
+                    try:
+                        slippage_frac = abs(fill_price_val - _last_close) / _last_close
+                        _slip_sev = "WARNING" if slippage_frac > 0.002 else "INFO"
+                        ledger.append(AuditEvent.create(
+                            actor="paper_runner",
+                            action="slippage.observed",
+                            payload={
+                                "ts": now_utc_iso(),
+                                "symbol": symbol,
+                                "fill_price": fill_price_val,
+                                "signal_price": _last_close,
+                                "slippage": round(slippage_frac, 8),
+                                "slippage_bps": round(slippage_frac * 10000, 2),
+                            },
+                            severity=_slip_sev,
+                        ))
+                    except Exception:
+                        pass  # slippage tracking is best-effort
 
             # Persist position state after each successful order so exposure_used
             # survives across runs and is never reset to 0.

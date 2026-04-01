@@ -47,6 +47,19 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `tests/test_p1_fill_reconciliation.py`
 
 
+### [2026-04-01 22:21:21] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 2 Code-Dateien - 1 Test-Dateien - (+955/-0 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 2 Dateien
+  - `octa_ledger/store.py`
+  - `octa_ops/autopilot/paper_runner.py`
+- **TESTS:** 1 Dateien
+  - `tests/test_p2_eod_reconciliation.py`
+- **SCRIPTS:** 1 Dateien
+  - `scripts/octa_eod_reconcile.py`
+
+
 ## 2026-03-31
 
 
