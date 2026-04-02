@@ -28,13 +28,27 @@ from octa_accounting.nav_engine import NAVEngine
 _POSITION_STATE_FILE = "position_state.json"
 
 
-def _load_position_state(state_dir: Path) -> Dict[str, Any]:
-    """Load persistent position state from state_dir/position_state.json.
+def _position_state_filename(mode: Optional[str] = None) -> str:
+    """Return the position-state filename for the given mode.
 
+    Mode-specific files prevent shadow/paper/live positions from
+    overwriting each other when multiple modes share a ledger_dir.
+    Falls back to the legacy name when mode is None.
+    """
+    if mode and mode in {"shadow", "paper", "live"}:
+        return f"position_state_{mode}.json"
+    return _POSITION_STATE_FILE
+
+
+def _load_position_state(state_dir: Path, mode: Optional[str] = None) -> Dict[str, Any]:
+    """Load persistent position state.
+
+    Reads from state_dir/position_state_{mode}.json when mode is provided,
+    otherwise falls back to the legacy position_state.json.
     Returns default empty state if file missing or corrupt.
     The returned dict always has keys: positions (dict), exposure_used (float), last_updated.
     """
-    p = Path(state_dir) / _POSITION_STATE_FILE
+    p = Path(state_dir) / _position_state_filename(mode)
     if p.exists():
         try:
             s = json.loads(p.read_text(encoding="utf-8"))
@@ -45,10 +59,14 @@ def _load_position_state(state_dir: Path) -> Dict[str, Any]:
     return {"positions": {}, "exposure_used": 0.0, "last_updated": None}
 
 
-def _save_position_state(state: Dict[str, Any], state_dir: Path) -> None:
-    """Atomically write position state to state_dir/position_state.json via tmp rename."""
+def _save_position_state(state: Dict[str, Any], state_dir: Path, mode: Optional[str] = None) -> None:
+    """Atomically write position state via tmp rename.
+
+    Writes to state_dir/position_state_{mode}.json when mode is provided,
+    otherwise writes to the legacy position_state.json.
+    """
     Path(state_dir).mkdir(parents=True, exist_ok=True)
-    p = Path(state_dir) / _POSITION_STATE_FILE
+    p = Path(state_dir) / _position_state_filename(mode)
     tmp = p.with_suffix(".tmp")
     tmp.write_text(json.dumps(state, indent=2, default=str), encoding="utf-8")
     tmp.rename(p)
@@ -91,6 +109,23 @@ class PaperRiskPolicy:
     daily_loss_limit: float = 0.01
     max_drawdown_stop: float = 0.05
     no_leverage: bool = True
+
+
+@dataclass
+class LiveRiskPolicy:
+    """Risk policy for live trading — tighter limits than paper.
+
+    Live requires narrower position sizing, lower portfolio exposure,
+    tighter daily loss limit, and a lower slippage-warning threshold.
+    """
+    max_risk_per_position: float = 0.02   # 2% vs paper 5%
+    max_portfolio_exposure: float = 0.20  # 20% vs paper 35%
+    daily_loss_limit: float = 0.005       # 0.5% vs paper 1%
+    max_drawdown_stop: float = 0.03       # 3% vs paper 5%
+    no_leverage: bool = True
+    slippage_warn_bps: float = 5.0        # 5bps vs paper 20bps
+    min_confidence: float = 0.60
+    require_regime_confirm: bool = True
 
 
 def _load_overlay_config(path: str = "config/risk_overlay.yaml", mode: str = "paper") -> Dict[str, Any]:
@@ -325,7 +360,7 @@ def run_paper(
 
     # Load persistent position state — exposure_used must NOT reset between runs.
     # Stored alongside ledger so ledger_dir parameterisation also isolates state in tests.
-    _pstate = _load_position_state(Path(ledger_dir))
+    _pstate = _load_position_state(Path(ledger_dir), mode=mode)
     exposure_used = float(_pstate.get("exposure_used", 0.0))
     open_positions: Dict[str, Any] = dict(_pstate.get("positions") or {})
 
@@ -644,6 +679,7 @@ def run_paper(
             _save_position_state(
                 {"positions": open_positions, "exposure_used": exposure_used, "last_updated": now_utc_iso()},
                 Path(ledger_dir),
+                mode=mode,
             )
         except Exception as e:
             try:

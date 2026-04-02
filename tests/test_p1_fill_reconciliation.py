@@ -273,6 +273,7 @@ class TestExposureUsedPersistence:
         _save_position_state(
             {"positions": {"ADC": {"side": "BUY", "exposure": 0.03}}, "exposure_used": 0.03, "last_updated": "t1"},
             ledger_dir,
+            mode="paper",
         )
 
         _make_minimal_run_paper_mocks(tmp_path, monkeypatch)
@@ -397,7 +398,7 @@ class TestExposureUsedPersistence:
         assert payload["fill_price"] == 21.50
         assert payload["side"] in ("BUY", "SELL")
 
-        # position_state.json must have been written
-        state = _load_position_state(ledger_dir)
+        # position_state_paper.json must have been written
+        state = _load_position_state(ledger_dir, mode="paper")
         assert "TST" in state["positions"]
         assert state["exposure_used"] > 0.0
