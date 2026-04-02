@@ -256,7 +256,7 @@ def _make_minimal_run_paper_mocks(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     fake_ledger = MagicMock()
     fake_ledger.by_action.return_value = []
     fake_ledger.append = MagicMock()
-    monkeypatch.setattr(mod, "LedgerStore", lambda path: fake_ledger)
+    monkeypatch.setattr(mod, "LedgerStore", lambda path, **kw: fake_ledger)
 
     monkeypatch.setenv("OCTA_BROKER_MODE", "sandbox")
 
@@ -360,7 +360,7 @@ class TestExposureUsedPersistence:
         ))
         monkeypatch.setattr(mod, "load_tradeable_artifact", fake_load_tradeable)
         monkeypatch.setattr(mod, "ArtifactRegistry", lambda **kw: fake_reg)
-        monkeypatch.setattr(mod, "LedgerStore", lambda path: CapturingLedger())
+        monkeypatch.setattr(mod, "LedgerStore", lambda path, **kw: CapturingLedger())
         monkeypatch.setattr(mod, "build_features", lambda df, cfg, ac: MagicMock())
         monkeypatch.setattr(mod, "_load_recent_features", lambda *a, **k: MagicMock())
         monkeypatch.setattr(mod, "evaluate_drift", lambda **kw: SimpleNamespace(disabled=False, reason="ok", kpi=1.0, diagnostics={}))

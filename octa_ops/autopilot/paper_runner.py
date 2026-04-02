@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import json
 import os
 from dataclasses import dataclass
@@ -341,7 +342,14 @@ def run_paper(
     }
     gov_audit = GovernanceAudit(run_id=run_id)
     reg = ArtifactRegistry(root=registry_root, ctx=run_ctx)
-    ledger = LedgerStore(ledger_dir)
+    _signing_key_b64 = os.getenv("LEDGER_SIGNING_KEY", "").strip()
+    _signing_key_bytes: Optional[bytes] = None
+    if _signing_key_b64:
+        try:
+            _signing_key_bytes = base64.b64decode(_signing_key_b64)
+        except Exception:
+            pass
+    ledger = LedgerStore(ledger_dir, signing_key_bytes=_signing_key_bytes)
 
     # Broker selection is configuration-driven. Default is sandbox.
     broker_mode = str(os.getenv("OCTA_BROKER_MODE") or "sandbox")
