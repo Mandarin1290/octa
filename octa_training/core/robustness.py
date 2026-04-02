@@ -144,6 +144,12 @@ def mandatory_monte_carlo_gate(
     mc_worst_drawdown = float(np.nanmax(maxdds))
     mc_prob_loss = float(np.nanmean(losses))
 
+    # Persist mc_pf_p05 into MetricsSummary so it flows through to PKL meta and results.json.
+    try:
+        metrics.mc_pf_p05 = mc_pf_p05
+    except Exception:
+        pass
+
     hist_dd = float(getattr(metrics, "max_drawdown", 0.0) or 0.0)
     dd_mult = float(getattr(gate, "monte_carlo_maxdd_mult", 1.5) or 1.5)
     mc_dd_floor = float(getattr(gate, "monte_carlo_maxdd_floor", 0.0) or 0.0)

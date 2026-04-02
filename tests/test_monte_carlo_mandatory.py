@@ -5,6 +5,7 @@ from types import SimpleNamespace
 import numpy as np
 import pandas as pd
 
+from octa_training.core.metrics_contract import MetricsSummary
 from octa_training.core.robustness import mandatory_monte_carlo_gate
 
 
@@ -53,3 +54,38 @@ def test_monte_carlo_moderate_metrics_pass() -> None:
     assert out["enabled"] is True
     assert out["passed"] is True
     assert out["metrics"]["mc_pf_p05"] >= 1.05
+
+
+def test_mc_pf_p05_persisted_into_metrics_summary() -> None:
+    """OP-9: mandatory_monte_carlo_gate must write mc_pf_p05 into MetricsSummary."""
+    idx = pd.date_range("2020-01-01", periods=300, freq="D", tz="UTC")
+    rng = np.random.default_rng(7)
+    good = rng.normal(loc=0.004, scale=0.003, size=len(idx))
+    df = pd.DataFrame({"strat_ret": good, "turnover": np.ones(len(idx))}, index=idx)
+    metrics = MetricsSummary(max_drawdown=0.08)
+    assert metrics.mc_pf_p05 is None  # not set before gate
+    out = mandatory_monte_carlo_gate(df, metrics=metrics, gate=_gate())
+    assert out["passed"] is True
+    assert metrics.mc_pf_p05 is not None
+    assert metrics.mc_pf_p05 > 0.0
+    # Must match what the gate itself reports
+    assert abs(metrics.mc_pf_p05 - out["metrics"]["mc_pf_p05"]) < 1e-9
+
+
+def test_mc_pf_p05_not_set_on_early_fail() -> None:
+    """mc_pf_p05 must not be set when MC cannot run (missing strat_ret)."""
+    idx = pd.date_range("2020-01-01", periods=120, freq="D", tz="UTC")
+    df = pd.DataFrame({"ret": np.zeros(len(idx))}, index=idx)
+    metrics = MetricsSummary(max_drawdown=0.05)
+    mandatory_monte_carlo_gate(df, metrics=metrics, gate=_gate())
+    assert metrics.mc_pf_p05 is None
+
+
+def test_metrics_summary_mc_pf_p05_field_exists() -> None:
+    """MetricsSummary must have mc_pf_p05 field serializable to dict."""
+    m = MetricsSummary(mc_pf_p05=1.23)
+    d = m.dict()
+    assert "mc_pf_p05" in d
+    assert d["mc_pf_p05"] == 1.23
+    m2 = MetricsSummary()
+    assert m2.dict()["mc_pf_p05"] is None

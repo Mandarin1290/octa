@@ -58,6 +58,8 @@ class MetricsSummary(BaseModel):
     cvar_95: Optional[float] = None
     daily_vol: Optional[float] = None
     cvar_95_over_daily_vol: Optional[float] = None
+    # Monte Carlo gate p05 profit-factor — persisted from mandatory_monte_carlo_gate().
+    mc_pf_p05: Optional[float] = None
     turnover: Optional[float] = None
     # Turnover normalized to a per-day estimate using inferred bars/day.
     turnover_per_day: Optional[float] = None
