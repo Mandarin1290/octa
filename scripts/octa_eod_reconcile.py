@@ -192,7 +192,22 @@ def run_eod_reconcile(
     except Exception as exc:
         result["errors"].append(f"evidence_write_failed:{exc}")
 
-    # 8. Print summary
+    # 8. Per-symbol P&L snapshot (non-blocking — errors captured in result)
+    try:
+        from octa_accounting.symbol_pnl import compute_symbol_pnl
+
+        pnl_output = Path(ledger_dir) / "symbol_pnl.json"
+        pstate_str = str(pstate_path) if pstate_path.exists() else None
+        symbol_pnl = compute_symbol_pnl(
+            ledger_path=ledger_dir,
+            positions_path=pstate_str,
+            output_path=str(pnl_output),
+        )
+        result["symbol_pnl_symbols"] = sorted(symbol_pnl.keys())
+    except Exception as exc:
+        result["errors"].append(f"symbol_pnl_failed:{exc}")
+
+    # 9. Print summary
     print(
         f"[eod_reconcile] {run_id}"
         f"  nav={broker_nav}"
