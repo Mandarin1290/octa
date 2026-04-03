@@ -11,6 +11,12 @@ broker:
 features:
   horizons: [1, 3, 5]
   min_return_filter_vol_mult: null
+  macro:
+    enabled: true
+    source: duckdb
+    altdat_duckdb_path: octa/var/altdata/altdat.duckdb
+    series: [FEDFUNDS, DGS10, DGS2, UNRATE]
+    shift_bars: 1
 
 session:
   enabled: true

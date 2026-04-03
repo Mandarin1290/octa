@@ -280,6 +280,51 @@ def build_features(raw: pd.DataFrame, settings, asset_class: str, build_targets:
             except Exception:
                 pass
 
+        # 1.5) DuckDB source — reads from altdat.duckdb/fred_series (offline, no API key needed)
+        if source in {"auto", "duckdb"}:
+            duckdb_path = str(macro_cfg.get("altdat_duckdb_path", "octa/var/altdata/altdat.duckdb")).strip()
+            try:
+                import duckdb as _ddb
+
+                _con = _ddb.connect(duckdb_path, read_only=True)
+                try:
+                    _frames: dict[str, pd.Series] = {}
+                    for _s in series:
+                        try:
+                            _qdf = _con.execute(
+                                "SELECT DATE_TRUNC('day', ts) AS d, AVG(value) AS v "
+                                "FROM fred_series WHERE series_id = ? GROUP BY d ORDER BY d",
+                                [_s],
+                            ).fetchdf()
+                            if len(_qdf) > 0:
+                                _qdf["d"] = pd.to_datetime(_qdf["d"])
+                                _frames[_s] = pd.Series(
+                                    _qdf["v"].values,
+                                    index=pd.DatetimeIndex(_qdf["d"].values),
+                                    name=_s,
+                                    dtype=float,
+                                )
+                        except Exception:
+                            pass
+                    if _frames:
+                        _mdf = pd.DataFrame(_frames)
+                        # Derived feature: yield curve spread (DGS10 - DGS2)
+                        if "DGS10" in _mdf.columns and "DGS2" in _mdf.columns:
+                            _mdf["YIELD_CURVE_10_2"] = _mdf["DGS10"] - _mdf["DGS2"]
+                        _mdf = _normalize_macro_index(_mdf).ffill()
+                        # Optionally cache to parquet for future runs
+                        if cache_path and not cache_path.exists():
+                            try:
+                                cache_path.parent.mkdir(parents=True, exist_ok=True)
+                                _mdf.to_parquet(cache_path)
+                            except Exception:
+                                pass
+                        return _mdf
+                finally:
+                    _con.close()
+            except Exception:
+                pass
+
         # 2) API fetch (optional)
         if source not in {"auto", "api"}:
             return None
@@ -732,6 +777,13 @@ def build_features(raw: pd.DataFrame, settings, asset_class: str, build_targets:
         X["month"] = X.index.month
         X["quarter"] = X.index.quarter
         X["day_of_year"] = X.index.dayofyear
+
+    # OP-5: Transfer macro columns (FRED features) to X for all asset classes.
+    # The columns are already shift_bars-shifted during join, so no additional
+    # leakage shift is needed here.
+    _macro_cols = [c for c in df.columns if isinstance(c, str) and c.startswith("macro_")]
+    for _mc in _macro_cols:
+        X[_mc] = df[_mc]
 
     if ac in ("bond",):
         # Bonds often behave differently (rates/macro sensitivity). Keep it minimal and numeric-only.

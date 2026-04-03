@@ -200,3 +200,15 @@ gates:
       regime_sharpe_collapse_ratio: 0.10
       sharpe_oos_over_is_min: 0.35
       regime_stability_skip_low: true
+
+# OP-5: FRED macro features — activated for all research training runs.
+# source: duckdb reads from the local altdat.duckdb (offline, no API key needed).
+# shift_bars: 1 ensures no lookahead (each bar sees yesterday's macro reading).
+# Derived feature YIELD_CURVE_10_2 (DGS10-DGS2) is computed automatically.
+features:
+  macro:
+    enabled: true
+    source: duckdb
+    altdat_duckdb_path: octa/var/altdata/altdat.duckdb
+    series: [FEDFUNDS, DGS10, DGS2, UNRATE]
+    shift_bars: 1

@@ -29,6 +29,20 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `tests/test_p4_live_regime.py`
 
 
+### [2026-04-03 20:21:48] TEST
+**Beschreibung:** Code-Änderungen - 1 Code-Dateien - 1 Test-Dateien - (+199/-0 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 1 Dateien
+  - `octa/core/features/features.py`
+- **TESTS:** 1 Dateien
+  - `tests/test_op5_fred_features.py`
+- **CONFIG:** 3 Dateien
+  - `configs/asset/etf.yaml`
+  - `configs/asset/stock.yaml`
+  - `configs/p03_research.yaml`
+
+
 ## 2026-04-02
 
 
