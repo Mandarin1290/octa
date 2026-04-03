@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
+import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -23,10 +24,12 @@ from .registry import ArtifactRegistry
 from .types import PaperOrderIntent, now_utc_iso, stable_hash
 from octa.core.risk.overlay import apply_overlay
 from octa.core.governance.drift_monitor import evaluate_drift
+from octa.core.regime.live_regime import load_live_regime
 from octa_accounting.nav_engine import NAVEngine
 
 
 _POSITION_STATE_FILE = "position_state.json"
+_log = logging.getLogger("octa.paper_runner")
 
 
 def _position_state_filename(mode: Optional[str] = None) -> str:
@@ -312,6 +315,7 @@ def run_paper(
     max_disk_mb: int = 10000,
     disk_root: str = "artifacts",
     broker_cfg_path: Optional[str] = None,
+    _risk_policy_override: str = "paper",
 ) -> Dict[str, Any]:
     """Load promoted PASS artifacts and place PAPER orders.
 
@@ -542,6 +546,21 @@ def run_paper(
             skipped.append({"symbol": symbol, "timeframe": timeframe, "reason": "drift_check_failed"})
             continue
 
+        # Live-regime check: downweight confidence on regime mismatch.
+        try:
+            live_regime = load_live_regime(symbol)
+            artifact_regime = str(
+                (artifact.get("gate") or {}).get("regime_label") or "mid_vol"
+            ).lower()
+            if live_regime and live_regime != artifact_regime:
+                _log.info(
+                    "[%s] Regime-shift: trained=%s live=%s — confidence × 0.7",
+                    symbol, artifact_regime, live_regime,
+                )
+                pred = pred * 0.7 if isinstance(pred, (int, float)) else pred
+        except Exception:
+            pass
+
         # Risk overlay (fail-closed)
         try:
             regime_state = _regime_state_from_artifact(artifact)
@@ -562,7 +581,7 @@ def run_paper(
             continue
 
         # Risk gate (fail-closed): per-position and portfolio exposure
-        risk = PaperRiskPolicy()
+        risk = LiveRiskPolicy() if _risk_policy_override == "live" else PaperRiskPolicy()
         try:
             max_pos = float(getattr(risk, "max_risk_per_position", 0.005))
             max_port = float(getattr(risk, "max_portfolio_exposure", 0.35))
@@ -711,3 +730,49 @@ def run_paper(
         pass
 
     return {"run_id": run_id, "placed": placed, "skipped": skipped, "promoted_count": len(promoted)}
+
+
+def run_live(
+    *,
+    run_id: str,
+    config_path: str = "configs/p03_research.yaml",
+    registry_root: str = "artifacts",
+    ledger_dir: str = "artifacts/ledger_live",
+    level: str = "live",
+    last_n_rows: int = 300,
+    paper_log_path: Optional[str] = None,
+    max_runtime_s: int = 3600,
+    broker_cfg_path: str = "configs/execution_ibkr.yaml",
+) -> Dict[str, Any]:
+    """Live-trading entry point with tighter risk parameters.
+
+    Differences vs run_paper():
+    - LiveRiskPolicy: 2% position, 20% portfolio, 5bps slippage-warn
+    - Separate ledger: artifacts/ledger_live/
+    - Separate position state: position_state_live.json
+    - min_confidence: 0.60, require_regime_confirm: True
+
+    IMPORTANT: Only for real IBKR live accounts.
+    Requires OCTA_LIVE_TRADING_ENABLED=1 set explicitly.
+    """
+    if not os.environ.get("OCTA_LIVE_TRADING_ENABLED"):
+        raise RuntimeError(
+            "Live-trading blocked: set OCTA_LIVE_TRADING_ENABLED=1 "
+            "explicitly to enable real-money trading"
+        )
+
+    _log.warning("LIVE TRADING STARTED — run_id=%s  REAL MONEY AT RISK", run_id)
+
+    return run_paper(
+        run_id=run_id,
+        config_path=config_path,
+        registry_root=registry_root,
+        ledger_dir=ledger_dir,
+        level=level,
+        live_enable=True,
+        last_n_rows=last_n_rows,
+        paper_log_path=paper_log_path or "artifacts/live_trade_log.ndjson",
+        max_runtime_s=max_runtime_s,
+        broker_cfg_path=broker_cfg_path,
+        _risk_policy_override="live",
+    )
