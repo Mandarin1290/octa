@@ -252,7 +252,7 @@ def smoke_test_artifact(pkl_path: str, raw_dir: str, last_n: int = 50) -> Dict[s
         if bar_size:
             s.timeframe = str(bar_size).upper()
         # keep legacy attribute fallbacks too
-        for k in ('window_short', 'window_med', 'window_long', 'vol_window', 'horizons'):
+        for k in ('window_short', 'window_med', 'window_long', 'vol_window', 'horizons', 'macro'):
             if k in feature_settings:
                 try:
                     setattr(s, k, feature_settings[k])

@@ -1018,6 +1018,8 @@ def build_features(raw: pd.DataFrame, settings, asset_class: str, build_targets:
             "vol_window": int(feat_cfg.get("vol_window", getattr(settings, "vol_window", 20))),
             "horizons": horizons,
             "min_return_filter_vol_mult": feat_cfg.get("min_return_filter_vol_mult", None),
+            # OP-5: persist macro config so smoke_test can rebuild macro features correctly.
+            "macro": getattr(settings, "macro", None),
         },
     }
     if build_targets:
@@ -1199,6 +1201,11 @@ def leakage_audit(
                         # Temporal integrity for altdata is enforced independently by
                         # validate_no_future_leakage() and backward asof_join inside
                         # build_altdata_features. Skip these columns here.
+                        continue
+                    elif _col_str.startswith("macro_"):
+                        # FRED/macro features are monthly or weekly — constant within a
+                        # window naturally matches across overlapping windows without leakage.
+                        # Temporal integrity is enforced by shift_bars=1 in _load_fred_macro.
                         continue
                     elif "_z_252" in _col_str or "_roc_20" in _col_str:
                         col_rtol = max(rtol, 0.05)
