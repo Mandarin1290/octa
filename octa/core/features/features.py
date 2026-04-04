@@ -1192,8 +1192,6 @@ def leakage_audit(
                     logger.debug("Leakage audit: skipping %d macro_/altdat_ columns missing from recomputed set: %s", len(_skippable), sorted(_skippable)[:5])
 
                 for col in X.columns:
-                    a = X.at[t, col]
-                    b = res.X.at[t, col]
                     # tolerant numeric comparison
                     # AltData features (FRED, EDGAR) use cache fallback to nearest
                     # prior date — values change naturally between dates, not leakage.
@@ -1219,6 +1217,8 @@ def leakage_audit(
                         col_rtol = max(rtol, 0.05)
                     else:
                         col_rtol = rtol
+                    a = X.at[t, col]
+                    b = res.X.at[t, col]
                     try:
                         af = float(a)
                         bf = float(b)
