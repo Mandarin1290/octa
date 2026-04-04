@@ -1176,12 +1176,20 @@ def leakage_audit(
                     missing_recomputed_ts.append(t)
                     continue  # skip this t as it's expected for short history
                 # If recomputed feature set differs, treat as an audit failure (can't compare safely).
+                # Exception: macro_ and altdat_ columns are already excluded from the numeric
+                # comparison below (they use caching/asof semantics that naturally differ on
+                # truncated windows). Only fail if non-skipped columns are missing.
                 if not set(X.columns).issubset(set(res.X.columns)):
                     missing_cols = sorted(set(X.columns) - set(res.X.columns))
-                    logger.warning("Leakage audit failed: recomputed feature set missing %d columns (e.g. %s)", len(missing_cols), missing_cols[:5])
-                    report["status"] = "recomputed_feature_mismatch"
-                    report["outside_tolerance_examples"] = [{"missing_columns": missing_cols[:20], "timestamp": str(t)}]
-                    return _done(False)
+                    _skippable = {c for c in missing_cols if str(c).startswith("macro_") or str(c).startswith("altdat_")}
+                    _hard_missing = [c for c in missing_cols if c not in _skippable]
+                    if _hard_missing:
+                        logger.warning("Leakage audit failed: recomputed feature set missing %d columns (e.g. %s)", len(_hard_missing), _hard_missing[:5])
+                        report["status"] = "recomputed_feature_mismatch"
+                        report["outside_tolerance_examples"] = [{"missing_columns": _hard_missing[:20], "timestamp": str(t)}]
+                        return _done(False)
+                    # Only skippable columns missing — log at debug level and continue
+                    logger.debug("Leakage audit: skipping %d macro_/altdat_ columns missing from recomputed set: %s", len(_skippable), sorted(_skippable)[:5])
 
                 for col in X.columns:
                     a = X.at[t, col]
