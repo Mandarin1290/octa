@@ -87,7 +87,7 @@ def run_altdata(
 
 
 def load_altdata_config(path: Optional[str] = None) -> Dict[str, Any]:
-    p = path or str(Path("config") / "altdata.yaml")
+    p = path or os.getenv("OKTA_ALTDATA_REFRESH_CONFIG") or str(Path("config") / "altdata.yaml")
     try:
         raw = Path(p).read_text()
         cfg = yaml.safe_load(raw) or {}

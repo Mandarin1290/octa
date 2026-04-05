@@ -38,8 +38,25 @@ def try_run(
             raw_root = candidate
             break
 
+    config_path = None
+    for attr in ("altdata_config_path", "altdat_config_path"):
+        try:
+            candidate = getattr(settings, attr)
+        except Exception:
+            candidate = None
+        if candidate:
+            config_path = str(candidate)
+            break
+
     try:
-        res = run_altdata(bars_df=bars_df, symbol=symbol, tz=tz, asset_class=asset_class, raw_root=raw_root)
+        res = run_altdata(
+            bars_df=bars_df,
+            symbol=symbol,
+            tz=tz,
+            config_path=config_path,
+            asset_class=asset_class,
+            raw_root=raw_root,
+        )
         f = res.features_df
         # Align with existing feature convention (most core features are shifted by 1 bar).
         try:

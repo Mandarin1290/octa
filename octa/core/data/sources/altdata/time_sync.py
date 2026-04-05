@@ -89,6 +89,13 @@ def asof_join(
     a = alt_df.copy()
     a[on] = pd.to_datetime(a[on], utc=True, errors="coerce")
     a = a.dropna(subset=[on]).sort_values(on)
+    # pandas 2.3+ requires identical datetime resolution for merge_asof.
+    # DuckDB returns datetime64[us]; bar index is typically datetime64[ns].
+    # Normalize alt_df timestamps to match bar resolution before merging.
+    try:
+        a[on] = a[on].dt.as_unit(b_on["bar_ts"].dt.unit)
+    except Exception:
+        pass
 
     merged = pd.merge_asof(
         b_on,

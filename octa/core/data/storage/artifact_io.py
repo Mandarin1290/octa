@@ -258,6 +258,13 @@ def smoke_test_artifact(pkl_path: str, raw_dir: str, last_n: int = 50) -> Dict[s
                     setattr(s, k, feature_settings[k])
                 except Exception:
                     pass
+        # altdata_config_path is not stored in feature_settings — set it explicitly so
+        # the AltData sidecar runs identically to training and produces the same feature set.
+        try:
+            from pathlib import Path as _Path
+            s.altdata_config_path = str(_Path(__file__).resolve().parents[4] / "config" / "altdat.yaml")
+        except Exception:
+            pass
 
         feats = build_features(df, settings=s, asset_class=str(asset_class), build_targets=False)
         X = feats.X

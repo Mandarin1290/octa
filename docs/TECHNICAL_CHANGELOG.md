@@ -3,6 +3,39 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-04-05 22:16:56] FEATURE
+Neue Funktionalität hinzugefügt - 13 Code-Dateien - 4 Test-Dateien - (+1247/-41 Zeilen)
+
+**Statistics:**
+- Files Changed: 19
+- Lines Added: +1247
+- Lines Deleted: -41
+- Net Change: +1206
+
+**File-Level Changes:**
+```
++   19 -    1  config/altdat.yaml
++    1 -    1  octa/core/data/sources/altdata/orchestrator.py
++   18 -    1  octa/core/data/sources/altdata/sidecar.py
++    7 -    0  octa/core/data/sources/altdata/time_sync.py
++    7 -    0  octa/core/data/storage/artifact_io.py
++  113 -   22  octa/core/features/features.py
++    1 -    0  octa/core/features/institutional/__init__.py
++   53 -    0  octa/core/features/institutional/microstructure.py
++   50 -    0  octa/core/features/institutional/multiframe.py
++   46 -    0  octa/core/features/institutional/robustness.py
++   97 -    0  octa/core/features/transforms/feature_builder.py
++   68 -   12  octa_training/core/config.py
++   15 -    2  octa_training/core/pipeline.py
++  201 -    0  octa_training/core/training_policy.py
++  180 -    0  scripts/batch_gate_check_stocks_1d.py
++  112 -    0  tests/test_altdata_training_edgar_cot_bridge.py
++  205 -    0  tests/test_institutional_features.py
++    5 -    2  tests/test_op5_fred_features.py
++   49 -    0  tests/test_runtime_stock_feature_resolver.py
+```
+
+
 ## [2026-04-04 14:23:34] CHANGE
 Code-Änderungen - 1 Code-Dateien - (+2/-2 Zeilen)
 

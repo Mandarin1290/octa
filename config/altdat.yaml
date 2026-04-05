@@ -43,7 +43,25 @@ sources:
     api_key_env: FRED_API_KEY
     series: ["FEDFUNDS", "DGS10", "DGS2", "UNRATE"]
   edgar:
-    enabled: false  # PILOT: disabled (no sec_edgar_downloader)
+    enabled: false
+    forms: ["10-K", "10-Q", "8-K"]
+    user_agent: "OCTA Research (training; offline cache preferred)"
+  cot:
+    enabled: false
+    window_days: 730
+    release_offset_days: 3
+    release_hour_utc: 20
+    targets:
+      - id: es
+        candidates: ["e-mini s&p 500", "s&p 500 e-mini", "s&p 500 stock index"]
+      - id: nq
+        candidates: ["e-mini nasdaq 100", "nasdaq-100", "nasdaq 100"]
+      - id: zn
+        candidates: ["10-year u.s. treasury note", "u.s. treasury notes, 10-yr"]
+      - id: gc
+        candidates: ["gold", "gold - commodity exchange inc."]
+      - id: cl
+        candidates: ["crude oil", "wti crude oil", "crude oil, light sweet"]
   news_events:
     enabled: false  # Reads from cache only (offline_only=true); enable after first refresh
     forms: ["10-K", "10-Q", "8-K"]

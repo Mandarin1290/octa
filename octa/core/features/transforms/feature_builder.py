@@ -23,6 +23,7 @@ from octa.core.data.sources.altdata.time_sync import (
 )
 from octa.core.data.sources.altdata.weights import apply_quality_adjustments, normalize_weights
 from octa.core.data.storage.altdata.storage import StoragePaths, init_duckdb, make_paths, write_meta_json
+from octa.core.features.altdata.flow_features import build as build_cot_flow_features
 from octa.core.features.transforms.filing_features import build_filing_features
 from octa.core.features.transforms.macro_features import build_macro_features
 
@@ -105,6 +106,7 @@ def build_altdata_features(
     }
 
     feat_parts: list[tuple[str, pd.DataFrame]] = []  # (source_name, df)
+    fallback_parts: list[pd.DataFrame] = []
 
     def _duckdb_try_insert(table: str, df: pd.DataFrame) -> None:
         if not ok_db or df is None or df.empty:
@@ -146,6 +148,11 @@ def build_altdata_features(
     def _payload_path(source: str, key_suffix: Optional[str] = None) -> Path:
         key = cache_key(source, asof_date, key_suffix=key_suffix)
         return source_day_dir(source, asof_date, root=storage_root) / f"{key}.json"
+
+    def _neutral_part(columns: list[str]) -> pd.DataFrame:
+        if not columns:
+            return pd.DataFrame(index=bars_df.index)
+        return pd.DataFrame(0.0, index=bars_df.index, columns=columns, dtype=float)
 
     # FRED / Macro
     fred_cfg = sources.get("fred") or {}
@@ -235,6 +242,7 @@ def build_altdata_features(
 
     # EDGAR
     edgar_cfg = sources.get("edgar") or {}
+    edgar_built = False
     if bool(edgar_cfg.get("enabled", False)):
         forms = edgar_cfg.get("forms") or ["10-K", "10-Q", "8-K"]
         try:
@@ -263,6 +271,7 @@ def build_altdata_features(
                     events = filings_to_events(df)
                     ff = build_filing_features(events, ticker=symbol)
                     if not ff.empty:
+                        ff = ff.rename(columns={c: str(c).replace("edgar_", "", 1) for c in ff.columns})
                         ff = ff.reset_index().rename(columns={"index": "ts"})
                         j = asof_join(bars_df=bars_df, alt_df=ff, on="ts", tolerance=tolerance)
                         leak = validate_no_future_leakage(merged_df=j, bar_index=bars_df.index, alt_ts_col="ts", strict=strict)
@@ -275,6 +284,7 @@ def build_altdata_features(
                         j = j.add_prefix("altdat_edgar_")
                         feat_parts.append(("edgar", j))
                         meta["coverage"]["edgar"] = float(j.notna().any(axis=1).mean())
+                        edgar_built = True
         else:
             edgar_res = fetch_edgar_filings(ticker=symbol, forms=forms, start_ts=tw.start_ts, end_ts=tw.end_ts)
             edgar_meta_live: Dict[str, Any] = {
@@ -296,6 +306,7 @@ def build_altdata_features(
                 events = filings_to_events(edgar_res.df)
                 ff = build_filing_features(events, ticker=symbol)
                 if not ff.empty:
+                    ff = ff.rename(columns={c: str(c).replace("edgar_", "", 1) for c in ff.columns})
                     ff = ff.reset_index().rename(columns={"index": "ts"})
                     j = asof_join(bars_df=bars_df, alt_df=ff, on="ts", tolerance=tolerance)
                     leak = validate_no_future_leakage(merged_df=j, bar_index=bars_df.index, alt_ts_col="ts", strict=strict)
@@ -308,6 +319,88 @@ def build_altdata_features(
                     j = j.add_prefix("altdat_edgar_")
                     feat_parts.append(("edgar", j))
                     meta["coverage"]["edgar"] = float(j.notna().any(axis=1).mean())
+                    edgar_built = True
+        if not edgar_built:
+            fallback_parts.append(
+                _neutral_part(
+                    [
+                        "altdat_edgar_10k",
+                        "altdat_edgar_10q",
+                        "altdat_edgar_8k",
+                        "altdat_edgar_event",
+                    ]
+                )
+            )
+
+    # COT
+    cot_cfg = sources.get("cot") or {}
+    cot_built = False
+    if bool(cot_cfg.get("enabled", False)):
+        targets = cot_cfg.get("targets") or []
+
+        def _cot_expected_columns() -> list[str]:
+            cols = ["altdat_cot_risk_score"]
+            for target in targets:
+                if not isinstance(target, dict):
+                    continue
+                market_id = str(target.get("id", "")).strip().lower()
+                if not market_id:
+                    continue
+                cols.extend(
+                    [
+                        f"altdat_cot_net_position_{market_id}",
+                        f"altdat_cot_noncommercial_net_{market_id}",
+                        f"altdat_cot_open_interest_{market_id}",
+                        f"altdat_cot_net_z_{market_id}",
+                        f"altdat_cot_extreme_flag_{market_id}",
+                    ]
+                )
+            return cols
+
+        def _cot_feature_df(payload: Dict[str, Any]) -> pd.DataFrame:
+            rows = payload.get("rows") if isinstance(payload, dict) else []
+            if not rows:
+                return pd.DataFrame()
+            unique_release_ts = sorted({str(r.get("release_ts")) for r in rows if r.get("release_ts")})
+            snapshots: list[dict[str, Any]] = []
+            for release_ts in unique_release_ts:
+                feats = build_cot_flow_features({"cot": {"rows": rows}}, asof_ts=release_ts)
+                if not feats:
+                    continue
+                item = {"ts": pd.to_datetime(release_ts, utc=True, errors="coerce")}
+                item.update(feats)
+                snapshots.append(item)
+            if not snapshots:
+                return pd.DataFrame()
+            return pd.DataFrame(snapshots).dropna(subset=["ts"]).sort_values("ts")
+
+        payload = read_snapshot(source="cot", asof=asof_date, root=storage_root, fallback_nearest=True)
+        if payload is None:
+            meta["sources"]["cot"] = {"ok": False, "error": "missing_cache"}
+            _duckdb_upsert_source("cot", False, "missing_cache")
+        else:
+            payload_path = _payload_path("cot")
+            meta["sources_used"].append("cot")
+            meta["cache_paths"].append(str(payload_path))
+            cot_df = _cot_feature_df(payload if isinstance(payload, dict) else {})
+            meta["sources"]["cot"] = {"ok": not cot_df.empty, "error": None if not cot_df.empty else "missing_cache_rows"}
+            _duckdb_upsert_source("cot", not cot_df.empty, None if not cot_df.empty else "missing_cache_rows")
+            if not cot_df.empty:
+                j = asof_join(bars_df=bars_df, alt_df=cot_df, on="ts", tolerance=tolerance)
+                leak = validate_no_future_leakage(merged_df=j, bar_index=bars_df.index, alt_ts_col="ts", strict=strict)
+                if leak.any():
+                    meta["leakage"]["detected"] = True
+                    meta["leakage"]["rows"] = int(meta["leakage"]["rows"]) + int(leak.sum())
+                    if strict:
+                        cot_cols = [c for c in cot_df.columns if c != "ts"]
+                        j.loc[leak.values, cot_cols] = pd.NA
+                j = j.drop(columns=["ts"], errors="ignore")
+                j = j.add_prefix("altdat_")
+                feat_parts.append(("cot", j))
+                meta["coverage"]["cot"] = float(j.notna().any(axis=1).mean())
+                cot_built = True
+        if not cot_built:
+            fallback_parts.append(_neutral_part(_cot_expected_columns()))
 
     # Weights manifest (explainable)
     enabled_map = {
@@ -316,6 +409,7 @@ def build_altdata_features(
         "news": bool((sources.get("gdelt") or {}).get("enabled", False)),
         "satellite": bool((sources.get("satellite") or {}).get("enabled", False)),
         "market": bool((sources.get("market") or {}).get("enabled", False)),
+        "cot": bool((sources.get("cot") or {}).get("enabled", False)),
     }
     w0 = normalize_weights(weights_base, enabled=enabled_map)
     w1, reasons = apply_quality_adjustments(
@@ -332,6 +426,9 @@ def build_altdata_features(
         feats = feats.reindex(bars_df.index)
     else:
         feats = pd.DataFrame(index=bars_df.index)
+    if fallback_parts:
+        feats = feats.join(pd.concat(fallback_parts, axis=1), how="left")
+        feats = feats.reindex(bars_df.index)
 
     # Persist metadata (best effort)
     run_id = f"altdat_{datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')}_{symbol}_{timeframe}"

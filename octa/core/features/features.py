@@ -5,11 +5,13 @@ import math
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
 import pandas_ta as ta
+import yaml
 
 
 @dataclass
@@ -17,6 +19,82 @@ class FeatureBuildResult:
     X: pd.DataFrame
     y_dict: Dict[str, pd.Series]
     meta: Dict
+
+    @property
+    def columns(self):
+        return self.X.columns
+
+    def __getitem__(self, key):
+        return self.X.__getitem__(key)
+
+
+def _normalize_feature_input(raw: pd.DataFrame, settings: Any, asset_class: str) -> tuple[pd.DataFrame, Any]:
+    df = raw.copy()
+    if not isinstance(df.index, pd.DatetimeIndex):
+        for col in ("timestamp", "datetime", "date", "Date", "Timestamp"):
+            if col in df.columns:
+                df = df.set_index(col)
+                break
+        if not isinstance(df.index, pd.DatetimeIndex):
+            df.index = pd.to_datetime(df.index, errors="coerce")
+    if not isinstance(settings, dict):
+        return df, settings
+
+    resolved = dict(settings or {})
+    resolved = _resolve_dict_feature_settings(resolved, asset_class)
+    out = SimpleNamespace(features=resolved)
+    for key, value in resolved.items():
+        if isinstance(key, str):
+            setattr(out, key, value)
+    return df, out
+
+
+def _expected_macro_columns(macro_cfg: dict) -> list[str]:
+    raw_series = macro_cfg.get("series") or ["FEDFUNDS", "DGS10", "DGS2", "UNRATE"]
+    series = [str(s).strip() for s in raw_series if str(s).strip()]
+    cols = list(series)
+    if "DGS10" in cols and "DGS2" in cols and "YIELD_CURVE_10_2" not in cols:
+        cols.append("YIELD_CURVE_10_2")
+    return cols
+
+
+def _resolve_dict_feature_settings(settings: dict, asset_class: str) -> dict:
+    out = dict(settings or {})
+    ac = str(asset_class or "").strip().lower()
+    aliases = {
+        "equity": "stock",
+        "equities": "stock",
+        "stocks": "stock",
+        "shares": "stock",
+        "forex": "forex",
+        "fx": "forex",
+        "futures": "future",
+        "options": "option",
+        "indices": "index",
+    }
+    ac = aliases.get(ac, ac)
+    if not ac:
+        return out
+    overlay_path = Path(__file__).resolve().parents[3] / "configs" / "asset" / f"{ac}.yaml"
+    if not overlay_path.exists():
+        return out
+    try:
+        raw = yaml.safe_load(overlay_path.read_text(encoding="utf-8")) or {}
+    except Exception:
+        return out
+    overlay = raw.get("features") if isinstance(raw, dict) else None
+    if not isinstance(overlay, dict):
+        return out
+
+    def _merge(dst: dict, src: dict) -> None:
+        for key, value in src.items():
+            if isinstance(dst.get(key), dict) and isinstance(value, dict):
+                _merge(dst[key], value)
+            else:
+                dst[key] = value
+
+    _merge(out, overlay)
+    return out
 
 
 def _safe_rolling(series: pd.Series, window: int, func: str = "mean") -> pd.Series:
@@ -218,7 +296,7 @@ def build_features(raw: pd.DataFrame, settings, asset_class: str, build_targets:
     settings: EffectiveSettings or config-like with attributes:
       nan_threshold, resample_enabled, resample_bar_size, and windows/horizons in cfg.
     """
-    df = raw.copy()
+    df, settings = _normalize_feature_input(raw, settings, asset_class)
     # ensure datetime index
     if not isinstance(df.index, pd.DatetimeIndex):
         raise ValueError("Input dataframe must have a DatetimeIndex")
@@ -415,28 +493,40 @@ def build_features(raw: pd.DataFrame, settings, asset_class: str, build_targets:
         return macro_df
 
     macro_cfg = getattr(settings, "macro", None)
-    if isinstance(macro_cfg, dict):
+    if isinstance(macro_cfg, dict) and bool(macro_cfg.get("enabled", False)):
         macro_df = _load_fred_macro(macro_cfg)
-        if macro_df is not None and not macro_df.empty:
-            try:
-                # Normalize tz alignment
-                if df.index.tz is None and macro_df.index.tz is not None:
-                    macro_df.index = macro_df.index.tz_localize(None)
-                elif df.index.tz is not None and macro_df.index.tz is None:
-                    macro_df.index = macro_df.index.tz_localize(df.index.tz)
+        try:
+            expected_macro_cols = _expected_macro_columns(macro_cfg)
+            macro_degraded = bool(macro_df is None or macro_df.empty)
+            if macro_degraded:
+                macro_df = pd.DataFrame(index=df.index, columns=expected_macro_cols, dtype=float).fillna(0.0)
 
-                # Align daily macro to bar index and forward-fill
-                aligned = macro_df.reindex(df.index, method="ffill")
-                shift_bars = int(macro_cfg.get("shift_bars", 1) or 0)
-                if shift_bars:
-                    aligned = aligned.shift(shift_bars)
+            # Normalize tz alignment
+            if df.index.tz is None and macro_df.index.tz is not None:
+                macro_df.index = macro_df.index.tz_localize(None)
+            elif df.index.tz is not None and macro_df.index.tz is None:
+                macro_df.index = macro_df.index.tz_localize(df.index.tz)
 
-                # Prefix columns to avoid collisions
-                aligned = aligned.rename(columns={c: f"macro_{c}" for c in aligned.columns})
-                df = df.join(aligned, how="left")
-                df = df.ffill()
-            except Exception:
-                pass
+            # Align daily macro to bar index and forward-fill
+            aligned = macro_df.reindex(df.index, method="ffill")
+            shift_bars = int(macro_cfg.get("shift_bars", 1) or 0)
+            if shift_bars:
+                aligned = aligned.shift(shift_bars)
+            aligned = aligned.ffill()
+            for col in expected_macro_cols:
+                if col not in aligned.columns:
+                    aligned[col] = 0.0
+            aligned = aligned[expected_macro_cols].fillna(0.0)
+
+            # Prefix columns to avoid collisions
+            aligned = aligned.rename(columns={c: f"macro_{c}" for c in aligned.columns})
+            df = df.join(aligned, how="left")
+            df = df.ffill()
+            macro_meta = {"enabled": True, "expected_columns": expected_macro_cols, "degraded": macro_degraded}
+        except Exception:
+            macro_meta = {"enabled": True, "expected_columns": _expected_macro_columns(macro_cfg), "degraded": True}
+    else:
+        macro_meta = {"enabled": False}
 
     def _load_market_context(ctx_cfg: dict, timeframe: str) -> pd.DataFrame | None:
         """Load market context series aligned to the asset timeframe.
@@ -1021,6 +1111,7 @@ def build_features(raw: pd.DataFrame, settings, asset_class: str, build_targets:
             # OP-5: persist macro config so smoke_test can rebuild macro features correctly.
             "macro": getattr(settings, "macro", None),
         },
+        "macro_meta": macro_meta,
     }
     if build_targets:
         meta["sample_filter"] = sample_filter_meta

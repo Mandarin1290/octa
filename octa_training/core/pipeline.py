@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 
 from octa_training.core.asset_class import infer_asset_class
+from octa_training.core.config import canonical_training_altdata_config_path, resolve_feature_settings
 from octa_training.core.asset_profiles import (
     AssetProfileMismatchError,
     ensure_canonical_profile_for_dataset,
@@ -705,9 +706,9 @@ def train_evaluate_package(
         except Exception:
             pass
         try:
-            eff_settings.features = cfg.features if isinstance(cfg.features, dict) else {}
+            eff_settings.features = resolve_feature_settings(cfg, asset_class)
         except Exception:
-            eff_settings.features = {}
+            eff_settings.features = cfg.features if isinstance(cfg.features, dict) else {}
         # Optional context for sidecar integrations (no behavioral impact unless used).
         try:
             eff_settings.symbol = symbol
@@ -719,6 +720,10 @@ def train_evaluate_package(
             pass
         try:
             eff_settings.timezone = str(getattr(getattr(cfg, 'session', None), 'timezone', 'UTC') or 'UTC')
+        except Exception:
+            pass
+        try:
+            eff_settings.altdata_config_path = str(canonical_training_altdata_config_path())
         except Exception:
             pass
         # legacy attribute fallbacks
@@ -2129,6 +2134,14 @@ def train_evaluate_package(
         # optionally smoke test performed by caller
         _record_end(bool(result.passed), metrics_obj=metrics, gate_obj=result, pack_res=pack_res)
         return PipelineResult(symbol=symbol, run_id=run_id, passed=result.passed, metrics=metrics, gate_result=result, pack_result=pack_res, altdata=alt_diag)
+    except AssetProfileMismatchError as e:
+        # Profile mismatch is a gate decision (wrong asset class), not a code error.
+        # Return without traceback so cascade_train classifies this as GATE_FAIL, not TRAIN_ERROR.
+        try:
+            state.record_run_end(symbol, run_id, passed=False, metrics_summary=None)
+        except Exception:
+            pass
+        return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error=f"profile_mismatch:{e}", altdata=alt_diag)
     except Exception as e:
         import traceback
         try:

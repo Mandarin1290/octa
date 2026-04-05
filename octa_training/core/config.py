@@ -8,6 +8,71 @@ from typing import Any, Dict, List, Optional
 
 import yaml
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_TRAINING_CONFIG_PATH = Path(__file__).resolve().parents[1] / "config" / "training.yaml"
+DEFAULT_TRAINING_ALTDATA_CONFIG_PATH = PROJECT_ROOT / "config" / "altdat.yaml"
+ASSET_CONFIG_DIR = PROJECT_ROOT / "configs" / "asset"
+
+
+def _deep_merge_dicts(dst: dict, src: dict) -> None:
+    if not isinstance(dst, dict) or not isinstance(src, dict):
+        return
+    for k, v in src.items():
+        if k in dst and isinstance(dst[k], dict) and isinstance(v, dict):
+            _deep_merge_dicts(dst[k], v)
+        else:
+            dst[k] = v
+
+
+def canonical_training_altdata_config_path() -> Path:
+    raw = os.getenv("OKTA_ALTDATA_CONFIG")
+    if raw:
+        return Path(str(raw))
+    return DEFAULT_TRAINING_ALTDATA_CONFIG_PATH
+
+
+def _normalize_asset_class_name(asset_class: Optional[str]) -> str:
+    if not asset_class:
+        return ""
+    value = str(asset_class).strip().lower()
+    aliases = {
+        "equity": "stock",
+        "equities": "stock",
+        "stocks": "stock",
+        "shares": "stock",
+        "forex": "forex",
+        "fx": "forex",
+        "futures": "future",
+        "options": "option",
+        "indices": "index",
+    }
+    return aliases.get(value, value)
+
+
+def load_asset_overlay(asset_class: Optional[str]) -> Dict[str, Any]:
+    ac = _normalize_asset_class_name(asset_class)
+    if not ac:
+        return {}
+    path = ASSET_CONFIG_DIR / f"{ac}.yaml"
+    if not path.exists():
+        return {}
+    try:
+        raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        return raw if isinstance(raw, dict) else {}
+    except Exception:
+        return {}
+
+
+def resolve_feature_settings(cfg_or_features: Any, asset_class: Optional[str] = None) -> Dict[str, Any]:
+    base = getattr(cfg_or_features, "features", cfg_or_features)
+    out = dict(base or {}) if isinstance(base, dict) else {}
+    overlay = load_asset_overlay(asset_class)
+    overlay_features = overlay.get("features") if isinstance(overlay, dict) else None
+    if isinstance(overlay_features, dict):
+        _deep_merge_dicts(out, overlay_features)
+    return out
+
+
 try:
     from pydantic.v1 import BaseModel, Field, validator
 except Exception:  # pragma: no cover
@@ -400,7 +465,7 @@ def load_config(path: Optional[str] = None) -> TrainingConfig:
     if path:
         p = Path(path)
     else:
-        p = Path(__file__).resolve().parents[1] / "config" / "training.yaml"
+        p = DEFAULT_TRAINING_CONFIG_PATH
     if not p.exists():
         raise FileNotFoundError(f"Config file not found: {p}")
     with p.open("r", encoding="utf-8") as fh:
@@ -479,21 +544,12 @@ def load_config(path: Optional[str] = None) -> TrainingConfig:
             # Fail-closed is handled by wrapper; training can proceed without overlay.
             pass
 
-    def _deep_merge(dst: dict, src: dict) -> None:
-        if not isinstance(dst, dict) or not isinstance(src, dict):
-            return
-        for k, v in src.items():
-            if k in dst and isinstance(dst[k], dict) and isinstance(v, dict):
-                _deep_merge(dst[k], v)
-            else:
-                dst[k] = v
-
     merged_raw = dict(hf_raw) if isinstance(hf_raw, dict) else {}
     if isinstance(raw, dict):
-        _deep_merge(merged_raw, raw)
+        _deep_merge_dicts(merged_raw, raw)
 
     def _force_altdata_enabled() -> None:
-        cfg_path = os.getenv("OKTA_ALTDATA_CONFIG") or str(Path("config") / "altdat.yaml")
+        cfg_path = str(canonical_training_altdata_config_path())
         prev_enabled = None
         cfg_file = Path(cfg_path)
         if cfg_file.exists():

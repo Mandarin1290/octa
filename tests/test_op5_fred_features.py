@@ -104,14 +104,17 @@ def test_fred_temporal_consistency() -> None:
 
 
 def test_fred_graceful_degradation_missing_db() -> None:
-    """Missing DuckDB path must return features without macro cols (no crash)."""
+    """Missing DuckDB path must keep deterministic macro columns with neutral fallback."""
     res = build_features(
         _price_df("2022-01-03", "2022-12-30"),
         _settings(_macro_cfg("/nonexistent/path.duckdb")),
         asset_class="stock",
     )
     macro_cols = [c for c in res.X.columns if c.startswith("macro_")]
-    assert macro_cols == [], f"Expected no macro cols with bad path, got {macro_cols}"
+    assert "macro_FEDFUNDS" in macro_cols
+    assert "macro_DGS10" in macro_cols
+    assert "macro_DGS2" in macro_cols
+    assert res.meta.get("macro_meta", {}).get("degraded") is True
 
 
 def test_fred_disabled_macro_produces_no_macro_cols() -> None:
