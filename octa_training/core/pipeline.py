@@ -766,7 +766,7 @@ def train_evaluate_package(
         except Exception:
             pass
 
-        features_res = build_features(df, eff_settings, asset_class)
+        features_res = build_features(df, eff_settings, asset_class, symbol=symbol)
         meta = getattr(features_res, "meta", {}) if hasattr(features_res, "meta") else {}
 
         def _build_altdata_diag() -> Dict[str, Any]:

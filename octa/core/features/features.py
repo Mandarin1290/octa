@@ -290,7 +290,7 @@ def _build_intraday_breakout_features(
         return {}
 
 
-def build_features(raw: pd.DataFrame, settings, asset_class: str, build_targets: bool = True) -> FeatureBuildResult:
+def build_features(raw: pd.DataFrame, settings, asset_class: str, build_targets: bool = True, symbol: str = "") -> FeatureBuildResult:
     """
     Build leakage-safe features from OHLCV raw dataframe.
     settings: EffectiveSettings or config-like with attributes:
@@ -998,6 +998,24 @@ def build_features(raw: pd.DataFrame, settings, asset_class: str, build_targets:
     except Exception:
         pass
 
+    # Value Features (P/E, P/B, P/S, ROE, etc.) from EDGAR fundamentals.
+    # Only for 1D timeframe (fundamentals are quarterly); symbol required.
+    # Fail-safe: never blocks training if EDGAR data is unavailable.
+    _tf_val = str(getattr(settings, "timeframe", "") or "").strip().upper()
+    if symbol and _tf_val in ("", "1D", "4H"):
+        try:
+            _close = df.get("close") if hasattr(df, "get") else None
+            _val_df = build_value_features(
+                df_index=X.index,
+                symbol=symbol,
+                price_series=_close,
+            )
+            if isinstance(_val_df, pd.DataFrame) and not _val_df.empty:
+                _val_df = _val_df.reindex(X.index)
+                X = X.join(_val_df, how="left")
+        except Exception:
+            pass
+
     # Intraday feature isolation: drop daily-native features for sub-daily timeframes.
     # These features use multi-day lookback windows or accumulate over full history;
     # they carry regime/trend information not native to intraday bars and contaminate
@@ -1173,6 +1191,134 @@ def build_features(raw: pd.DataFrame, settings, asset_class: str, build_targets:
     except Exception:
         raise
     return FeatureBuildResult(X=X_clean, y_dict=y_clean, meta=meta)
+
+
+def build_value_features(
+    df_index,
+    symbol: str,
+    price_series=None,
+) -> "pd.DataFrame | None":
+    """
+    Fundamentale Value-Features aus EDGAR XBRL + Marktpreis.
+
+    Alle Features sind leakage-safe: asof-Join auf filed_date (Einreichungsdatum),
+    kein Lookahead. Normalisiert auf [0, 1] via rolling Perzentil.
+
+    Features:
+      value_pe_ratio        — Price / EPS TTM (P/E Ratio)
+      value_pb_ratio        — Price / Book Value per Share
+      value_ps_ratio        — Price / Revenue per Share
+      value_earnings_yield  — EPS TTM / Price
+      value_roe             — Net Income / Equity (Return on Equity)
+      value_profit_margin   — Net Income / Revenue
+      value_pe_percentile   — P/E im rollenden 5-Jahres-Perzentil
+      value_composite       — Kombinierter Value-Score (hoch = günstig)
+
+    Returns None bei fehlendem Symbol / EDGAR-Daten / DuckDB-Fehler.
+    """
+    log = logging.getLogger("octa.features.value")
+    try:
+        import duckdb as _ddb
+
+        _altdat_db = Path(__file__).resolve().parents[4] / "octa" / "var" / "altdata" / "altdat.duckdb"
+        if not _altdat_db.exists():
+            return None
+
+        con = _ddb.connect(str(_altdat_db), read_only=True)
+        try:
+            tables = {t[0] for t in con.execute("SHOW TABLES").fetchall()}
+            if "edgar_fundamentals" not in tables:
+                return None
+
+            def _load(metric: str) -> "pd.Series":
+                df_m = con.execute(
+                    """SELECT filed, value FROM edgar_fundamentals
+                       WHERE symbol = ? AND metric = ?
+                         AND form IN ('10-K', '10-Q')
+                         AND value IS NOT NULL AND value != 0
+                       ORDER BY filed""",
+                    [symbol, metric],
+                ).fetchdf()
+                if df_m.empty:
+                    return pd.Series(dtype=float)
+                df_m["filed"] = pd.to_datetime(df_m["filed"])
+                s = df_m.set_index("filed")["value"].sort_index()
+                return s[~s.index.duplicated(keep="last")]
+
+            eps     = _load("eps_diluted")
+            revenue = _load("revenue")
+            net_inc = _load("net_income")
+            equity  = _load("equity")
+            shares  = _load("shares_outstanding")
+        finally:
+            con.close()
+
+        if eps.empty and revenue.empty:
+            return None
+
+        idx = pd.DatetimeIndex(df_index).normalize()
+
+        def _asof(series: "pd.Series") -> "pd.Series":
+            if series.empty:
+                return pd.Series(np.nan, index=df_index)
+            s = series.dropna().sort_index()
+            vals = [float(s.asof(d)) if d >= s.index[0] else np.nan for d in idx]
+            return pd.Series(vals, index=df_index, dtype=float)
+
+        result = pd.DataFrame(index=df_index)
+
+        eps_ttm    = _asof(eps) * 4        # Quarterly EPS → Trailing-12-Month
+        rev_mapped = _asof(revenue)
+        ni_mapped  = _asof(net_inc)
+        eq_mapped  = _asof(equity)
+        sh_mapped  = _asof(shares)
+
+        rev_ps = rev_mapped / sh_mapped.replace(0, np.nan)
+        bvps   = eq_mapped  / sh_mapped.replace(0, np.nan)
+
+        if price_series is not None:
+            price = price_series.reindex(df_index).ffill()
+            result["value_pe_ratio"]       = (price / eps_ttm.replace(0, np.nan)).clip(0, 200)
+            result["value_pb_ratio"]       = (price / bvps.replace(0, np.nan)).clip(0, 50)
+            result["value_ps_ratio"]       = (price / rev_ps.replace(0, np.nan)).clip(0, 50)
+            result["value_earnings_yield"] = (eps_ttm / price.replace(0, np.nan))
+            # Rolling 5-year percentile — leakage-safe (only past data)
+            result["value_pe_percentile"]  = (
+                result["value_pe_ratio"].rolling(1260, min_periods=252).rank(pct=True)
+            )
+
+        result["value_roe"]           = ni_mapped / eq_mapped.replace(0, np.nan)
+        result["value_profit_margin"] = ni_mapped / rev_mapped.replace(0, np.nan)
+
+        # Composite: low P/E percentile + high earnings yield + high ROE → high score
+        score_parts = []
+        if "value_pe_percentile" in result:
+            score_parts.append(1.0 - result["value_pe_percentile"])
+        if "value_earnings_yield" in result:
+            score_parts.append((result["value_earnings_yield"].clip(0, 0.20) / 0.20))
+        if "value_roe" in result:
+            score_parts.append((result["value_roe"].clip(0, 0.30) / 0.30))
+        if score_parts:
+            result["value_composite"] = pd.concat(score_parts, axis=1).mean(axis=1)
+
+        # Clip extreme outliers, forward-fill, fill remaining NaN with neutral 0.5
+        for col in result.columns:
+            s = result[col]
+            lo, hi = s.quantile(0.01), s.quantile(0.99)
+            if hi > lo:
+                result[col] = s.clip(lo, hi)
+                result[col] = ((result[col] - lo) / (hi - lo)).clip(0.0, 1.0)
+        result = result.ffill().fillna(0.5)
+
+        if result.empty or result.shape[1] == 0:
+            return None
+
+        log.debug("[%s] Value features: %s", symbol, list(result.columns))
+        return result
+
+    except Exception as exc:
+        log.debug("[%s] build_value_features failed: %s", symbol, exc)
+        return None
 
 
 def leakage_audit(

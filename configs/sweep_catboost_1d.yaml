@@ -1,0 +1,57 @@
+mode: DEV
+env: dev
+service_name: octa-foundation-dev
+broker:
+  requires_secret: false
+
+# Universe sweep: CatBoost only — ~5x faster than full 5-model ensemble.
+# Use for gate sweeps where per-symbol pass/fail matters more than ensemble diversity.
+# NOTE: train_models prefers tuning.models_order, so both must be pinned.
+models_order:
+  - catboost
+
+tuning:
+  enabled: false
+  models_order:
+    - catboost
+
+# CatBoost with early stopping — injected via constructor since models.py doesn't
+# pass early_stopping_rounds to .fit(). Without this, CatBoost trains all 1000 trees
+# (~17s/fit). With early_stopping_rounds=30: stops at ~50 trees (~1s/fit = 17x speedup).
+cat_params:
+  loss_function: Logloss
+  iterations: 500
+  early_stopping_rounds: 30
+
+splits_by_timeframe:
+  1D:
+    n_folds: -3
+    train_window: 262
+    test_window: 126
+    step: 126
+    min_train_size: 252
+    min_test_size: 126
+  1H:
+    n_folds: -5
+    train_window: 2880
+    test_window: 960
+    step: 960
+    expanding: false
+  30M:
+    n_folds: -5
+    train_window: 1560
+    test_window: 500
+    step: 500
+    expanding: false
+  5M:
+    n_folds: -5
+    train_window: 6240
+    test_window: 2000
+    step: 2000
+    expanding: false
+  1M:
+    n_folds: -6
+    train_window: 23400
+    test_window: 6500
+    step: 6500
+    expanding: false
