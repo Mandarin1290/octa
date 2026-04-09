@@ -89,6 +89,13 @@ class GateSpec(BaseModel):
     # structurally regime-selective (e.g. REITs, carry trades) where low-vol
     # underperformance is expected and not a signal of model failure.
     regime_stability_skip_low: bool = False
+    # When True: skip pf/dd check for the high-volatility regime and exclude it
+    # from the cross-regime sharpe-collapse calculation.  Use for intraday (1H)
+    # strategies that are regime-selective: they trade low/mid-vol windows
+    # where spread_bps is tight; during VIX-spike high-vol, bid-ask widens 3-5×
+    # and signal quality naturally degrades.  Not a model-quality failure for
+    # research screening — monitor and disable during stress in production.
+    regime_stability_skip_high: bool = False
 
     # Mandatory cost-stress gate
     stress_pf_min: float = 1.05

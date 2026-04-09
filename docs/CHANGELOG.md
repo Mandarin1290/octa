@@ -28,6 +28,21 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `configs/sweep_catboost_1d.yaml`
 
 
+### [2026-04-09 22:13:42] TEST
+**Beschreibung:** Code-Änderungen - 2 Code-Dateien - 1 Test-Dateien - (+358/-4 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 2 Dateien
+  - `octa_training/core/gates.py`
+  - `octa_training/core/institutional_gates.py`
+- **TESTS:** 1 Dateien
+  - `tests/test_institutional_gates_mandatory.py`
+- **CONFIG:** 1 Dateien
+  - `configs/sweep_catboost_1d.yaml`
+- **OTHER:** 1 Dateien
+  - `configs/shadow_trading_v000.json`
+
+
 ## 2026-04-07
 
 

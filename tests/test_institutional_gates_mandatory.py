@@ -229,6 +229,93 @@ def test_regime_skip_low_default_false_unchanged_behaviour() -> None:
     assert out_old.get("reasons") == out_new.get("reasons")
 
 
+# ---------------------------------------------------------------------------
+# regime_stability_skip_high
+# ---------------------------------------------------------------------------
+
+
+def _mk_intraday_backtest(n: int = 1200, seed: int = 99) -> pd.DataFrame:
+    """Build a backtest where high-vol regime is bad (pf<1) but low/mid are strong.
+
+    Simulates a 1H intraday strategy: profitable in calm markets, breaks in VIX spikes.
+    Uses 1200 bars to exceed 1H min_bars_regime=960.
+    """
+    idx = pd.date_range("2020-01-01", periods=n, freq="h", tz="UTC")
+    rng = np.random.default_rng(seed)
+    ret = np.empty(n)
+    strat = np.empty(n)
+    block = n // 3
+    # low-vol block: calm, strong strategy
+    ret[:block] = rng.normal(0.0002, 0.004, size=block)
+    strat[:block] = rng.normal(0.005, 0.005, size=block)
+    # mid-vol block: moderate vol, good strategy
+    ret[block : 2 * block] = rng.normal(0.0003, 0.008, size=block)
+    strat[block : 2 * block] = rng.normal(0.003, 0.006, size=block)
+    # high-vol block: VIX-spike, strategy loses (wide spreads, noise)
+    ret[2 * block :] = rng.normal(0.0005, 0.020, size=n - 2 * block)
+    strat[2 * block :] = rng.normal(-0.002, 0.015, size=n - 2 * block)
+    price = 100.0 * np.exp(np.cumsum(ret))
+    return pd.DataFrame(
+        {"price": price, "ret": ret, "strat_ret": strat, "turnover": np.ones(n)},
+        index=idx,
+    )
+
+
+def test_regime_skip_high_false_fails_high_vol() -> None:
+    """Without skip_high, intraday backtest fails regime gate on high-vol segment."""
+    df = _mk_intraday_backtest()
+    gate = _gate(regime_pf_min=1.0, regime_pf_min_worst=1.0, regime_sharpe_collapse_ratio=0.10)
+    out = evaluate_regime_stability(df, gate, timeframe="1H")
+    assert out["passed"] is False
+    assert any("high" in r or "collapse" in r for r in out.get("reasons", []))
+
+
+def test_regime_skip_high_true_passes_when_low_mid_strong() -> None:
+    """With skip_high=True, intraday backtest passes if low/mid regimes are healthy."""
+    df = _mk_intraday_backtest()
+    gate = _gate(
+        regime_pf_min=1.0,
+        regime_pf_min_worst=1.0,
+        regime_sharpe_collapse_ratio=0.10,
+        regime_stability_skip_high=True,
+    )
+    out = evaluate_regime_stability(df, gate, timeframe="1H")
+    assert out["passed"] is True, f"Expected pass, reasons={out.get('reasons')}"
+
+
+def test_regime_skip_high_still_fails_on_mid_failure() -> None:
+    """skip_high=True must NOT suppress low/mid failures."""
+    df = _mk_intraday_backtest()
+    gate = _gate(
+        regime_pf_min=10.0,  # impossible threshold — mid will fail
+        regime_pf_min_worst=10.0,
+        regime_sharpe_collapse_ratio=0.10,
+        regime_stability_skip_high=True,
+    )
+    out = evaluate_regime_stability(df, gate, timeframe="1H")
+    assert out["passed"] is False
+    assert any("low" in r or "mid" in r for r in out.get("reasons", []))
+
+
+def test_regime_skip_high_meta_flag_present() -> None:
+    """regime_meta must expose the skip_high flag for audit traceability."""
+    df = _mk_intraday_backtest()
+    gate = _gate(regime_stability_skip_high=True)
+    out = evaluate_regime_stability(df, gate, timeframe="1H")
+    assert out["regime_meta"].get("regime_stability_skip_high") is True
+
+
+def test_regime_skip_high_default_false_unchanged_behaviour() -> None:
+    """GateSpec without regime_stability_skip_high behaves exactly as before."""
+    df = _mk_intraday_backtest()
+    gate_old = _gate()
+    gate_new = _gate(regime_stability_skip_high=False)
+    out_old = evaluate_regime_stability(df, gate_old, timeframe="1H")
+    out_new = evaluate_regime_stability(df, gate_new, timeframe="1H")
+    assert out_old["passed"] == out_new["passed"]
+    assert out_old.get("reasons") == out_new.get("reasons")
+
+
 def test_cross_tf_consistency_passes_when_aligned() -> None:
     stages = [
         _stage("1D", cagr=0.12, dd=0.05),
