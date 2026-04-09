@@ -3,6 +3,22 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-04-09 19:19:43] CHANGE
+Code-Änderungen - 1 Code-Dateien - (+54/-0 Zeilen)
+
+**Statistics:**
+- Files Changed: 2
+- Lines Added: +54
+- Lines Deleted: -0
+- Net Change: +54
+
+**File-Level Changes:**
+```
++    7 -    0  configs/sweep_catboost_1d.yaml
++   47 -    0  octa/core/features/features_1h.py
+```
+
+
 ## [2026-04-09 19:01:53] FEATURE
 Neue Funktionalität hinzugefügt - 4 Code-Dateien - (+702/-25 Zeilen)
 

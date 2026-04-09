@@ -18,6 +18,16 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `configs/sweep_catboost_1d.yaml`
 
 
+### [2026-04-09 19:19:43] CHANGE
+**Beschreibung:** Code-Änderungen - 1 Code-Dateien - (+54/-0 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 1 Dateien
+  - `octa/core/features/features_1h.py`
+- **CONFIG:** 1 Dateien
+  - `configs/sweep_catboost_1d.yaml`
+
+
 ## 2026-04-07
 
 

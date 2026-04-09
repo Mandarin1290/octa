@@ -395,6 +395,53 @@ def build_features_1h(
     X["vol_ratio_rv"] = (rv6 / rv12.replace(0, np.nan)).fillna(1.0).clip(0.2, 5.0)
 
     # -------------------------------------------------------------------------
+    # 8c. Long-horizon regime context (multi-session, 65-130H ≈ 10-20 trading days)
+    #
+    # SHORT features (atr_4/14, realized_vol_6/12) detect spikes within a session.
+    # LONG features below detect STRUCTURAL regime shifts across multiple WF folds.
+    # These are the features most likely to improve WF fold consistency by teaching
+    # the model when its own signal quality is structurally different.
+    # -------------------------------------------------------------------------
+
+    # 1. Volatility regime z-score: ATR(14) vs its 65-bar EMA and std-dev.
+    #    z > +1.5 → high-vol regime (signal quality degrades; model should reduce conviction)
+    #    z < -1.0 → low-vol compression (breakout potential; trend features more reliable)
+    #    65H ≈ 10 trading days: sufficient to capture multi-day vol regimes.
+    atr14_ma65 = atr_14.rolling(65, min_periods=20).mean().replace(0, np.nan)
+    atr14_std65 = atr_14.rolling(65, min_periods=20).std().replace(0, 1e-8)
+    X["regime_vol_z"] = ((atr_14 - atr14_ma65) / atr14_std65).fillna(0).clip(-3, 3)
+
+    # 2. ADX percentile over 65 bars: where is current trend strength vs recent history?
+    #    Low percentile → trend weaker than usual → mean-reversion more likely
+    #    High percentile → unusually strong trend → momentum continuation more reliable
+    adx_ser = X["adx_14"]
+    adx_min65 = adx_ser.rolling(65, min_periods=20).min()
+    adx_max65 = adx_ser.rolling(65, min_periods=20).max()
+    adx_range65 = (adx_max65 - adx_min65).replace(0, np.nan)
+    X["adx_pct_65"] = ((adx_ser - adx_min65) / adx_range65).fillna(0.5).clip(0, 1)
+
+    # 3. Momentum acceleration: short-term (6H) minus scaled medium-term (32H) momentum.
+    #    Positive → momentum building (intraday trend strengthening vs multi-day)
+    #    Negative → momentum fading (intraday reverting vs multi-day direction)
+    _ret6 = c.pct_change(6, fill_method=None).fillna(0)
+    _ret32 = c.pct_change(32, fill_method=None).fillna(0)
+    X["mom_accel"] = (_ret6 - _ret32 * (6.0 / 32.0)).clip(-0.10, 0.10)
+
+    # 4. Realized vol trend: is realized vol increasing or decreasing?
+    #    Sign of the 12-bar slope of realized_vol_6.
+    #    Positive → vol expanding (regime shift in progress)
+    #    Negative → vol compressing (regime stabilizing)
+    rv6_ser = X["realized_vol_6"]
+    rv6_change = rv6_ser.diff(12).fillna(0)
+    X["vol_trend_dir"] = np.sign(rv6_change).fillna(0)
+
+    # 5. Range compression ratio: current bar range vs 65-bar baseline.
+    #    < 0.5 → narrow bars (consolidation / regime compression before breakout)
+    #    > 2.0 → wide bars (high event vol; reversal risk)
+    range_ma65 = range_hl.rolling(65, min_periods=20).mean().replace(0, np.nan)
+    X["range_regime_65"] = (range_hl / range_ma65).fillna(1.0).clip(0, 5)
+
+    # -------------------------------------------------------------------------
     # 9. Volume features (only if volume is meaningful)
     # -------------------------------------------------------------------------
     if has_volume:
