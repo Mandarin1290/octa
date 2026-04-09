@@ -709,6 +709,17 @@ def train_evaluate_package(
             eff_settings.features = resolve_feature_settings(cfg, asset_class)
         except Exception:
             eff_settings.features = cfg.features if isinstance(cfg.features, dict) else {}
+        # Apply per-TF feature overrides AFTER asset overlay (highest priority).
+        # cfg.features_by_timeframe = {"1H": {"horizons": [6, 12]}} etc.
+        try:
+            _ftf = getattr(cfg, 'features_by_timeframe', None) or {}
+            if isinstance(_ftf, dict) and _ftf:
+                _tf_key_feat = getattr(eff_settings, 'timeframe', None) or ''
+                _tf_spec = _ftf.get(_tf_key_feat) or _ftf.get(_tf_key_feat.upper()) or {}
+                if _tf_spec and isinstance(eff_settings.features, dict):
+                    eff_settings.features = {**eff_settings.features, **_tf_spec}
+        except Exception:
+            pass
         # Optional context for sidecar integrations (no behavioral impact unless used).
         try:
             eff_settings.symbol = symbol
@@ -896,6 +907,22 @@ def train_evaluate_package(
         cost_bps = getattr(broker, 'cost_bps', None) if broker is not None else None
         spread_bps = getattr(broker, 'spread_bps', None) if broker is not None else None
         stress_mult = getattr(broker, 'stress_cost_multiplier', None) if broker is not None else None
+        # Per-timeframe broker override: e.g. 1H uses tighter limit-order spread vs 1D market orders.
+        # cfg.broker_by_timeframe = {"1H": {"spread_bps": 1.0}, "1D": {"spread_bps": 5.0}}
+        try:
+            _btf = getattr(cfg, 'broker_by_timeframe', None) or {}
+            if isinstance(_btf, dict) and _btf:
+                _cur_tf = str(getattr(eff_settings, 'timeframe', '') or '').upper()
+                _tf_bspec = _btf.get(_cur_tf) or _btf.get(_cur_tf.lower()) or {}
+                if isinstance(_tf_bspec, dict) and _tf_bspec:
+                    if _tf_bspec.get('cost_bps') is not None:
+                        cost_bps = float(_tf_bspec['cost_bps'])
+                    if _tf_bspec.get('spread_bps') is not None:
+                        spread_bps = float(_tf_bspec['spread_bps'])
+                    if _tf_bspec.get('stress_cost_multiplier') is not None:
+                        stress_mult = float(_tf_bspec['stress_cost_multiplier'])
+        except Exception:
+            pass
         es = EvalSettings(
             mode=cfg.signal.mode,
             upper_q=cfg.signal.upper_q,

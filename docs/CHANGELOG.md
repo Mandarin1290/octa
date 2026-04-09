@@ -2,6 +2,22 @@
 
 Automatisch generiert. Alle Änderungen werden hier dokumentiert.
 
+## 2026-04-09
+
+
+### [2026-04-09 19:01:53] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 4 Code-Dateien - (+702/-25 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 4 Dateien
+  - `octa/core/features/features.py`
+  - `octa/core/features/features_1h.py`
+  - `octa_training/core/config.py`
+  - ... und 1 weitere
+- **CONFIG:** 1 Dateien
+  - `configs/sweep_catboost_1d.yaml`
+
+
 ## 2026-04-07
 
 

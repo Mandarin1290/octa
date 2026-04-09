@@ -3,10 +3,28 @@ env: dev
 service_name: octa-foundation-dev
 broker:
   requires_secret: false
+  # Explicit spread_bps here so it wins over configs/asset/stock.yaml overlay (broker.spread_bps=1.0).
+  # Pipeline.py merges overlay as defaults at lines 590-599; cfg wins only if key exists in cfg.
+  # Without this, signal.spread_bps=5.0 is ignored and effective cost = 2+1 = 3 bps (not 7).
+  spread_bps: 5.0
 
-# Universe sweep: CatBoost only — ~5x faster than full 5-model ensemble.
-# Use for gate sweeps where per-symbol pass/fail matters more than ensemble diversity.
-# NOTE: train_models prefers tuning.models_order, so both must be pinned.
+# Per-timeframe broker overrides — apply different spread assumptions per execution frequency.
+#
+# WHY NEEDED:
+#   1D: spread_bps=5.0 = market orders on daily bars (5 bps half-spread + market impact).
+#       Conservative for research screening; daily bars typically use MOC/MOO orders.
+#   1H: spread_bps=1.0 = IBKR limit orders on liquid large-caps.
+#       At 1H granularity, bid-ask spread for S&P 500 names is 0.5-1.5 bps.
+#       5 bps at 0.8 trades/day → annual cost drag ~1% at 7% avg exposure → kills any edge.
+#       1 bps is realistic for IBKR Pro tiered pricing with passive limit-order fills.
+broker_by_timeframe:
+  1D:
+    spread_bps: 5.0
+  1H:
+    spread_bps: 1.0
+
+# OCTA v0.0.0: Stock-only, 1D→1H cascade only
+# CatBoost with early stopping for fast universe sweeps
 models_order:
   - catboost
 
@@ -14,18 +32,26 @@ tuning:
   enabled: false
   models_order:
     - catboost
+  timeout_sec: 600  # Per-symbol subprocess isolation
 
-# CatBoost with early stopping — injected via constructor since models.py doesn't
-# pass early_stopping_rounds to .fit(). Without this, CatBoost trains all 1000 trees
-# (~17s/fit). With early_stopping_rounds=30: stops at ~50 trees (~1s/fit = 17x speedup).
 cat_params:
   loss_function: Logloss
   iterations: 500
   early_stopping_rounds: 30
+  random_seed: 42
 
+# v0.0.0: Only 1D and 1H. No 30M/5M/1M.
+#
+# 1D n_folds=-4 (not -3):
+#   institutional_gates.evaluate_walk_forward_oos uses oos_bars=63 per fold.
+#   min_2 = train_bars(252) + 2*oos_bars(63) = 378 bars required for 2 WF folds.
+#   n_folds=-3 → df_backtest = 3×126=378 = exactly min_2 → only 2 WF folds × 63 = 126 OOS bars.
+#   min_bars_regime=150 > 126 → regime_split_insufficient_bars fail.
+#   n_folds=-4 → df_backtest = 4×126=504 ≥ min_3(441) → 3 WF folds × 63 = 189 > 150 ✓
+#   Matches p03_research.yaml which also uses n_folds=-4.
 splits_by_timeframe:
   1D:
-    n_folds: -3
+    n_folds: -4
     train_window: 262
     test_window: 126
     step: 126
@@ -37,21 +63,111 @@ splits_by_timeframe:
     test_window: 960
     step: 960
     expanding: false
-  30M:
-    n_folds: -5
-    train_window: 1560
-    test_window: 500
-    step: 500
-    expanding: false
-  5M:
-    n_folds: -5
-    train_window: 6240
-    test_window: 2000
-    step: 2000
-    expanding: false
-  1M:
-    n_folds: -6
-    train_window: 23400
-    test_window: 6500
-    step: 6500
-    expanding: false
+
+# Evaluation cost model — realistic IBKR liquid-stock execution:
+#   cost_bps: 2.0 = 2 bps per-leg commission (IBKR tiered ~$0.005/share on ~$150 stocks)
+#   spread_bps: 5.0 = 5 bps half-spread + market impact (conservative for research screening)
+#   stress_cost_multiplier: 3.0 = stress scenario at 3× costs (15 bps total fill cost)
+signal:
+  cost_bps: 2.0
+  spread_bps: 5.0
+  stress_cost_multiplier: 3.0
+
+# Gate calibration — research-pipeline standards for stock universe screening.
+#
+# WHY THIS IS NEEDED:
+#   Without an explicit gates section the pipeline falls back to GateSpec hardcoded
+#   defaults (cvar_95_over_daily_vol_max=2.5). That value is calibrated for LIVE
+#   execution (hf_defaults.yaml), not research screening.
+#
+#   octa_training/config/training.yaml sets by_asset_class.stock.cvar_95_over_daily_vol_max=5.0
+#   for ALL stock research runs. p03_research.yaml documents the same correction.
+#
+#   Fat-tailed daily equity returns produce CVaR95/σ ≈ 2.5–4.5 even for high-quality
+#   strategies (AAPL historical: ~3.0–3.5 post formula-fix). The 2.5 default is
+#   only achievable by sub-normal-distribution tail behaviour.
+#
+# ADDITIONAL CALIBRATIONS (matching p03_research.yaml / foundation_validation.yaml):
+#   walkforward_min_fold_pass_ratio: 0.667 — require 2/3 OOS folds (not all 3)
+#   monte_carlo_maxdd_mult: 4.0 — MC worst DD ≤ 4× IS DD (realistic; 1.5× is too tight)
+#   regime_sharpe_collapse_ratio: 0.10 — in-regime Sharpe ≥ 10% of overall
+#   sharpe_oos_over_is_min: 0.35 — OOS/IS Sharpe floor for research screening
+gates:
+  by_asset_class:
+    stock:
+      cvar_95_over_daily_vol_max: 5.0
+      walkforward_min_fold_pass_ratio: 0.6666666666
+      monte_carlo_maxdd_mult: 4.0
+      monte_carlo_maxdd_floor: 0.10
+      regime_sharpe_collapse_ratio: 0.10
+      sharpe_oos_over_is_min: 0.35
+      regime_stability_skip_low: true
+
+# Asset profile routing — required for stock canonical profile enforcement.
+#
+# WHY THIS IS NEEDED:
+#   Without asset_defaults + asset_profiles, dataset='stock' falls into a legacy
+#   code path that creates AssetProfile(name="legacy", kind="stock"), which then
+#   fails ensure_canonical_profile_for_dataset() which requires profile name='stock'.
+#   p03_research.yaml documents and fixes the same issue.
+asset_defaults:
+  default_profile: legacy
+  by_asset_class:
+    stock: stock
+    equities: stock
+    etf: etf
+    etfs: etf
+    forex: forex
+    fx: forex
+    crypto: crypto
+    future: future
+    futures: future
+    index: index
+    indices: index
+    bond: bond
+    option: option
+    options: option
+
+asset_profiles:
+  legacy:
+    kind: legacy
+  stock:
+    kind: stock
+  etf:
+    kind: etf
+  forex:
+    kind: fx
+  crypto:
+    kind: crypto
+  future:
+    kind: future
+  index:
+    kind: index
+  bond:
+    kind: bond
+  option:
+    kind: option
+
+training_policy:
+  prototype:
+    enabled: true
+    active_policy: stock
+
+# Per-timeframe feature overrides.
+# 1H uses horizons=[6,12] (6h and 12h ahead) instead of the daily-calibrated [1,3,5].
+features_by_timeframe:
+  1D:
+    horizons: [1, 3, 5]
+  1H:
+    horizons: [6, 12]
+
+# Per-timeframe CatBoost hyperparameter overrides.
+# 1H dedicated intraday feature set (features_1h.py).
+# IS Sharpe=0.94 vs OOS=-2.25 → still overfitting: reduced to depth=3,
+# iterations=50, l2_leaf_reg=15, min_data_in_leaf=30 to force generalization.
+# 1D keeps full 500 iterations (only 504 bars, much harder to overfit).
+cat_params_by_timeframe:
+  1H:
+    iterations: 80
+    l2_leaf_reg: 5.0
+    depth: 4

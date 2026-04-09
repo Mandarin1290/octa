@@ -359,6 +359,16 @@ class TrainingConfig(BaseModel):
     # Per-timeframe split overrides — each entry merges on top of `splits` for that TF only.
     # Keys are canonical timeframe strings (e.g. "1D", "1H", "30M", "5M", "1M").
     splits_by_timeframe: Dict[str, Any] = Field(default_factory=dict)
+    # Per-timeframe feature overrides — each entry merges on top of `features` for that TF only.
+    # Example: {"1H": {"horizons": [6, 12]}} to use longer horizons for intraday training.
+    features_by_timeframe: Dict[str, Any] = Field(default_factory=dict)
+    # Per-timeframe cat_params overrides — merged on top of cat_params for that TF only.
+    # Example: {"1H": {"iterations": 100}} to reduce overfitting on large intraday datasets.
+    cat_params_by_timeframe: Dict[str, Any] = Field(default_factory=dict)
+    # Per-timeframe broker/cost overrides — apply different cost assumptions per TF.
+    # Example: {"1D": {"spread_bps": 5.0}, "1H": {"spread_bps": 1.0}}
+    # 1D uses market orders (5 bps half-spread). 1H uses limit orders (1 bps for large-caps).
+    broker_by_timeframe: Dict[str, Any] = Field(default_factory=dict)
     # Optional cascade timeframe order override. If set, replaces DEFAULT_TIMEFRAMES
     # for this training run. Must be an ordered list of known TF strings.
     # If None (default), the standard 5-TF cascade (1D→1H→30M→5M→1M) is used.

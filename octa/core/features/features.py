@@ -296,6 +296,12 @@ def build_features(raw: pd.DataFrame, settings, asset_class: str, build_targets:
     settings: EffectiveSettings or config-like with attributes:
       nan_threshold, resample_enabled, resample_bar_size, and windows/horizons in cfg.
     """
+    # Route 1H to dedicated intraday feature builder (session structure, multi-day momentum).
+    _tf_route = str(getattr(settings, "timeframe", "") or "").strip().upper()
+    if _tf_route == "1H":
+        from octa.core.features.features_1h import build_features_1h  # noqa: PLC0415
+        return build_features_1h(raw, settings, asset_class, build_targets, symbol)
+
     df, settings = _normalize_feature_input(raw, settings, asset_class)
     # ensure datetime index
     if not isinstance(df.index, pd.DatetimeIndex):
