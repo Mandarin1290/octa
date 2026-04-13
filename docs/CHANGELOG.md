@@ -2,6 +2,32 @@
 
 Automatisch generiert. Alle Änderungen werden hier dokumentiert.
 
+## 2026-04-13
+
+
+### [2026-04-13 19:38:07] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 9 Code-Dateien - 5 Test-Dateien - (+2988/-42 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 9 Dateien
+  - `octa/core/data/sources/altdata/fred.py`
+  - `octa/core/governance/governance_audit.py`
+  - `octa/support/ops/run_full_cascade_training_from_parquets.py`
+  - ... und 6 weitere
+- **TESTS:** 5 Dateien
+  - `tests/test_b1_exclusion_records.py`
+  - `tests/test_ensemble_manifest.py`
+  - `tests/test_prescreening.py`
+  - ... und 2 weitere
+- **CONFIG:** 2 Dateien
+  - `config/altdat.yaml`
+  - `configs/sweep_catboost_1d.yaml`
+- **SCRIPTS:** 1 Dateien
+  - `scripts/run_shadow_execution.py`
+- **OTHER:** 1 Dateien
+  - `retrain_monitor.sh`
+
+
 ## 2026-04-09
 
 

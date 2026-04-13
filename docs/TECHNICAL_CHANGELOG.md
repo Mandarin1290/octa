@@ -3,6 +3,38 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-04-13 19:38:07] FEATURE
+Neue Funktionalität hinzugefügt - 9 Code-Dateien - 5 Test-Dateien - (+2988/-42 Zeilen)
+
+**Statistics:**
+- Files Changed: 18
+- Lines Added: +2988
+- Lines Deleted: -42
+- Net Change: +2946
+
+**File-Level Changes:**
+```
++   33 -    1  config/altdat.yaml
++  117 -    0  configs/sweep_catboost_1d.yaml
++   12 -    2  octa/core/data/sources/altdata/fred.py
++   18 -    0  octa/core/governance/governance_audit.py
++  142 -    8  octa/support/ops/run_full_cascade_training_from_parquets.py
++  302 -   16  octa_ops/autopilot/cascade_train.py
++   77 -    0  octa_training/core/config.py
++  500 -    4  octa_training/core/pipeline.py
++  282 -    0  octa_training/core/prescreening.py
++  202 -    0  octa_training/core/regime_detector.py
++  171 -    0  octa_training/core/regime_labels.py
++  111 -    0  retrain_monitor.sh
++  216 -   11  scripts/run_shadow_execution.py
++  217 -    0  tests/test_b1_exclusion_records.py
++  118 -    0  tests/test_ensemble_manifest.py
++  163 -    0  tests/test_prescreening.py
++  123 -    0  tests/test_regime_detector.py
++  184 -    0  tests/test_regime_labels.py
+```
+
+
 ## [2026-04-09 22:13:42] TEST
 Code-Änderungen - 2 Code-Dateien - 1 Test-Dateien - (+358/-4 Zeilen)
 

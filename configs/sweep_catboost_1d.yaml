@@ -25,6 +25,16 @@ broker_by_timeframe:
 
 # OCTA v0.0.0: Stock-only, 1D→1H cascade only
 # CatBoost with early stopping for fast universe sweeps
+
+# Prototype scope — enforced by cascade_train.py scope guards at runtime.
+# Any cascade_order that includes TFs outside this list raises SCOPE_VIOLATION_TF.
+# Any symbol whose asset_class is not in this list is SKIPped with SCOPE_VIOLATION_ASSET_CLASS.
+# Emergency override (diagnostics only): set OCTA_SCOPE_OVERRIDE=1 in environment.
+# Note: asset_classes values are matched case-insensitively ("Stock" == "stock").
+scope:
+  timeframes: [1D, 1H]
+  asset_classes: [Stock]
+
 models_order:
   - catboost
 
@@ -201,3 +211,110 @@ cat_params_by_timeframe:
     iterations: 80
     l2_leaf_reg: 5.0
     depth: 4
+
+# Crisis hold-out OOS gate — enforced by pipeline.py crisis_oos_gate() at runtime.
+#
+# WHY NEEDED:
+#   Current OOS window (n_folds=-4 → 2024-2026) excludes ALL historical crises.
+#   A model that passes WF-OOS on calm 2024-2026 data may collapse in the next
+#   drawdown regime (GFC-type -50%, COVID -35%, 2022 rate-hike -25%).
+#   The gate retrains the model on ALL data EXCEPT the crisis window (so the
+#   model genuinely has no knowledge of that period), then evaluates on crisis only.
+#
+# GATE SEMANTICS:
+#   PASSED  → sharpe >= min_sharpe AND max_drawdown <= max_drawdown_pct
+#   FAILED  → thresholds not met; cascade_train receives GATE_FAIL for that TF
+#   SKIPPED → crisis dates not in the available data (e.g. GFC before 2015 parquets)
+#             SKIPPED windows do NOT fail the gate.
+#
+# ACTIVATION:
+#   Requires `crisis_oos: Optional[Dict]` field on TrainingConfig (config.py).
+#   Until that field is added, this block is read-only documentation.
+#   Set enabled: false to disable without removing the config.
+#
+# THRESHOLDS (research-screening):
+#   min_sharpe: 0.0   → strategy must be net-positive in crisis (not losing money)
+#   max_drawdown_pct: 0.40 → max 40% drawdown during crisis acceptable
+#   These are intentionally lenient: crisis periods are stress tests, not production.
+crisis_oos:
+  enabled: true
+  min_sharpe: 0.0
+  max_drawdown_pct: 0.40
+  min_test_rows: 20
+  min_train_rows: 252
+  windows:
+    - {name: gfc,            start: "2008-09-01", end: "2009-03-31"}
+    - {name: covid,          start: "2020-02-01", end: "2020-05-31"}
+    - {name: rate_hike_2022, start: "2022-01-01", end: "2022-12-31"}
+
+# ---------------------------------------------------------------------------
+# v0.1.0 Regime-Ensemble (OCTA architecture upgrade)
+#
+# Trains one CatBoost submodel per market regime (bull/bear/crisis) using
+# regime-filtered subsets of the full training history.
+#
+# REGIME DETECTION (rule-based, deterministic):
+#   rolling_return_20d = 20-day cumulative return
+#   rolling_vol_20d    = 20-day rolling volatility
+#   vol_252d_baseline  = trailing 252-day vol baseline (no look-ahead)
+#
+#   CRISIS   : return < -0.15 AND vol > 2.0 × baseline  (highest priority)
+#   BEAR     : return < -0.05 AND vol > 1.3 × baseline
+#   BULL     : return > +0.05
+#   NEUTRAL  : else
+#
+# GATE: ensemble passes iff ≥ min_regimes_trained submodels complete successfully.
+#       A regime is excluded (not failed) if it has fewer than min_rows[regime] bars.
+#
+# SHADOW EXECUTION: RegimeDetector is restored from <SYM>_<TF>_regime.pkl.
+#   Active submodel is selected by the dominant regime in the last 20 bars.
+#   Fallback order: crisis → bear → bull → neutral.
+#
+# Set enabled: false to run v0.0.0 single-model cascade without regime splitting.
+# ---------------------------------------------------------------------------
+regime_ensemble:
+  enabled: true
+  regimes:
+    - bull
+    - bear
+    - crisis
+  min_rows:
+    bull: 252
+    bear: 126
+    crisis: 63
+  min_regimes_trained: 2
+  fallback_order:
+    - crisis
+    - bear
+    - bull
+    - neutral
+
+# ---------------------------------------------------------------------------
+# v0.1.0 Pre-Screening
+#
+# Eliminates symbols that structurally cannot pass training gates before the
+# expensive ~20s/symbol training loop.  Applied AFTER universe discovery,
+# BEFORE the training loop.  Only the 1D parquet is loaded per symbol.
+#
+# Filters (fail-fast, in order):
+#   F4 Warrant/rights suffix → PRESCREENED_OUT warrant_or_rights
+#   F1 Minimum history       → PRESCREENED_OUT insufficient_history
+#   F2 Minimum price         → PRESCREENED_OUT price_too_low
+#   F3 Minimum volume (20d)  → PRESCREENED_OUT volume_too_low
+#   F5 Regime diversity      → PRESCREENED_OUT insufficient_regime_diversity
+#
+# Disabled by default (set enabled: true to activate on next retrain).
+# Does NOT affect the currently running retrain.
+# ---------------------------------------------------------------------------
+prescreening:
+  enabled: true
+  min_history_bars: 504
+  min_price: 1.0
+  min_volume_20d: 100000
+  warrant_suffixes:
+    - W
+    - R
+    - WS
+    - WSA
+    - WSB
+    - WT

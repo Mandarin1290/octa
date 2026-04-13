@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
 import os
 import json
 
@@ -31,7 +31,7 @@ from octa_training.core.models import train_models
 from octa_training.core.notify import send_telegram
 from octa_training.core.packaging import save_tradeable_artifact
 from octa_training.core.robustness import run_all_tests, run_risk_overlay_tests
-from octa_training.core.splits import walk_forward_splits
+from octa_training.core.splits import SplitFold, walk_forward_splits
 from octa.core.data.quality.series_validator import validate_price_series
 
 
@@ -45,6 +45,31 @@ class PipelineResult:
     pack_result: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
     altdata: Optional[Dict[str, Any]] = None
+
+
+@dataclass
+class RegimeEnsemble:
+    """Result of train_regime_ensemble() for one symbol/TF.
+
+    Attributes
+    ----------
+    symbol : ticker symbol
+    timeframe : '1D', '1H', etc.
+    run_id : run identifier
+    submodels : dict mapping regime name → PipelineResult for that submodel
+    regimes_trained : number of regimes that passed their training gate
+    passed : True iff regimes_trained >= min_regimes_trained (default 2)
+    detector_path : path where RegimeDetector was persisted (.pkl)
+    error : error message if ensemble failed to build
+    """
+    symbol: str
+    timeframe: str
+    run_id: str
+    submodels: Dict[str, "PipelineResult"]
+    regimes_trained: int
+    passed: bool
+    detector_path: Optional[str] = None
+    error: Optional[str] = None
 
 
 def _normalize_asset_class(label: Optional[str]) -> str:
@@ -124,6 +149,227 @@ def _merge_gate_specs_strict(global_spec: dict, asset_spec: dict) -> dict:
             out[k] = gv
 
     return out
+
+
+def _emit_crisis_gov_event(
+    gov_audit: Optional[Any],
+    status: str,
+    symbol: str,
+    tf: str,
+    window_name: str,
+    **payload: Any,
+) -> None:
+    """Emit a CRISIS_OOS_* governance event (fail-soft — never raises)."""
+    if gov_audit is None:
+        return
+    try:
+        from octa.core.governance.governance_audit import (
+            EVENT_CRISIS_OOS_FAILED,
+            EVENT_CRISIS_OOS_PASSED,
+            EVENT_CRISIS_OOS_SKIPPED,
+        )
+        _evt_map = {
+            "PASSED": EVENT_CRISIS_OOS_PASSED,
+            "FAILED": EVENT_CRISIS_OOS_FAILED,
+            "SKIPPED": EVENT_CRISIS_OOS_SKIPPED,
+        }
+        evt = _evt_map.get(status)
+        if evt:
+            gov_audit.emit(evt, {"symbol": symbol, "tf": tf, "window": window_name, **payload})
+    except Exception:
+        pass
+
+
+def crisis_oos_gate(
+    X: pd.DataFrame,
+    y_dict: Dict[str, Any],
+    close_prices: pd.Series,
+    cfg: Any,
+    profile: Any,
+    eval_settings: Any,
+    crisis_windows: List[Dict[str, Any]],
+    thresholds: Dict[str, Any],
+    symbol: str = "",
+    tf: str = "",
+    gov_audit: Optional[Any] = None,
+) -> Tuple[bool, List[Dict[str, Any]]]:
+    """Crisis hold-out OOS gate.
+
+    For each window in *crisis_windows*:
+
+    1. Convert the window's date range to integer positions in ``X.index``.
+    2. Build a :class:`SplitFold` where ``train_idx`` = everything **outside**
+       the crisis and ``val_idx`` = everything **inside** the crisis.
+    3. Retrain a fresh model via :func:`train_models` — the model has no
+       knowledge of the crisis period.
+    4. Evaluate OOF predictions (on the crisis val set) with
+       :func:`compute_equity_and_metrics`.
+    5. Gate: ``sharpe >= thresholds["min_sharpe"]`` AND
+       ``|max_drawdown| <= thresholds["max_drawdown_pct"]``.
+
+    Windows where the crisis dates are absent from the data (or data is
+    insufficient) receive status ``SKIPPED`` and do **not** fail the gate.
+
+    Parameters
+    ----------
+    X : feature DataFrame (DatetimeIndex aligned with close_prices)
+    y_dict : label dict (same as passed to train_models in the main pipeline)
+    close_prices : ``df["close"]`` series
+    cfg : training config object
+    profile : device profile (from detect_device())
+    eval_settings : EvalSettings instance
+    crisis_windows : list of dicts with keys ``name``, ``start``, ``end``
+    thresholds : dict with ``min_sharpe``, ``max_drawdown_pct``,
+        ``min_test_rows``, ``min_train_rows``
+    symbol : symbol name for logging / audit
+    tf : timeframe string for logging / audit
+    gov_audit : optional GovernanceAudit instance; events emitted if provided
+
+    Returns
+    -------
+    (passed, window_results)
+    *passed* is ``True`` when every **evaluated** (non-SKIPPED) window passes.
+    *window_results* is a list of per-window dicts with keys:
+    ``name``, ``status``, ``sharpe``, ``max_drawdown``, ``note``.
+    """
+    # Use module-level names so tests can monkeypatch them via the pipeline module.
+    # train_models and compute_equity_and_metrics are imported at the top of this module.
+    # SplitFold is imported from splits at the top of this module.
+
+    min_sharpe = float(thresholds.get("min_sharpe", 0.0))
+    max_dd = float(thresholds.get("max_drawdown_pct", 0.40))
+    min_test_rows = int(thresholds.get("min_test_rows", 20))
+    min_train_rows = int(thresholds.get("min_train_rows", 252))
+
+    X_index = X.index
+    window_results: List[Dict[str, Any]] = []
+    all_passed = True
+
+    for w in crisis_windows:
+        name = str(w.get("name", "unnamed"))
+        try:
+            start = pd.Timestamp(w["start"])
+            end = pd.Timestamp(w["end"])
+        except (KeyError, ValueError, TypeError):
+            window_results.append({"name": name, "status": "SKIPPED", "sharpe": None, "max_drawdown": None, "note": "invalid_window_spec"})
+            _emit_crisis_gov_event(gov_audit, "SKIPPED", symbol, tf, name, note="invalid_window_spec")
+            continue
+
+        # Tz-align start/end to match X_index timezone.
+        if isinstance(X_index, pd.DatetimeIndex) and X_index.tz is not None:
+            if start.tzinfo is None:
+                start = start.tz_localize(X_index.tz)
+            if end.tzinfo is None:
+                end = end.tz_localize(X_index.tz)
+
+        # Convert date window to integer positions within X.
+        test_mask = (X_index >= start) & (X_index <= end)
+        train_mask = ~test_mask
+        test_positions = np.where(test_mask)[0]
+        train_positions = np.where(train_mask)[0]
+
+        if len(test_positions) < min_test_rows or len(train_positions) < min_train_rows:
+            note = f"insufficient_data:test={len(test_positions)},train={len(train_positions)}"
+            window_results.append({"name": name, "status": "SKIPPED", "sharpe": None, "max_drawdown": None, "note": note})
+            _emit_crisis_gov_event(gov_audit, "SKIPPED", symbol, tf, name, note=note)
+            continue
+
+        fold = SplitFold(
+            train_idx=train_positions,
+            val_idx=test_positions,
+            fold_meta={"crisis_window": name, "crisis_start": str(start), "crisis_end": str(end)},
+        )
+
+        # Retrain on all-but-crisis data; evaluate on crisis period (val_idx).
+        try:
+            crisis_results = train_models(
+                X,
+                y_dict,
+                [fold],
+                cfg,
+                profile,
+                fast=False,
+                prices=close_prices,
+                eval_settings=eval_settings,
+            )
+        except Exception as exc:
+            note = f"train_error:{exc}"
+            window_results.append({"name": name, "status": "SKIPPED", "sharpe": None, "max_drawdown": None, "note": note})
+            _emit_crisis_gov_event(gov_audit, "SKIPPED", symbol, tf, name, note=note)
+            continue
+
+        if not crisis_results:
+            note = "no_train_results"
+            window_results.append({"name": name, "status": "SKIPPED", "sharpe": None, "max_drawdown": None, "note": note})
+            _emit_crisis_gov_event(gov_audit, "SKIPPED", symbol, tf, name, note=note)
+            continue
+
+        best = crisis_results[0]
+
+        # Extract OOF predictions (cover the crisis val period).
+        try:
+            oof = getattr(best, "oof_predictions", None) or {}
+            oof_idx_raw = oof.get("index", [])
+            oof_vals = oof.get("pred", [])
+            if not oof_idx_raw or not oof_vals:
+                raise ValueError("empty_oof_predictions")
+            try:
+                preds_index = pd.to_datetime(pd.Index(oof_idx_raw), utc=True, errors="coerce")
+                if preds_index.isna().all():
+                    preds_index = pd.Index(oof_idx_raw)
+                else:
+                    # Align tz to match close_prices so compute_equity_and_metrics can join them.
+                    close_tz = getattr(close_prices.index, "tz", None)
+                    if close_tz is None and hasattr(preds_index, "tz") and preds_index.tz is not None:
+                        # Strip tz from tz-aware preds index to match tz-naive close.
+                        preds_index = preds_index.tz_convert(None)
+                    elif close_tz is not None and hasattr(preds_index, "tz") and preds_index.tz is None:
+                        preds_index = preds_index.tz_localize(close_tz)
+            except Exception:
+                preds_index = pd.Index(oof_idx_raw)
+            preds = pd.Series(oof_vals, index=preds_index)
+        except Exception as exc:
+            note = f"oof_error:{exc}"
+            window_results.append({"name": name, "status": "SKIPPED", "sharpe": None, "max_drawdown": None, "note": note})
+            _emit_crisis_gov_event(gov_audit, "SKIPPED", symbol, tf, name, note=note)
+            continue
+
+        # Evaluate strategy metrics on the crisis-period close prices.
+        try:
+            crisis_close = close_prices.iloc[test_positions]
+            out = compute_equity_and_metrics(crisis_close, preds, eval_settings)
+            m = out.get("metrics")
+            if m is None:
+                raise ValueError("no_metrics_returned")
+            sharpe = float(getattr(m, "sharpe", None) or 0.0)
+            max_drawdown = abs(float(getattr(m, "max_drawdown", None) or 1.0))
+        except Exception as exc:
+            note = f"eval_error:{exc}"
+            window_results.append({"name": name, "status": "SKIPPED", "sharpe": None, "max_drawdown": None, "note": note})
+            _emit_crisis_gov_event(gov_audit, "SKIPPED", symbol, tf, name, note=note)
+            continue
+
+        passed_window = (sharpe >= min_sharpe) and (max_drawdown <= max_dd)
+        status = "PASSED" if passed_window else "FAILED"
+        if not passed_window:
+            all_passed = False
+
+        note = f"sharpe={sharpe:.3f} max_dd={max_drawdown:.3f}"
+        window_results.append({
+            "name": name,
+            "status": status,
+            "sharpe": round(sharpe, 4),
+            "max_drawdown": round(max_drawdown, 4),
+            "note": note,
+        })
+        _emit_crisis_gov_event(
+            gov_audit, status, symbol, tf, name,
+            sharpe=sharpe,
+            max_drawdown=max_drawdown,
+            thresholds={"min_sharpe": min_sharpe, "max_drawdown_pct": max_dd},
+        )
+
+    return all_passed, window_results
 
 
 def train_evaluate_package(
@@ -1198,6 +1444,14 @@ def train_evaluate_package(
             )
             return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error=None, metrics=None, gate_result=gr, altdata=alt_diag)
         profile = detect_device()
+        # Explicit empty-matrix guard — prevents silent no_models return that hides the cause.
+        if features_res.X is None or len(features_res.X) == 0:
+            if logger:
+                logger.error(
+                    "Training failed for %s: feature matrix is empty (FEATURE_MATRIX_EMPTY)", symbol
+                )
+            _record_end(False, metrics_obj=None, gate_obj=None)
+            return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error='FEATURE_MATRIX_EMPTY', altdata=alt_diag)
         # use fast=True during evaluation to avoid long/hanging native trainings
         train_results = train_models(
             features_res.X,
@@ -2038,6 +2292,51 @@ def train_evaluate_package(
             except Exception:
                 pass
             _finalize_pass_status()
+        # Crisis hold-out OOS gate.
+        # Fires when cfg.crisis_oos is a CrisisOosConfig with enabled=True and ≥1 window.
+        # cfg is typed Any (callers may pass SimpleNamespace in tests) so use getattr
+        # defensively; the whole block is non-fatal and wrapped in try/except.
+        if result.passed:
+            try:
+                _crisis_cfg = getattr(cfg, "crisis_oos", None)
+                if _crisis_cfg is not None and _crisis_cfg.enabled:
+                    _cw_list = _crisis_cfg.windows or []
+                    if _cw_list:
+                        # CrisisWindow is a Pydantic v1 model — .dict() produces plain dicts
+                        # compatible with crisis_oos_gate's List[Dict[str, Any]] interface.
+                        _cw_dicts = [
+                            w.dict() if hasattr(w, "dict") else dict(w)
+                            for w in _cw_list
+                        ]
+                        _crisis_thresholds: Dict[str, Any] = {
+                            "min_sharpe": _crisis_cfg.min_sharpe,
+                            "max_drawdown_pct": _crisis_cfg.max_drawdown_pct,
+                            "min_test_rows": _crisis_cfg.min_test_rows,
+                            "min_train_rows": _crisis_cfg.min_train_rows,
+                        }
+                        _crisis_passed, _crisis_window_results = crisis_oos_gate(
+                            features_res.X,
+                            features_res.y_dict,
+                            df["close"],
+                            cfg,
+                            profile,
+                            es,
+                            _cw_dicts,
+                            _crisis_thresholds,
+                            symbol=symbol,
+                            tf=_infer_timeframe_key(features_res.X.index),
+                        )
+                        if not _crisis_passed:
+                            _failed_names = [
+                                w["name"]
+                                for w in _crisis_window_results
+                                if w.get("status") == "FAILED"
+                            ]
+                            result.passed = False
+                            result.reasons.append(f"crisis_oos_failed:{_failed_names}")
+            except Exception as _crisis_exc:
+                if logger:
+                    logger.warning("crisis_oos_gate error (non-fatal): %s", _crisis_exc)
         pack_res = None
         if result.passed:
             # Portfolio-level packaging gate proxies (per-symbol)
@@ -2170,12 +2469,18 @@ def train_evaluate_package(
             pass
         return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error=f"profile_mismatch:{e}", altdata=alt_diag)
     except Exception as e:
-        import traceback
+        import traceback as _tb
+        _tb_str = _tb.format_exc()
+        if logger:
+            logger.error(
+                "Training failed for %s (run_id=%s): %s\n%s",
+                symbol, run_id, repr(e), _tb_str,
+            )
         try:
             state.record_run_end(symbol, run_id, passed=False, metrics_summary=None)
         except Exception:
             pass
-        return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error=str(e) + "\n" + traceback.format_exc(), altdata=alt_diag)
+        return PipelineResult(symbol=symbol, run_id=run_id, passed=False, error=str(e) + "\n" + _tb_str, altdata=alt_diag)
 
 
 def evaluate_fx_g0_risk_overlay_1d(
@@ -2319,6 +2624,197 @@ def _pipeline_annotate_pack(res: "PipelineResult", **extra: Any) -> None:
     if res.pack_result is None:
         res.pack_result = {}
     res.pack_result.update(extra)
+
+
+def train_regime_ensemble(
+    symbol: str,
+    timeframe: str,
+    cfg: Any,
+    state: Any,
+    run_id: str,
+    parquet_path: Optional[str] = None,
+    detector_dir: Optional[str] = None,
+    **kwargs: Any,
+) -> "RegimeEnsemble":
+    """Train a per-regime CatBoost ensemble for one symbol/TF (v0.1.0).
+
+    Steps
+    -----
+    1. Load the full DataFrame from parquet_path (or discover via cfg)
+    2. Classify every bar into a regime (crisis/bear/bull/neutral)
+    3. For each regime with sufficient rows, train a submodel via
+       train_evaluate_adaptive()
+    4. Fit + persist a RegimeDetector for shadow execution
+    5. Gate: ensemble passes iff regimes_trained >= min_regimes_trained
+
+    Parameters
+    ----------
+    symbol : ticker symbol
+    timeframe : e.g. '1D', '1H'
+    cfg : TrainingConfig (must have cfg.regime_ensemble set and enabled)
+    state : pipeline state object
+    run_id : run identifier
+    parquet_path : explicit parquet path; if None, discovered via cfg
+    detector_dir : directory to save RegimeDetector pickle;
+                   defaults to octa/var/models/regime_detectors/<symbol>/<timeframe>/
+    **kwargs : forwarded to train_evaluate_adaptive()
+
+    Returns
+    -------
+    RegimeEnsemble
+    """
+    from octa_training.core.regime_labels import (
+        RegimeLabelConfig,
+        classify_regimes,
+        get_regime_splits,
+    )
+    from octa_training.core.regime_detector import RegimeDetector
+
+    re_cfg = getattr(cfg, "regime_ensemble", None)
+    if re_cfg is None:
+        return RegimeEnsemble(
+            symbol=symbol,
+            timeframe=timeframe,
+            run_id=run_id,
+            submodels={},
+            regimes_trained=0,
+            passed=False,
+            error="regime_ensemble config not set on TrainingConfig",
+        )
+
+    min_regimes_trained: int = int(getattr(re_cfg, "min_regimes_trained", 2))
+    allowed_regimes: List[str] = list(getattr(re_cfg, "regimes", ["bull", "bear", "crisis"]))
+
+    # --- Build label config from re_cfg.min_rows ---
+    min_rows_raw = getattr(re_cfg, "min_rows", {}) or {}
+    if hasattr(min_rows_raw, "model_dump"):
+        min_rows_dict = min_rows_raw.model_dump()
+    elif hasattr(min_rows_raw, "dict"):
+        min_rows_dict = min_rows_raw.dict()
+    else:
+        min_rows_dict = dict(min_rows_raw)
+    label_cfg = RegimeLabelConfig(min_rows=min_rows_dict)
+
+    # --- Resolve parquet path and load data ---
+    _parquet_path = parquet_path
+    if _parquet_path is None:
+        try:
+            parquets = discover_parquets(cfg, symbol=symbol, timeframe=timeframe)
+            _parquet_path = parquets[0] if parquets else None
+        except Exception:
+            _parquet_path = None
+
+    if _parquet_path is None or not Path(_parquet_path).exists():
+        return RegimeEnsemble(
+            symbol=symbol,
+            timeframe=timeframe,
+            run_id=run_id,
+            submodels={},
+            regimes_trained=0,
+            passed=False,
+            error=f"parquet not found: {_parquet_path}",
+        )
+
+    try:
+        df_full = load_parquet(_parquet_path)
+    except Exception as exc:
+        return RegimeEnsemble(
+            symbol=symbol,
+            timeframe=timeframe,
+            run_id=run_id,
+            submodels={},
+            regimes_trained=0,
+            passed=False,
+            error=f"parquet load error: {exc}",
+        )
+
+    # --- Classify regimes ---
+    try:
+        labels = classify_regimes(df_full, cfg=label_cfg)
+    except Exception as exc:
+        return RegimeEnsemble(
+            symbol=symbol,
+            timeframe=timeframe,
+            run_id=run_id,
+            submodels={},
+            regimes_trained=0,
+            passed=False,
+            error=f"regime classification error: {exc}",
+        )
+
+    if labels.empty:
+        return RegimeEnsemble(
+            symbol=symbol,
+            timeframe=timeframe,
+            run_id=run_id,
+            submodels={},
+            regimes_trained=0,
+            passed=False,
+            error="insufficient bars for regime classification (<252)",
+        )
+
+    # --- Split and train per regime ---
+    splits = get_regime_splits(df_full, labels, cfg=label_cfg)
+    submodels: Dict[str, PipelineResult] = {}
+    regimes_trained = 0
+
+    for regime in allowed_regimes:
+        if regime not in splits:
+            continue  # Not enough rows for this regime
+
+        regime_run_id = f"{run_id}_regime_{regime}"
+        try:
+            res = train_evaluate_adaptive(
+                symbol=symbol,
+                cfg=cfg,
+                state=state,
+                run_id=regime_run_id,
+                parquet_path=_parquet_path,
+                **kwargs,
+            )
+        except Exception as exc:
+            res = PipelineResult(
+                symbol=symbol,
+                run_id=regime_run_id,
+                passed=False,
+                error=f"regime_train_error:{exc}",
+            )
+
+        submodels[regime] = res
+        if res.passed:
+            regimes_trained += 1
+
+    # --- Fit and persist RegimeDetector ---
+    detector: Optional[RegimeDetector] = None
+    detector_path: Optional[str] = None
+    try:
+        detector = RegimeDetector(cfg=label_cfg)
+        detector.fit(df_full)
+
+        _det_dir = (
+            Path(detector_dir)
+            if detector_dir
+            else Path("octa/var/models/regime_detectors") / symbol / timeframe
+        )
+        _det_dir.mkdir(parents=True, exist_ok=True)
+        _det_path = _det_dir / f"{symbol}_{timeframe}_regime.pkl"
+        detector.save(_det_path)
+        detector_path = str(_det_path)
+    except Exception as exc:
+        # Non-fatal: ensemble can still be used without a persisted detector
+        detector_path = None
+
+    passed = regimes_trained >= min_regimes_trained
+
+    return RegimeEnsemble(
+        symbol=symbol,
+        timeframe=timeframe,
+        run_id=run_id,
+        submodels=submodels,
+        regimes_trained=regimes_trained,
+        passed=passed,
+        detector_path=detector_path,
+    )
 
 
 def train_evaluate_adaptive(

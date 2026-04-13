@@ -24,8 +24,18 @@ class FredSource:
         api_key = _get_env(self.cfg)
         if not api_key:
             return None
-        series = self.cfg.get("series") or []
-        series = [str(s).strip() for s in series if str(s).strip()]
+        # Normalize series: accept list-of-strings OR list-of-dicts (with "id" key).
+        # list-of-dicts format allows documenting feature_name/transform in the YAML
+        # without changing the fetch logic.
+        _raw_series = self.cfg.get("series") or []
+        series = []
+        for _s in _raw_series:
+            if isinstance(_s, dict):
+                _sid = str(_s.get("id") or "").strip()
+            else:
+                _sid = str(_s).strip()
+            if _sid:
+                series.append(_sid)
         if not series:
             return None
         start = asof - timedelta(days=365)

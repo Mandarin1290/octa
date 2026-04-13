@@ -283,6 +283,70 @@ class KvpConfig(BaseModel):
     filename: str = "kvp_summary.json"
 
 
+class CrisisWindow(BaseModel):
+    """A single historical crisis window used for OOS hold-out validation."""
+
+    name: str
+    start: str  # YYYY-MM-DD
+    end: str    # YYYY-MM-DD
+
+
+class CrisisOosConfig(BaseModel):
+    """Crisis hold-out OOS gate configuration.
+
+    For each window the model is retrained on ALL data EXCEPT the crisis period,
+    then evaluated on the crisis hold-out.  This ensures the model has no
+    knowledge of the crisis, providing an uncontaminated OOS stress test.
+
+    Activation: set enabled=True and populate windows.
+    PASSED: sharpe >= min_sharpe AND |max_drawdown| <= max_drawdown_pct for all evaluated windows.
+    SKIPPED: windows whose dates are absent from the training data (neutral, not a failure).
+    """
+
+    enabled: bool = True
+    min_sharpe: float = 0.0
+    max_drawdown_pct: float = 0.40
+    min_test_rows: int = 20
+    min_train_rows: int = 252
+    windows: List[CrisisWindow] = Field(default_factory=list)
+
+
+class PrescreeningConfig(BaseModel):
+    """Pre-screening filter applied before training to eliminate dead-end symbols.
+
+    Filters run in fail-fast order:
+      F4 (warrant suffix) → F1 (history) → F2 (price) → F3 (volume) → F5 (regime)
+    """
+
+    enabled: bool = False
+    min_history_bars: int = 504
+    min_price: float = 1.0
+    min_volume_20d: float = 100_000
+    warrant_suffixes: List[str] = Field(
+        default_factory=lambda: ["W", "R", "WS", "WSA", "WSB", "WT"]
+    )
+
+
+class RegimeEnsembleConfig(BaseModel):
+    """v0.1.0 Regime-Ensemble configuration.
+
+    Trains one CatBoost submodel per regime (bull/bear/crisis) using
+    regime-filtered subsets of the training data.
+
+    Gate: ensemble passes iff regimes_trained >= min_regimes_trained.
+    Fallback order: crisis → bear → bull → neutral (highest-priority present wins
+    at shadow execution time).
+    """
+
+    enabled: bool = False
+    regimes: List[str] = Field(default_factory=lambda: ["bull", "bear", "crisis"])
+    min_rows: Dict[str, int] = Field(
+        default_factory=lambda: {"bull": 252, "bear": 126, "crisis": 63}
+    )
+    min_regimes_trained: int = 2
+    fallback_order: List[str] = Field(
+        default_factory=lambda: ["crisis", "bear", "bull", "neutral"]
+    )
 
 
 class TrainingConfig(BaseModel):
@@ -449,6 +513,17 @@ class TrainingConfig(BaseModel):
         regime_max_drawdown: float = 0.5
 
     robustness: RobustnessDefaults = Field(default_factory=RobustnessDefaults)
+    # Crisis hold-out OOS gate — retrains per window on non-crisis data.
+    # See configs/sweep_catboost_1d.yaml for calibrated GFC/COVID/2022 windows.
+    # None (default) = gate disabled; set crisis_oos.enabled=false to disable
+    # without removing the config block.
+    crisis_oos: Optional[CrisisOosConfig] = None
+    # v0.1.0 Regime-Ensemble: train separate CatBoost submodels per market regime.
+    # None (default) = disabled; set regime_ensemble.enabled=true to activate.
+    regime_ensemble: Optional["RegimeEnsembleConfig"] = None
+    # v0.1.0 Pre-Screening: eliminate dead-end symbols before expensive training.
+    # None (default) = disabled; set prescreening.enabled=true to activate.
+    prescreening: Optional["PrescreeningConfig"] = None
 
 
 # Pydantic v1 + postponed annotations can require explicit forward-ref resolution
@@ -459,6 +534,8 @@ try:  # pragma: no cover
         PackagingPolicy=TrainingConfig.PackagingPolicy,
         AssuranceConfig=TrainingConfig.AssuranceConfig,
         RobustnessDefaults=TrainingConfig.RobustnessDefaults,
+        RegimeEnsembleConfig=RegimeEnsembleConfig,
+        PrescreeningConfig=PrescreeningConfig,
     )
 except Exception:
     pass

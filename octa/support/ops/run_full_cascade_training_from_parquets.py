@@ -29,6 +29,7 @@ from octa_ops.autopilot.cascade_train import CascadePolicy, run_cascade_training
 from octa.core.data.sources.altdata.orchestrator import load_altdat_config
 from octa.core.data.sources.altdata.cache import resolve_cache_root
 from octa.support.ops.universe_preflight import ASSET_CLASS_ALIASES, KNOWN_ASSET_CLASSES
+from octa.core.governance.governance_audit import GovernanceAudit, EVENT_TRAINING_RUN
 
 
 MAX_EXCEPTION_MESSAGE_CHARS = 2000
@@ -879,8 +880,13 @@ def _promote_to_paper_ready(
     paper_root: Path,
     run_id: str,
 ) -> List[str]:
+    from datetime import datetime, timezone as _tz
+
     paper_root.mkdir(parents=True, exist_ok=True)
     out_paths: List[str] = []
+    timeframes_promoted: List[str] = []
+    per_tf_metrics: Dict[str, Any] = {}
+
     for stage in stages:
         tf = stage.get("timeframe")
         if not tf:
@@ -914,6 +920,29 @@ def _promote_to_paper_ready(
         metrics_path = stage_dir / "metrics.json"
         metrics_path.write_text(json.dumps(metrics, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
         out_paths.append(str(metrics_path))
+        timeframes_promoted.append(str(tf))
+        per_tf_metrics[str(tf)] = metrics
+
+    # Write v0.1.0 ensemble_manifest.json at the symbol level
+    sym_dir = paper_root / symbol
+    sym_dir.mkdir(parents=True, exist_ok=True)
+    manifest = {
+        "schema_version": "v0.1.0",
+        "symbol": symbol,
+        "architecture": "regime_ensemble",
+        "run_id": run_id,
+        "created_at": datetime.now(_tz.utc).isoformat(),
+        "timeframes": timeframes_promoted,
+        "per_tf_metrics": per_tf_metrics,
+        "submodels": {},  # populated by regime_ensemble training path; empty for cascade-only promotion
+    }
+    manifest_path = sym_dir / "ensemble_manifest.json"
+    manifest_path.write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    out_paths.append(str(manifest_path))
+
     return out_paths
 
 
@@ -932,7 +961,7 @@ class RunSettings:
     follow_symlinks: bool = False
     asset_classes: Optional[Tuple[str, ...]] = None
     promote_required_tfs: Tuple[str, ...] = ("1D", "1H")
-    paper_registry_dir: Path = Path("octa") / "var" / "models" / "paper_ready"
+    paper_registry_dir: Optional[Path] = None  # None = skip paper_ready promotion (safe default for tests)
     symbols_override: Optional[List[str]] = None
     cascade_timeframes: Optional[Tuple[str, ...]] = None
     symbols_requested_explicitly: bool = False
@@ -1070,6 +1099,26 @@ def run_full_cascade(
     summary_path = settings.evidence_dir / "summary.json"
 
     settings.evidence_dir.mkdir(parents=True, exist_ok=True)
+
+    # Governance hash-chain: emit TRAINING_RUN start event.
+    # Fail-open: a broken GovernanceAudit must never abort training.
+    _gov_run_id = str(settings.evidence_dir.name).strip() or _run_id()
+    _gov_audit: Optional[GovernanceAudit] = None
+    try:
+        _gov_audit = GovernanceAudit(run_id=_gov_run_id)
+        _gov_audit.emit(
+            EVENT_TRAINING_RUN,
+            {
+                "phase": "start",
+                "run_id": _gov_run_id,
+                "config_path": settings.config_path,
+                "dry_run": settings.dry_run,
+                "max_symbols": settings.max_symbols,
+                "promote_required_tfs": list(settings.promote_required_tfs),
+            },
+        )
+    except Exception:
+        _gov_audit = None
 
     os.environ["OKTA_ALTDATA_OFFLINE_ONLY"] = "1"
     os.environ["OKTA_ALTDATA_ENABLED"] = "1"
@@ -1227,6 +1276,39 @@ def run_full_cascade(
         total = len(symbols)
         start_ts = _utc_now()
         _log(log_path, f"[info] trainable_symbols={total}")
+
+        # v0.1.0 Pre-Screening: eliminate dead-end symbols before training loop.
+        # Activated when cfg.prescreening.enabled == True (set in sweep YAML).
+        # Symbols that fail are logged as PRESCREENED_OUT and excluded from training.
+        try:
+            _ps_cfg = getattr(cfg, "prescreening", None)
+            if _ps_cfg is not None and bool(getattr(_ps_cfg, "enabled", False)):
+                from octa_training.core.prescreening import (
+                    prescreen_universe,
+                    REASON_INSUFFICIENT_HISTORY,
+                    REASON_PRICE_TOO_LOW,
+                    REASON_VOLUME_TOO_LOW,
+                    REASON_WARRANT_OR_RIGHTS,
+                    REASON_INSUFFICIENT_REGIME_DIVERSITY,
+                )
+                _ps_results = prescreen_universe(
+                    symbols=symbols,
+                    inventory=inventory,
+                    cfg=cfg,
+                    log_fn=lambda msg: _log(log_path, f"[prescreening] {msg}"),
+                )
+                _prescreened_out = [s for s, r in _ps_results.items() if not r.passed]
+                if _prescreened_out:
+                    for _sym in _prescreened_out:
+                        _sr = _ps_results[_sym]
+                        _log(log_path, f"[stage] symbol={_sym} asset_class={str((inventory.get(_sym) or {}).get('asset_class', 'unknown'))} tf=1D status=PRESCREENED_OUT reason={_sr.reason} pf=None sharpe=None cagr=None max_dd=None n_trades=None artifacts_written=False")
+                        _log(log_path, f"[stage] symbol={_sym} asset_class={str((inventory.get(_sym) or {}).get('asset_class', 'unknown'))} tf=1H status=SKIP reason=cascade_previous_not_pass pf=None sharpe=None cagr=None max_dd=None n_trades=None artifacts_written=False")
+                        outcome_counts["skipped"] = outcome_counts.get("skipped", 0) + 1
+                    symbols = [s for s in symbols if s not in set(_prescreened_out)]
+                    total = len(symbols)
+                    _log(log_path, f"[info] prescreening_complete prescreened_out={len(_prescreened_out)} remaining={total}")
+        except Exception as _ps_exc:
+            _log(log_path, f"[warn] prescreening_error={_ps_exc} — continuing without pre-screening")
     except Exception as exc:
         error_reason = f"preflight_exception:{exc}"
         start_ts = _utc_now()
@@ -1500,12 +1582,13 @@ def run_full_cascade(
                     for tf in required
                 ):
                     paper_ready = True
-                    paper_artifacts = _promote_to_paper_ready(
-                        sym,
-                        stages,
-                        settings.paper_registry_dir,
-                        run_id,
-                    )
+                    if settings.paper_registry_dir is not None:
+                        paper_artifacts = _promote_to_paper_ready(
+                            sym,
+                            stages,
+                            settings.paper_registry_dir,
+                            run_id,
+                        )
                 elif required and not promotion_allowed:
                     paper_block_reason = f"paper_promotion_blocked_for_regime:{training_regime}"
 
@@ -1665,6 +1748,27 @@ def run_full_cascade(
         _write_json(summary_path, summary)
         _write_hashes(settings.evidence_dir, summary_path, manifest_path, results_dir)
 
+        # Governance hash-chain: emit TRAINING_RUN end event.
+        if _gov_audit is not None:
+            try:
+                _gov_audit.emit(
+                    EVENT_TRAINING_RUN,
+                    {
+                        "phase": "end",
+                        "run_id": _gov_run_id,
+                        "final_verdict": final_verdict,
+                        "exit_code": int(final_exit_code),
+                        "passed": int(passed),
+                        "failed": int(failed),
+                        "timed_out": int(timed_out),
+                        "paper_ready_count": int(outcome_counts.get("trained_successfully", 0)),
+                        "error": error_reason,
+                        "chain_path": str(_gov_audit.chain_path),
+                    },
+                )
+            except Exception:
+                pass
+
     return summary
 
 
@@ -1695,13 +1799,43 @@ def main() -> None:
     promote_tfs = tuple([t.strip().upper() for t in str(args.promote_required_tfs).split(",") if t.strip()])
     symbols_override = _parse_symbols_arg(args.symbols) + _load_symbols_file(args.symbols_file)
     cfg = load_config(args.config or "octa_training/config/training.yaml")
+
+    # Read raw YAML once — used for scope-based auto-configuration below.
+    _raw_yaml_scope: dict = {}
+    try:
+        import yaml as _yaml_scope_loader
+        _raw_yaml_scope = _yaml_scope_loader.safe_load(
+            Path(args.config or "octa_training/config/training.yaml").read_text(encoding="utf-8")
+        ) or {}
+    except Exception:
+        pass
+
     cascade_tfs_raw = args.cascade_timeframes
     if cascade_tfs_raw:
         cascade_tfs: Optional[Tuple[str, ...]] = tuple([t.strip().upper() for t in cascade_tfs_raw.split(",") if t.strip()])
     elif getattr(cfg, "cascade_timeframes", None):
         cascade_tfs = tuple(cfg.cascade_timeframes)
     else:
-        cascade_tfs = None
+        # Fall back to scope.timeframes from the config YAML so the cascade TFs
+        # automatically match the allowed scope — prevents SCOPE_VIOLATION_TF.
+        _scope_tfs = (_raw_yaml_scope.get("scope") or {}).get("timeframes")
+        cascade_tfs = tuple(str(t).strip().upper() for t in _scope_tfs if str(t).strip()) if _scope_tfs else None
+
+    # Auto-restrict preflight root to raw/Stock_parquet when scope is stock/equity-only.
+    # Avoids scanning ~1026 non-equity parquets (ETF, FX, Futures, …) that will be
+    # immediately SKIPped by the SCOPE_VIOLATION_ASSET_CLASS guard anyway.
+    # Only fires when the user has not explicitly passed --root.
+    if args.root == "raw":
+        _scope_acs = {
+            str(a).lower()
+            for a in ((_raw_yaml_scope.get("scope") or {}).get("asset_classes") or [])
+        }
+        _EQUITY_TYPES = {"stock", "stocks", "equities", "equity"}
+        if _scope_acs and _scope_acs.issubset(_EQUITY_TYPES):
+            _stock_dir = Path("raw") / "Stock_parquet"
+            if _stock_dir.exists():
+                args.root = str(_stock_dir)
+
     settings = RunSettings(
         root=Path(args.root),
         preflight_out=preflight_out,

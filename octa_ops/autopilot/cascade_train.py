@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
+import os
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -10,12 +12,22 @@ from typing import Any, Dict, List, Optional, Tuple
 import pandas as pd
 
 from octa.core.data.quality.series_validator import validate_price_series
+from octa.core.governance.governance_audit import (
+    GovernanceAudit,
+    EVENT_SCOPE_GUARD_FAILED,
+    EVENT_SCOPE_GUARD_PASSED,
+)
 from octa_training.core.io_parquet import load_parquet
 from octa_training.core.config import load_config
-from octa_training.core.pipeline import train_evaluate_adaptive, train_evaluate_package
+from octa_training.core.pipeline import (
+    train_evaluate_adaptive,
+    train_evaluate_package,
+    train_regime_ensemble,
+    RegimeEnsemble,
+)
 from octa_training.core.state import StateRegistry
 
-from .types import GateDecision, normalize_timeframe
+from .autopilot_types import GateDecision, normalize_timeframe
 
 
 @dataclass
@@ -205,8 +217,50 @@ def _is_structural_failure(*, reason: Optional[str], error_text: Optional[str], 
         "empty_after_filters",
         "data_invalid",
         "data_load_failed",
+        "missing_metrics_fail_closed",
+        "no_models",
+        "feature_matrix_empty",
     )
     return any(marker in blob for marker in structural_markers)
+
+
+_cascade_log = logging.getLogger(__name__)
+
+
+def _write_exclusion_record(
+    *,
+    run_id: str,
+    symbol: str,
+    tf: str,
+    reason_code: str,
+    detail: str,
+    evidence_root: Optional[str] = None,
+) -> Optional[str]:
+    """Write a per-symbol/TF exclusion record under octa/var/evidence/exclusions/.
+
+    Idempotent — overwrites any prior record for the same (symbol, tf, run_id).
+    Returns the path written, or None on failure (never raises).
+    """
+    import datetime
+
+    try:
+        base = Path(evidence_root) if evidence_root else Path("octa/var/evidence")
+        excl_dir = base / "exclusions"
+        excl_dir.mkdir(parents=True, exist_ok=True)
+        fname = f"{symbol}_{tf}_{run_id}.json"
+        payload = {
+            "symbol": symbol,
+            "tf": tf,
+            "run_id": run_id,
+            "reason_code": reason_code,
+            "detail": detail,
+            "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
+        }
+        p = excl_dir / fname
+        p.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
+        return str(p)
+    except Exception:
+        return None
 
 
 def _trace_emit(trace_dir: Optional[str], payload: Dict[str, Any]) -> None:
@@ -224,6 +278,25 @@ def _trace_write_json(trace_dir: Optional[str], name: str, payload: Dict[str, An
     p = Path(str(trace_dir)) / str(name)
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True, default=str), encoding="utf-8")
+
+
+def _load_scope_config(config_path: str) -> Optional[Dict[str, Any]]:
+    """Return the ``scope`` section from *config_path* as a plain dict, or ``None`` if absent.
+
+    Raises ``RuntimeError`` with ``reason_code=SCOPE_CONFIG_MISSING`` when the
+    YAML file itself cannot be found.  A missing *scope* key is not an error —
+    the guards simply become no-ops in that case.
+    """
+    import yaml  # type: ignore  # pyyaml — always available in this environment
+
+    p = Path(str(config_path))
+    if not p.exists():
+        raise RuntimeError(
+            f"SCOPE_CONFIG_MISSING: config file not found: {config_path!r} "
+            f"(reason_code=SCOPE_CONFIG_MISSING)"
+        )
+    raw = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+    return raw.get("scope")  # None when key is absent — guards are no-ops
 
 
 def run_cascade_training(
@@ -333,6 +406,135 @@ def run_cascade_training(
     # Only a genuine PASS (performance_pass=True) authorises promotion to the next TF.
     prev_stage_pass = True
     normalized_order = [normalize_timeframe(t) for t in cascade.order]
+
+    # ------------------------------------------------------------------ #
+    # Scope Guards (S1 + S2): TF and Asset-Class enforcement              #
+    #                                                                      #
+    # Source of truth: scope.timeframes / scope.asset_classes in the      #
+    # YAML at config_path.  Missing scope section → no-op (guards pass).  #
+    # Missing YAML file → RuntimeError(SCOPE_CONFIG_MISSING).             #
+    # OCTA_SCOPE_OVERRIDE=1 bypasses hard failures with an explicit       #
+    # warning — never silent.                                              #
+    # ------------------------------------------------------------------ #
+    _scope_log = logging.getLogger(__name__)
+    _scope_override = os.environ.get("OCTA_SCOPE_OVERRIDE", "").strip() == "1"
+    _scope_cfg: Optional[Dict[str, Any]] = _load_scope_config(config_path)
+    _gov_scope: Optional[GovernanceAudit] = None
+    try:
+        _gov_scope = GovernanceAudit(run_id=run_id)
+    except Exception:
+        pass  # audit chain unavailable — guard logic still runs
+
+    if _scope_cfg is not None:
+        _allowed_tfs_raw = _scope_cfg.get("timeframes")
+        _allowed_ac_raw = _scope_cfg.get("asset_classes")
+
+        # S1 — Timeframe scope ---------------------------------------------
+        if _allowed_tfs_raw is not None:
+            _allowed_tfs_norm = {normalize_timeframe(str(t)) for t in _allowed_tfs_raw}
+            _violation_tfs = [t for t in normalized_order if t not in _allowed_tfs_norm]
+            if _violation_tfs:
+                _tf_fail_payload: Dict[str, Any] = {
+                    "reason_code": "SCOPE_VIOLATION_TF",
+                    "symbol": symbol,
+                    "violation_tfs": _violation_tfs,
+                    "allowed_tfs": sorted(_allowed_tfs_norm),
+                    "cascade_order": list(normalized_order),
+                    "config_path": str(config_path),
+                }
+                try:
+                    if _gov_scope is not None:
+                        _gov_scope.emit(EVENT_SCOPE_GUARD_FAILED, _tf_fail_payload)
+                except Exception:
+                    pass
+                _tf_err = (
+                    f"SCOPE_VIOLATION_TF: cascade contains timeframes {_violation_tfs!r} "
+                    f"not in allowed scope {sorted(_allowed_tfs_norm)!r} "
+                    f"(reason_code=SCOPE_VIOLATION_TF, config={config_path!r})"
+                )
+                if _scope_override:
+                    _scope_log.warning(
+                        "OCTA_SCOPE_OVERRIDE=1 — bypassing SCOPE_VIOLATION_TF "
+                        "symbol=%s violation_tfs=%s",
+                        symbol,
+                        _violation_tfs,
+                    )
+                else:
+                    raise RuntimeError(_tf_err)
+
+        # S2 — Asset-class scope -------------------------------------------
+        if _allowed_ac_raw is not None:
+            _allowed_ac_norm = {str(a).lower() for a in _allowed_ac_raw}
+            # Expand allowed set with canonical aliases so that config "Stock"
+            # matches inventory "equities" and vice-versa.
+            try:
+                from octa.support.ops.universe_preflight import ASSET_CLASS_ALIASES as _AC_ALIASES
+                _allowed_ac_canon = {_AC_ALIASES.get(a, a) for a in _allowed_ac_norm}
+                _asset_class_lower = str(asset_class).lower()
+                _asset_class_canon = _AC_ALIASES.get(_asset_class_lower, _asset_class_lower)
+            except Exception:
+                _allowed_ac_canon = set()
+                _asset_class_lower = str(asset_class).lower()
+                _asset_class_canon = _asset_class_lower
+            _allowed_ac_all = _allowed_ac_norm | _allowed_ac_canon
+            if _asset_class_lower not in _allowed_ac_all and _asset_class_canon not in _allowed_ac_all:
+                _ac_fail_payload: Dict[str, Any] = {
+                    "reason_code": "SCOPE_VIOLATION_ASSET_CLASS",
+                    "symbol": symbol,
+                    "asset_class": str(asset_class),
+                    "allowed_asset_classes": sorted(_allowed_ac_norm),
+                    "config_path": str(config_path),
+                }
+                try:
+                    if _gov_scope is not None:
+                        _gov_scope.emit(EVENT_SCOPE_GUARD_FAILED, _ac_fail_payload)
+                except Exception:
+                    pass
+                if _scope_override:
+                    _scope_log.warning(
+                        "OCTA_SCOPE_OVERRIDE=1 — bypassing SCOPE_VIOLATION_ASSET_CLASS "
+                        "symbol=%s asset_class=%s",
+                        symbol,
+                        asset_class,
+                    )
+                else:
+                    # Asset-class violation: SKIP all TFs with a structured record
+                    # (does not abort the whole run — other symbols continue).
+                    return [
+                        GateDecision(
+                            symbol=symbol,
+                            timeframe=tf,
+                            stage="train",
+                            status="SKIP",
+                            reason="SCOPE_VIOLATION_ASSET_CLASS",
+                            details={
+                                "structural_pass": False,
+                                "performance_pass": False,
+                                "asset_class": str(asset_class),
+                                "allowed_asset_classes": sorted(_allowed_ac_norm),
+                                "reason_code": "SCOPE_VIOLATION_ASSET_CLASS",
+                            },
+                        )
+                        for tf in normalized_order
+                    ], {}
+
+    # All scope guards cleared (or no scope section defined in config).
+    try:
+        if _gov_scope is not None:
+            _gov_scope.emit(
+                EVENT_SCOPE_GUARD_PASSED,
+                {
+                    "symbol": symbol,
+                    "asset_class": str(asset_class),
+                    "cascade_order": list(normalized_order),
+                    "config_path": str(config_path),
+                    "scope_enforced": _scope_cfg is not None,
+                },
+            )
+    except Exception:
+        pass
+    # ------------------------------------------------------------------ #
+
     for idx, tf in enumerate(normalized_order):
         stage_timer = time.monotonic()
         _trace_emit(trace_dir, {"ts": time.time(), "step": "timeframe_stage", "event": "start", "elapsed_s": float(time.monotonic() - root_timer), "timeframe": str(tf)})
@@ -342,6 +544,20 @@ def run_cascade_training(
             cfg_layer = cfg.copy(deep=True)
         except Exception:
             cfg_layer = cfg
+        # Apply per-TF cat_params overrides (e.g. fewer iterations for 1H to reduce overfitting)
+        try:
+            _cat_by_tf = getattr(cfg, 'cat_params_by_timeframe', None) or {}
+            if isinstance(_cat_by_tf, dict):
+                _tf_cat_spec = (
+                    _cat_by_tf.get(str(tf), {})
+                    or _cat_by_tf.get(str(tf).upper(), {})
+                    or {}
+                )
+                if _tf_cat_spec:
+                    _base_cat = dict(getattr(cfg_layer, 'cat_params', None) or {})
+                    cfg_layer.cat_params = {**_base_cat, **_tf_cat_spec}
+        except Exception:
+            pass
         stage_state = None
         stage_state_dir = None
         orig_pkl_dir = None
@@ -488,20 +704,61 @@ def run_cascade_training(
                 gate_overrides = None
             train_start = time.monotonic()
             _trace_emit(trace_dir, {"ts": time.time(), "step": "train_evaluate_package", "event": "start", "elapsed_s": float(time.monotonic() - root_timer), "timeframe": str(tf)})
-            res = train_evaluate_adaptive(
-                symbol=symbol,
-                cfg=cfg_layer,
-                state=stage_state if stage_state is not None else StateRegistry(base_state_root / "state.db"),
-                run_id=run_id,
-                safe_mode=bool(safe_mode),
-                smoke_test=False,
-                parquet_path=str(pq),
-                dataset=asset_class,
-                asset_class=asset_class,
-                gate_overrides=gate_overrides,
-                fast=bool(getattr(cfg_layer, "proof_mode", False)),
-                robustness_profile="risk_overlay" if bool(getattr(cfg_layer, "proof_mode", False)) else "full",
-            )
+
+            # v0.1.0 Regime-Ensemble dispatch: when cfg.regime_ensemble.enabled=True,
+            # train one CatBoost submodel per regime (bull/bear/crisis) and gate on
+            # regimes_trained >= min_regimes_trained.  Downstream code receives a
+            # PipelineResult-compatible object (same .passed / .pack_result attrs).
+            _re_cfg = getattr(cfg_layer, "regime_ensemble", None)
+            if _re_cfg is not None and bool(getattr(_re_cfg, "enabled", False)):
+                ensemble: RegimeEnsemble = train_regime_ensemble(
+                    symbol=symbol,
+                    timeframe=str(tf),
+                    cfg=cfg_layer,
+                    state=stage_state if stage_state is not None else StateRegistry(base_state_root / "state.db"),
+                    run_id=run_id,
+                    parquet_path=str(pq),
+                    dataset=asset_class,
+                    asset_class=asset_class,
+                )
+                # Synthesize PipelineResult-compatible attributes from RegimeEnsemble
+                from octa_training.core.pipeline import PipelineResult as _PR
+                _sub_artifacts: list = []
+                _sub_features: list = []
+                for _regime_res in ensemble.submodels.values():
+                    _sub_pack = getattr(_regime_res, "pack_result", None) or {}
+                    _sub_artifacts.extend(_sub_pack.get("model_artifacts") or [])
+                    _sub_features.extend(_sub_pack.get("features_used") or [])
+                res = _PR(
+                    symbol=symbol,
+                    run_id=run_id,
+                    passed=ensemble.passed,
+                    error=ensemble.error,
+                    pack_result={
+                        "model_artifacts": list(dict.fromkeys(_sub_artifacts)),
+                        "features_used": list(dict.fromkeys(_sub_features)),
+                        "regime_ensemble": {
+                            "regimes_trained": ensemble.regimes_trained,
+                            "detector_path": ensemble.detector_path,
+                            "submodels": {r: getattr(v, "passed", False) for r, v in ensemble.submodels.items()},
+                        },
+                    },
+                )
+            else:
+                res = train_evaluate_adaptive(
+                    symbol=symbol,
+                    cfg=cfg_layer,
+                    state=stage_state if stage_state is not None else StateRegistry(base_state_root / "state.db"),
+                    run_id=run_id,
+                    safe_mode=bool(safe_mode),
+                    smoke_test=False,
+                    parquet_path=str(pq),
+                    dataset=asset_class,
+                    asset_class=asset_class,
+                    gate_overrides=gate_overrides,
+                    fast=bool(getattr(cfg_layer, "proof_mode", False)),
+                    robustness_profile="risk_overlay" if bool(getattr(cfg_layer, "proof_mode", False)) else "full",
+                )
             durations[f"{tf}.train_evaluate_package"] = float(time.monotonic() - train_start)
             _trace_emit(
                 trace_dir,
@@ -681,7 +938,19 @@ def run_cascade_training(
             metrics_by_tf[tf]["performance_pass"] = bool(performance_pass)
             # I1: only a real performance PASS advances the cascade
             prev_stage_pass = bool(performance_pass)
+            # Write exclusion record when metrics are missing so downstream
+            # analysis can distinguish silent fails from gate fails.
+            if metrics_dump is None and not passed:
+                _excl_rc = str(getattr(res, "error", None) or fail_reason or "METRICS_MISSING")
+                _write_exclusion_record(
+                    run_id=run_id,
+                    symbol=symbol,
+                    tf=tf,
+                    reason_code=_excl_rc,
+                    detail=str(getattr(res, "error", "") or ""),
+                )
         except Exception as e:
+            _cascade_log.error("Training failed for %s/%s: %s", symbol, tf, repr(e))
             _trace_write_json(
                 trace_dir,
                 "exception.json",
@@ -692,6 +961,23 @@ def run_cascade_training(
                 },
             )
             _trace_emit(trace_dir, {"ts": time.time(), "step": "train_evaluate_package", "event": "error", "elapsed_s": float(time.monotonic() - root_timer), "timeframe": str(tf), "error": str(e)})
+            metrics_by_tf[tf] = {
+                "gate": None,
+                "metrics": None,
+                "reason_code": "TRAINING_EXCEPTION",
+                "detail": repr(e),
+                "parquet_path": str(pq) if pq else None,
+                "asset_class": str(asset_class),
+                "structural_pass": False,
+                "performance_pass": False,
+            }
+            _write_exclusion_record(
+                run_id=run_id,
+                symbol=symbol,
+                tf=tf,
+                reason_code="TRAINING_EXCEPTION",
+                detail=repr(e),
+            )
             decisions.append(
                 GateDecision(
                     symbol=symbol,
