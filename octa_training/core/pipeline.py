@@ -2770,6 +2770,9 @@ def train_regime_ensemble(
                 state=state,
                 run_id=regime_run_id,
                 parquet_path=_parquet_path,
+                require_full_run=True,  # bypass recent_pass idempotency: each
+                # regime submodel must train independently; the bull run's state
+                # record must not cause bear/crisis to short-circuit with metrics=None.
                 **kwargs,
             )
         except Exception as exc:
