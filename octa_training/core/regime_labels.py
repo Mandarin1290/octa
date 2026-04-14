@@ -1,4 +1,4 @@
-"""Regime label assignment for regime-ensemble training (v0.1.0).
+"""Regime label assignment for regime-ensemble training (v0.0.0).
 
 Priority: CRISIS > BEAR > BULL > NEUTRAL
 

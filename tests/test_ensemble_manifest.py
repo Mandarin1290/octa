@@ -1,4 +1,4 @@
-"""Tests for v0.1.0 ensemble_manifest.json writing in _promote_to_paper_ready."""
+"""Tests for v0.0.0 ensemble_manifest.json writing in _promote_to_paper_ready."""
 from __future__ import annotations
 
 import json
@@ -52,7 +52,7 @@ def test_manifest_created(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# Test 2: manifest schema_version is v0.1.0
+# Test 2: manifest schema_version is v0.0.0
 # ---------------------------------------------------------------------------
 
 def test_manifest_schema_version(tmp_path):
@@ -62,7 +62,7 @@ def test_manifest_schema_version(tmp_path):
     _promote_to_paper_ready(symbol, [stage], paper_root, run_id="test_run_002")
 
     manifest = json.loads((paper_root / symbol / "ensemble_manifest.json").read_text())
-    assert manifest["schema_version"] == "v0.1.0"
+    assert manifest["schema_version"] == "v0.0.0"
     assert manifest["architecture"] == "regime_ensemble"
 
 

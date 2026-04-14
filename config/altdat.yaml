@@ -41,7 +41,7 @@ sources:
   fred:
     enabled: true
     api_key_env: FRED_API_KEY
-    # v0.1.0: added CPI/inflation series for rate_hike_2022 crisis robustness.
+    # v0.0.0: added CPI/inflation series for rate_hike_2022 crisis robustness.
     # CPIAUCSL/CPILFESL: monthly, yoy pct-change → feat_altdat_macro_fred_cpi_yoy etc.
     # T10YIE: daily inflation breakeven (market-implied) → leading indicator vs lagging CPI.
     # UNRATE/DGS10/DGS2/FEDFUNDS: existing macro rates suite.

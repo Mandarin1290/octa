@@ -2,6 +2,30 @@
 
 Automatisch generiert. Alle Änderungen werden hier dokumentiert.
 
+## 2026-04-14
+
+
+### [2026-04-14 06:31:53] CONFIG
+**Beschreibung:** Code-Änderungen - 7 Code-Dateien - 5 Test-Dateien - (+77/-41 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 7 Dateien
+  - `octa/support/ops/run_full_cascade_training_from_parquets.py`
+  - `octa_ops/autopilot/cascade_train.py`
+  - `octa_training/core/config.py`
+  - ... und 4 weitere
+- **TESTS:** 5 Dateien
+  - `tests/test_b1_exclusion_records.py`
+  - `tests/test_ensemble_manifest.py`
+  - `tests/test_prescreening.py`
+  - ... und 2 weitere
+- **CONFIG:** 2 Dateien
+  - `config/altdat.yaml`
+  - `configs/sweep_catboost_1d.yaml`
+- **SCRIPTS:** 1 Dateien
+  - `scripts/run_shadow_execution.py`
+
+
 ## 2026-04-13
 
 

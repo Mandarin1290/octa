@@ -2636,7 +2636,7 @@ def train_regime_ensemble(
     detector_dir: Optional[str] = None,
     **kwargs: Any,
 ) -> "RegimeEnsemble":
-    """Train a per-regime CatBoost ensemble for one symbol/TF (v0.1.0).
+    """Train a per-regime CatBoost ensemble for one symbol/TF (v0.0.0).
 
     Steps
     -----
@@ -2805,6 +2805,9 @@ def train_regime_ensemble(
         detector_path = None
 
     passed = regimes_trained >= min_regimes_trained
+    _ensemble_error: Optional[str] = None
+    if not passed:
+        _ensemble_error = f"insufficient_regimes_trained:{regimes_trained}/{min_regimes_trained}"
 
     return RegimeEnsemble(
         symbol=symbol,
@@ -2814,6 +2817,7 @@ def train_regime_ensemble(
         regimes_trained=regimes_trained,
         passed=passed,
         detector_path=detector_path,
+        error=_ensemble_error,
     )
 
 

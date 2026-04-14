@@ -1,4 +1,4 @@
-"""Pre-screening filter for universe symbols before expensive training (v0.1.0).
+"""Pre-screening filter for universe symbols before expensive training (v0.0.0).
 
 Eliminates symbols that structurally cannot pass training gates, saving ~20s/symbol
 on the next retrain.  All checks run on the 1D parquet only (cheapest data).

@@ -248,7 +248,7 @@ crisis_oos:
     - {name: rate_hike_2022, start: "2022-01-01", end: "2022-12-31"}
 
 # ---------------------------------------------------------------------------
-# v0.1.0 Regime-Ensemble (OCTA architecture upgrade)
+# v0.0.0 Regime-Ensemble (OCTA architecture upgrade)
 #
 # Trains one CatBoost submodel per market regime (bull/bear/crisis) using
 # regime-filtered subsets of the full training history.
@@ -290,7 +290,7 @@ regime_ensemble:
     - neutral
 
 # ---------------------------------------------------------------------------
-# v0.1.0 Pre-Screening
+# v0.0.0 Pre-Screening
 #
 # Eliminates symbols that structurally cannot pass training gates before the
 # expensive ~20s/symbol training loop.  Applied AFTER universe discovery,

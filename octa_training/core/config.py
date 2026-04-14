@@ -328,7 +328,7 @@ class PrescreeningConfig(BaseModel):
 
 
 class RegimeEnsembleConfig(BaseModel):
-    """v0.1.0 Regime-Ensemble configuration.
+    """v0.0.0 Regime-Ensemble configuration.
 
     Trains one CatBoost submodel per regime (bull/bear/crisis) using
     regime-filtered subsets of the training data.
@@ -518,10 +518,10 @@ class TrainingConfig(BaseModel):
     # None (default) = gate disabled; set crisis_oos.enabled=false to disable
     # without removing the config block.
     crisis_oos: Optional[CrisisOosConfig] = None
-    # v0.1.0 Regime-Ensemble: train separate CatBoost submodels per market regime.
+    # v0.0.0 Regime-Ensemble: train separate CatBoost submodels per market regime.
     # None (default) = disabled; set regime_ensemble.enabled=true to activate.
     regime_ensemble: Optional["RegimeEnsembleConfig"] = None
-    # v0.1.0 Pre-Screening: eliminate dead-end symbols before expensive training.
+    # v0.0.0 Pre-Screening: eliminate dead-end symbols before expensive training.
     # None (default) = disabled; set prescreening.enabled=true to activate.
     prescreening: Optional["PrescreeningConfig"] = None
 

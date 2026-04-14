@@ -1,4 +1,4 @@
-"""Tests for octa_training.core.regime_detector (v0.1.0)."""
+"""Tests for octa_training.core.regime_detector (v0.0.0)."""
 from __future__ import annotations
 
 import numpy as np

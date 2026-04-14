@@ -705,7 +705,7 @@ def run_cascade_training(
             train_start = time.monotonic()
             _trace_emit(trace_dir, {"ts": time.time(), "step": "train_evaluate_package", "event": "start", "elapsed_s": float(time.monotonic() - root_timer), "timeframe": str(tf)})
 
-            # v0.1.0 Regime-Ensemble dispatch: when cfg.regime_ensemble.enabled=True,
+            # v0.0.0 Regime-Ensemble dispatch: when cfg.regime_ensemble.enabled=True,
             # train one CatBoost submodel per regime (bull/bear/crisis) and gate on
             # regimes_trained >= min_regimes_trained.  Downstream code receives a
             # PipelineResult-compatible object (same .passed / .pack_result attrs).
@@ -721,28 +721,52 @@ def run_cascade_training(
                     dataset=asset_class,
                     asset_class=asset_class,
                 )
-                # Synthesize PipelineResult-compatible attributes from RegimeEnsemble
+                # Synthesize PipelineResult-compatible attributes from RegimeEnsemble.
+                # Critical: downstream code (run_full_cascade_training_from_parquets.py)
+                # requires .metrics and .gate_result to validate a passing result.
+                # Pick the representative submodel: first passing one (priority order),
+                # fallback to first submodel if none pass.
                 from octa_training.core.pipeline import PipelineResult as _PR
                 _sub_artifacts: list = []
                 _sub_features: list = []
+                _rep_sub = None
+                for _r_key in ["neutral", "bull", "bear", "crisis"]:
+                    _s = ensemble.submodels.get(_r_key)
+                    if _s is not None and getattr(_s, "passed", False):
+                        _rep_sub = _s
+                        break
+                if _rep_sub is None and ensemble.submodels:
+                    _rep_sub = next(iter(ensemble.submodels.values()))
                 for _regime_res in ensemble.submodels.values():
                     _sub_pack = getattr(_regime_res, "pack_result", None) or {}
                     _sub_artifacts.extend(_sub_pack.get("model_artifacts") or [])
                     _sub_features.extend(_sub_pack.get("features_used") or [])
+                # Propagate pack_result fields from representative submodel so that
+                # monte_carlo / walk_forward / regime_stability / cost_stress /
+                # liquidity are visible to run_full_cascade validation.
+                _rep_pack = (getattr(_rep_sub, "pack_result", None) or {}) if _rep_sub else {}
+                _merged_pack = dict(_rep_pack)
+                _merged_pack["model_artifacts"] = list(dict.fromkeys(_sub_artifacts))
+                _merged_pack["features_used"] = list(dict.fromkeys(_sub_features))
+                _merged_pack["regime_ensemble"] = {
+                    "regimes_trained": ensemble.regimes_trained,
+                    "detector_path": ensemble.detector_path,
+                    "submodels": {r: getattr(v, "passed", False) for r, v in ensemble.submodels.items()},
+                }
+                # Set error when ensemble did not reach min_regimes_trained threshold
+                # so that cascade_train produces a readable fail_reason (not "gate_failed").
+                _ens_error = ensemble.error
+                if not ensemble.passed and not _ens_error:
+                    _min_req = int(getattr(_re_cfg, "min_regimes_trained", 2))
+                    _ens_error = f"insufficient_regimes_trained:{ensemble.regimes_trained}/{_min_req}"
                 res = _PR(
                     symbol=symbol,
                     run_id=run_id,
                     passed=ensemble.passed,
-                    error=ensemble.error,
-                    pack_result={
-                        "model_artifacts": list(dict.fromkeys(_sub_artifacts)),
-                        "features_used": list(dict.fromkeys(_sub_features)),
-                        "regime_ensemble": {
-                            "regimes_trained": ensemble.regimes_trained,
-                            "detector_path": ensemble.detector_path,
-                            "submodels": {r: getattr(v, "passed", False) for r, v in ensemble.submodels.items()},
-                        },
-                    },
+                    error=_ens_error,
+                    metrics=getattr(_rep_sub, "metrics", None) if _rep_sub else None,
+                    gate_result=getattr(_rep_sub, "gate_result", None) if _rep_sub else None,
+                    pack_result=_merged_pack,
                 )
             else:
                 res = train_evaluate_adaptive(

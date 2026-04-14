@@ -1,4 +1,4 @@
-"""RegimeDetector: rule-based regime classifier with pickle persistence (v0.1.0).
+"""RegimeDetector: rule-based regime classifier with pickle persistence (v0.0.0).
 
 Wraps regime_labels.classify_regimes() behind a fit/predict/save/load interface
 so that shadow execution can restore a frozen detector without re-fitting.

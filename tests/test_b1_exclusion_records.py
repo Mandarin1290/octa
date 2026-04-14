@@ -65,7 +65,7 @@ def test_feature_matrix_empty_writes_exclusion_record(tmp_path):
     reports_dir = str(tmp_path / "reports")
     excl_dir = tmp_path / "octa" / "var" / "evidence" / "exclusions"
 
-    # v0.1.0: when regime_ensemble.enabled=True, cascade_train dispatches to
+    # v0.0.0: when regime_ensemble.enabled=True, cascade_train dispatches to
     # train_regime_ensemble instead of train_evaluate_adaptive.  Patch both so
     # the test works regardless of which dispatch path is active.
     from octa_training.core.pipeline import RegimeEnsemble as _RE
@@ -184,7 +184,7 @@ def test_training_exception_writes_record_and_does_not_propagate(tmp_path):
 
     with (
         patch("octa_ops.autopilot.cascade_train.train_evaluate_adaptive", side_effect=_boom),
-        # v0.1.0: also patch train_regime_ensemble to raise so the cascade
+        # v0.0.0: also patch train_regime_ensemble to raise so the cascade
         # exception handler fires and records TRAIN_ERROR (not GATE_FAIL).
         patch("octa_ops.autopilot.cascade_train.train_regime_ensemble", side_effect=_boom),
         patch("octa_ops.autopilot.cascade_train._write_exclusion_record", side_effect=_real_write),

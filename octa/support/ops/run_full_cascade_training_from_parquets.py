@@ -923,11 +923,11 @@ def _promote_to_paper_ready(
         timeframes_promoted.append(str(tf))
         per_tf_metrics[str(tf)] = metrics
 
-    # Write v0.1.0 ensemble_manifest.json at the symbol level
+    # Write ensemble_manifest.json at the symbol level
     sym_dir = paper_root / symbol
     sym_dir.mkdir(parents=True, exist_ok=True)
     manifest = {
-        "schema_version": "v0.1.0",
+        "schema_version": "v0.0.0",
         "symbol": symbol,
         "architecture": "regime_ensemble",
         "run_id": run_id,
@@ -1277,10 +1277,18 @@ def run_full_cascade(
         start_ts = _utc_now()
         _log(log_path, f"[info] trainable_symbols={total}")
 
-        # v0.1.0 Pre-Screening: eliminate dead-end symbols before training loop.
+        # v0.0.0 Pre-Screening: eliminate dead-end symbols before training loop.
         # Activated when cfg.prescreening.enabled == True (set in sweep YAML).
         # Symbols that fail are logged as PRESCREENED_OUT and excluded from training.
         try:
+            # Load training config to access prescreening settings.
+            # run_full_cascade() does not load cfg directly — it passes config_path
+            # to train_fn per-symbol.  Load it here just for prescreening.
+            try:
+                from octa_training.core.config import load_config as _load_train_cfg
+                cfg = _load_train_cfg(settings.config_path or "octa_training/config/training.yaml")
+            except Exception:
+                cfg = None
             _ps_cfg = getattr(cfg, "prescreening", None)
             if _ps_cfg is not None and bool(getattr(_ps_cfg, "enabled", False)):
                 from octa_training.core.prescreening import (

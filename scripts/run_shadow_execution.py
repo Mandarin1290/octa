@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Shadow execution entry point for Phase 2 validation (v0.1.0 regime-ensemble).
+"""Shadow execution entry point for Phase 2 validation (v0.0.0 regime-ensemble).
 
 Data source: TWS (ib_insync) — NOT yfinance.
 Flow:
   1. Refresh parquets from TWS for all paper-ready symbols
-  2. Load ensemble_manifest.json (v0.1.0 schema) — version-check schema_version
+  2. Load ensemble_manifest.json (v0.0.0 schema) — version-check schema_version
   3. Run RegimeDetector.predict() to select active submodel
   4. Emit EVENT_REGIME_ACTIVATED to governance audit chain
   5. Log [shadow] decisions to artifacts/shadow_orders.ndjson
@@ -39,7 +39,7 @@ _TWS_HOST = "127.0.0.1"
 _TWS_PORT = 7497
 _TWS_CLIENT_ID = 202  # dedicated client ID for shadow refresh
 _ENSEMBLE_MANIFEST_NAME = "ensemble_manifest.json"
-_EXPECTED_SCHEMA_VERSION = "v0.1.0"
+_EXPECTED_SCHEMA_VERSION = "v0.0.0"
 _REGIME_WINDOW_BARS = 20  # trailing bars for regime distribution
 
 
@@ -243,7 +243,7 @@ def _run_regime_routing(
         # Load ensemble_manifest to check architecture version
         manifest = _load_ensemble_manifest(sym)
         if manifest is None:
-            print(f"  [shadow] {sym}/{tf}: no v0.1.0 manifest — skipping regime routing")
+            print(f"  [shadow] {sym}/{tf}: no v0.0.0 manifest — skipping regime routing")
             regime_routing[key] = "neutral"
             continue
 
@@ -283,7 +283,7 @@ def main() -> int:
     ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     run_id = f"shadow_tws_{ts}"
 
-    print(f"=== Shadow Execution v0.1.0 (TWS data, regime-ensemble) ===")
+    print(f"=== Shadow Execution v0.0.0 (TWS data, regime-ensemble) ===")
     print(f"run_id: {run_id}")
     print(f"ts: {ts}")
     print()
@@ -334,8 +334,8 @@ def main() -> int:
             return 1
         print()
 
-        # Step 3: Regime routing (v0.1.0) — detect active regime per symbol/TF
-        print("Step 2: Regime routing (v0.1.0 ensemble)...")
+        # Step 3: Regime routing — detect active regime per symbol/TF
+        print("Step 2: Regime routing (v0.0.0 ensemble)...")
         regime_routing = _run_regime_routing(
             symbols_info=symbols_info,
             refresh_results=refresh_results,
@@ -361,7 +361,7 @@ def main() -> int:
     summary = {
         "run_id": run_id,
         "ts": ts,
-        "schema_version": "v0.1.0",
+        "schema_version": "v0.0.0",
         "data_source": "tws",
         "tws_host": _TWS_HOST,
         "tws_port": _TWS_PORT,
