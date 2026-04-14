@@ -14,6 +14,7 @@ Tests:
 - test_options_skip_when_underlying_none (I7)
 - test_options_skip_when_underlying_false (I7)
 - test_options_proceed_when_underlying_true (I7) — structural only
+- TestRegimeArtifactPersistence (I8): per-regime pkls, router manifest, partial-fail invariants
 """
 from __future__ import annotations
 
@@ -60,7 +61,7 @@ def _make_minimal_cfg(splits: Optional[Dict] = None):
 
 
 def _make_gate_decision_pass(symbol, tf):
-    from octa_ops.autopilot.types import GateDecision
+    from octa_ops.autopilot.autopilot_types import GateDecision
     return GateDecision(
         symbol=symbol,
         timeframe=tf,
@@ -72,7 +73,7 @@ def _make_gate_decision_pass(symbol, tf):
 
 
 def _make_gate_decision_fail(symbol, tf, status="GATE_FAIL"):
-    from octa_ops.autopilot.types import GateDecision
+    from octa_ops.autopilot.autopilot_types import GateDecision
     return GateDecision(
         symbol=symbol,
         timeframe=tf,
@@ -563,3 +564,466 @@ class TestOptionsCascadeSkip:
         # Should be SKIP for data reasons, not for options gate
         for d in decisions:
             assert "underlying" not in str(d.reason), f"Options gate should not block: {d.reason}"
+
+
+# ---------------------------------------------------------------------------
+# I8: crisis_oos gate disabled for non-crisis regime submodels (v0.0.0)
+# ---------------------------------------------------------------------------
+
+class TestCrisisOosDisabledForNonCrisisSubmodels:
+    """I8: train_regime_ensemble must NOT apply crisis_oos to non-crisis submodels.
+
+    Non-crisis submodels (bull, bear, neutral) are never deployed during crisis
+    periods — the crisis submodel handles those intervals.  Applying the crisis
+    OOS gate to non-crisis submodels is architecturally incorrect.
+    """
+
+    def test_non_crisis_submodels_get_crisis_oos_disabled(self, tmp_path):
+        """Verify cfg passed to non-crisis regimes has crisis_oos.enabled=False."""
+        import pandas as pd
+        import numpy as np
+        from unittest.mock import patch, MagicMock
+        from octa_training.core.pipeline import train_regime_ensemble, PipelineResult
+        from octa_training.core.config import TrainingConfig, CrisisOosConfig, CrisisWindow
+
+        # Build a real TrainingConfig with crisis_oos enabled
+        from octa_training.core.config import RegimeEnsembleConfig
+        re_cfg = RegimeEnsembleConfig(
+            enabled=True,
+            regimes=["bull", "bear", "crisis"],
+            min_regimes_trained=2,
+        )
+        crisis_cfg = CrisisOosConfig(
+            enabled=True,
+            min_sharpe=0.0,
+            max_drawdown_pct=0.4,
+            windows=[CrisisWindow(name="covid", start="2020-02-01", end="2020-05-31")],
+        )
+        cfg = TrainingConfig(regime_ensemble=re_cfg, crisis_oos=crisis_cfg)
+
+        # Build a minimal fake parquet
+        pq = tmp_path / "TEST_1D.parquet"
+        idx = pd.date_range("2015-01-01", periods=600, freq="B", tz="UTC")
+        df = pd.DataFrame({"open": 100.0, "high": 101.0, "low": 99.0, "close": 100.0, "volume": 1e6}, index=idx)
+        df.to_parquet(str(pq))
+
+        # Track which cfg each submodel gets
+        captured_cfgs: dict = {}
+
+        def _fake_train_adaptive(symbol, cfg, state, run_id, **kwargs):
+            # Extract regime from run_id suffix (e.g. "...regime_bull")
+            regime_key = run_id.split("_regime_")[-1] if "_regime_" in run_id else "unknown"
+            captured_cfgs[regime_key] = cfg
+            return PipelineResult(symbol=symbol, run_id=run_id, passed=True,
+                                  metrics={"sharpe": 1.5, "n_trades": 10})
+
+        def _fake_labels(df_full, cfg):
+            # Return non-empty labels so regime splits are computed
+            labels = pd.Series("bull", index=df_full.index)
+            labels.iloc[100:200] = "bear"
+            labels.iloc[200:250] = "crisis"
+            return labels
+
+        def _fake_splits(df_full, labels, cfg):
+            # Return all three regimes as present
+            return {
+                "bull": df_full.iloc[:200],
+                "bear": df_full.iloc[100:300],
+                "crisis": df_full.iloc[200:260],
+            }
+
+        state = MagicMock()
+
+        with patch("octa_training.core.pipeline.train_evaluate_adaptive", side_effect=_fake_train_adaptive), \
+             patch("octa_training.core.regime_labels.classify_regimes", side_effect=_fake_labels), \
+             patch("octa_training.core.regime_labels.get_regime_splits", side_effect=_fake_splits):
+            result = train_regime_ensemble(
+                symbol="TEST",
+                timeframe="1D",
+                cfg=cfg,
+                state=state,
+                run_id="test_run",
+                parquet_path=str(pq),
+            )
+
+        # All three regimes should have been trained
+        assert "bull" in captured_cfgs, "bull submodel not trained"
+        assert "bear" in captured_cfgs, "bear submodel not trained"
+        assert "crisis" in captured_cfgs, "crisis submodel not trained"
+
+        # Non-crisis submodels must have crisis_oos disabled
+        bull_oos = getattr(captured_cfgs["bull"], "crisis_oos", None)
+        assert bull_oos is not None, "bull cfg missing crisis_oos"
+        assert bull_oos.enabled is False, f"bull crisis_oos.enabled should be False, got {bull_oos.enabled}"
+
+        bear_oos = getattr(captured_cfgs["bear"], "crisis_oos", None)
+        assert bear_oos is not None, "bear cfg missing crisis_oos"
+        assert bear_oos.enabled is False, f"bear crisis_oos.enabled should be False, got {bear_oos.enabled}"
+
+        # Crisis submodel must retain crisis_oos enabled
+        crisis_oos = getattr(captured_cfgs["crisis"], "crisis_oos", None)
+        assert crisis_oos is not None, "crisis cfg missing crisis_oos"
+        assert crisis_oos.enabled is True, f"crisis crisis_oos.enabled should be True, got {crisis_oos.enabled}"
+
+    def test_no_crisis_oos_cfg_is_passthrough(self, tmp_path):
+        """When crisis_oos is None, cfg passes through unchanged to all submodels."""
+        import pandas as pd
+        from unittest.mock import patch, MagicMock
+        from octa_training.core.pipeline import train_regime_ensemble, PipelineResult
+        from octa_training.core.config import TrainingConfig, RegimeEnsembleConfig
+
+        re_cfg = RegimeEnsembleConfig(enabled=True, regimes=["bull", "crisis"], min_regimes_trained=1)
+        cfg = TrainingConfig(regime_ensemble=re_cfg, crisis_oos=None)
+
+        pq = tmp_path / "TEST_1D.parquet"
+        idx = pd.date_range("2015-01-01", periods=600, freq="B", tz="UTC")
+        df = pd.DataFrame({"open": 100.0, "high": 101.0, "low": 99.0, "close": 100.0, "volume": 1e6}, index=idx)
+        df.to_parquet(str(pq))
+
+        captured_cfgs: dict = {}
+
+        def _fake_train_adaptive(symbol, cfg, state, run_id, **kwargs):
+            regime_key = run_id.split("_regime_")[-1] if "_regime_" in run_id else "unknown"
+            captured_cfgs[regime_key] = cfg
+            return PipelineResult(symbol=symbol, run_id=run_id, passed=True,
+                                  metrics={"sharpe": 1.5, "n_trades": 10})
+
+        def _fake_labels(df_full, cfg):
+            labels = pd.Series("bull", index=df_full.index)
+            labels.iloc[200:250] = "crisis"
+            return labels
+
+        def _fake_splits(df_full, labels, cfg):
+            return {"bull": df_full.iloc[:200], "crisis": df_full.iloc[200:260]}
+
+        state = MagicMock()
+
+        with patch("octa_training.core.pipeline.train_evaluate_adaptive", side_effect=_fake_train_adaptive), \
+             patch("octa_training.core.regime_labels.classify_regimes", side_effect=_fake_labels), \
+             patch("octa_training.core.regime_labels.get_regime_splits", side_effect=_fake_splits):
+            train_regime_ensemble(
+                symbol="TEST",
+                timeframe="1D",
+                cfg=cfg,
+                state=state,
+                run_id="test_run",
+                parquet_path=str(pq),
+            )
+
+        # When crisis_oos is None, the original cfg object should be passed unchanged
+        assert "bull" in captured_cfgs
+        assert captured_cfgs["bull"] is cfg, "cfg should be passed unchanged when crisis_oos is None"
+
+
+# ---------------------------------------------------------------------------
+# I8: Per-regime artifact persistence and routing manifest
+# ---------------------------------------------------------------------------
+
+class TestRegimeArtifactPersistence:
+    """Verify per-regime pkl artifacts and the RegimeRouter manifest.
+
+    I8-A: Passing regimes produce <SYM>_<TF>_<regime>.pkl in the artifacts dir.
+    I8-B: A failing regime does NOT produce an artifact; passing ones are kept.
+    I8-C: Ensemble passes iff bull AND bear both produce validated artifacts.
+    I8-D: <SYM>_<TF>_regime.pkl (router manifest) is always written.
+    I8-E: All artifact paths in routing_table are load-validated.
+    I8-F: require_bull=False lets bear-only pass.
+    """
+
+    # ------------------------------------------------------------------ helpers
+
+    def _make_parquet(self, tmp_path: Path) -> Path:
+        idx = pd.date_range("2015-01-01", periods=600, freq="B", tz="UTC")
+        df = pd.DataFrame(
+            {"open": 100.0, "high": 101.0, "low": 99.0, "close": 100.0, "volume": 1e6},
+            index=idx,
+        )
+        pq = tmp_path / "TEST_1D.parquet"
+        df.to_parquet(str(pq))
+        return pq
+
+    def _write_fake_pkl(self, path: Path, content: dict) -> Path:
+        import pickle
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "wb") as fh:
+            pickle.dump(content, fh, protocol=4)
+        return path
+
+    def _make_cfg(self, tmp_path: Path, require_bull=True, require_bear=True):
+        from octa_training.core.config import TrainingConfig, RegimeEnsembleConfig
+        arts_dir = str(tmp_path / "regime_arts")
+        re_cfg = RegimeEnsembleConfig(
+            enabled=True,
+            regimes=["bull", "bear", "crisis"],
+            min_regimes_trained=2,
+            require_bull=require_bull,
+            require_bear=require_bear,
+            regime_artifacts_dir=arts_dir,
+        )
+        return TrainingConfig(regime_ensemble=re_cfg)
+
+    def _fake_regime_labels(self, df_full, cfg=None):
+        labels = pd.Series("bull", index=df_full.index)
+        labels.iloc[100:300] = "bear"
+        labels.iloc[300:360] = "crisis"
+        return labels
+
+    def _fake_regime_splits(self, df_full, labels, cfg=None):
+        return {
+            "bull": df_full.iloc[:300],
+            "bear": df_full.iloc[100:400],
+            "crisis": df_full.iloc[300:365],
+        }
+
+    def _run_ensemble(self, tmp_path, cfg, pq, per_regime_results: dict):
+        """Run train_regime_ensemble with mocked submodel results keyed by regime."""
+        from octa_training.core.pipeline import train_regime_ensemble, PipelineResult as _PR
+
+        # NOTE: train_evaluate_adaptive is called with all keyword args, so the
+        # mock must accept **kw rather than named positional params.
+        def _fake_train(**kw):
+            run_id = kw.get("run_id", "")
+            regime_key = run_id.split("_regime_")[-1] if "_regime_" in run_id else "unknown"
+            return per_regime_results.get(
+                regime_key,
+                _PR(symbol=kw.get("symbol", ""), run_id=run_id, passed=False, error="no_result"),
+            )
+
+        state = MagicMock()
+        with (
+            patch("octa_training.core.pipeline.train_evaluate_adaptive", side_effect=_fake_train),
+            patch("octa_training.core.regime_labels.classify_regimes", side_effect=self._fake_regime_labels),
+            patch("octa_training.core.regime_labels.get_regime_splits", side_effect=self._fake_regime_splits),
+        ):
+            return train_regime_ensemble(
+                symbol="TEST",
+                timeframe="1D",
+                cfg=cfg,
+                state=state,
+                run_id="test_run",
+                parquet_path=str(pq),
+            )
+
+    # ------------------------------------------------------------------ tests
+
+    def test_passing_regimes_produce_per_regime_pkls(self, tmp_path):
+        """I8-A: bull, bear, crisis all pass → three per-regime pkls created."""
+        import pickle
+        from octa_training.core.pipeline import PipelineResult
+
+        pq = self._make_parquet(tmp_path)
+        cfg = self._make_cfg(tmp_path)
+        arts_dir = Path(cfg.regime_ensemble.regime_artifacts_dir)
+
+        # Create fake source pkls (simulates save_tradeable_artifact output)
+        src_pkls = {}
+        for regime in ("bull", "bear", "crisis"):
+            p = self._write_fake_pkl(tmp_path / f"src_{regime}.pkl", {"regime": regime, "ok": True})
+            src_pkls[regime] = p
+
+        per_regime_results = {
+            r: PipelineResult(
+                symbol="TEST", run_id=f"test_run_regime_{r}", passed=True,
+                pack_result={"saved": True, "pkl": str(src_pkls[r])},
+            )
+            for r in ("bull", "bear", "crisis")
+        }
+
+        result = self._run_ensemble(tmp_path, cfg, pq, per_regime_results)
+
+        assert result.passed, f"ensemble should pass with all three regimes; error={result.error}"
+        for regime in ("bull", "bear", "crisis"):
+            dst = arts_dir / "TEST" / "1D" / f"TEST_1D_{regime}.pkl"
+            assert dst.exists(), f"missing per-regime artifact: {dst}"
+            with open(dst, "rb") as fh:
+                content = pickle.load(fh)
+            assert content["regime"] == regime, f"artifact content mismatch for {regime}"
+
+    def test_crisis_failure_preserves_bull_bear_artifacts(self, tmp_path):
+        """I8-B: bull+bear pass, crisis fails → bull/bear pkls kept, crisis absent."""
+        import pickle
+        from octa_training.core.pipeline import PipelineResult
+
+        pq = self._make_parquet(tmp_path)
+        cfg = self._make_cfg(tmp_path)
+        arts_dir = Path(cfg.regime_ensemble.regime_artifacts_dir)
+
+        bull_src = self._write_fake_pkl(tmp_path / "src_bull.pkl", {"regime": "bull"})
+        bear_src = self._write_fake_pkl(tmp_path / "src_bear.pkl", {"regime": "bear"})
+
+        per_regime_results = {
+            "bull": PipelineResult(
+                symbol="TEST", run_id="run_bull", passed=True,
+                pack_result={"saved": True, "pkl": str(bull_src)},
+            ),
+            "bear": PipelineResult(
+                symbol="TEST", run_id="run_bear", passed=True,
+                pack_result={"saved": True, "pkl": str(bear_src)},
+            ),
+            "crisis": PipelineResult(
+                symbol="TEST", run_id="run_crisis", passed=False,
+                pack_result=None, error="gate_fail",
+            ),
+        }
+
+        result = self._run_ensemble(tmp_path, cfg, pq, per_regime_results)
+
+        assert result.passed, f"bull+bear should be enough; error={result.error}"
+        assert (arts_dir / "TEST" / "1D" / "TEST_1D_bull.pkl").exists()
+        assert (arts_dir / "TEST" / "1D" / "TEST_1D_bear.pkl").exists()
+        assert not (arts_dir / "TEST" / "1D" / "TEST_1D_crisis.pkl").exists()
+        assert "bull" in result.regime_artifact_paths
+        assert "bear" in result.regime_artifact_paths
+        assert "crisis" not in result.regime_artifact_paths
+
+    def test_bull_only_fails_ensemble(self, tmp_path):
+        """I8-C: only bull passes → ensemble fails (bear required by default)."""
+        from octa_training.core.pipeline import PipelineResult
+
+        pq = self._make_parquet(tmp_path)
+        cfg = self._make_cfg(tmp_path)
+
+        bull_src = self._write_fake_pkl(tmp_path / "src_bull.pkl", {"regime": "bull"})
+        per_regime_results = {
+            "bull": PipelineResult(
+                symbol="TEST", run_id="run_bull", passed=True,
+                pack_result={"saved": True, "pkl": str(bull_src)},
+            ),
+            "bear": PipelineResult(
+                symbol="TEST", run_id="run_bear", passed=False,
+                error="gate_fail",
+            ),
+            "crisis": PipelineResult(
+                symbol="TEST", run_id="run_crisis", passed=False,
+                error="gate_fail",
+            ),
+        }
+
+        result = self._run_ensemble(tmp_path, cfg, pq, per_regime_results)
+
+        assert not result.passed, "ensemble must fail when bear is absent"
+        assert result.error is not None and "bear" in result.error, (
+            f"error should mention missing bear; got: {result.error}"
+        )
+
+    def test_router_manifest_written_with_correct_structure(self, tmp_path):
+        """I8-D: regime.pkl written; manifest contains symbol/tf/run_id/routing_table."""
+        import pickle
+        from octa_training.core.pipeline import PipelineResult
+
+        pq = self._make_parquet(tmp_path)
+        cfg = self._make_cfg(tmp_path)
+        arts_dir = Path(cfg.regime_ensemble.regime_artifacts_dir)
+
+        bull_src = self._write_fake_pkl(tmp_path / "src_bull.pkl", {"regime": "bull"})
+        bear_src = self._write_fake_pkl(tmp_path / "src_bear.pkl", {"regime": "bear"})
+
+        per_regime_results = {
+            "bull": PipelineResult(
+                symbol="TEST", run_id="run_bull", passed=True,
+                pack_result={"saved": True, "pkl": str(bull_src)},
+            ),
+            "bear": PipelineResult(
+                symbol="TEST", run_id="run_bear", passed=True,
+                pack_result={"saved": True, "pkl": str(bear_src)},
+            ),
+            "crisis": PipelineResult(
+                symbol="TEST", run_id="run_crisis", passed=False,
+                error="gate_fail",
+            ),
+        }
+
+        result = self._run_ensemble(tmp_path, cfg, pq, per_regime_results)
+
+        router_path = arts_dir / "TEST" / "1D" / "TEST_1D_regime.pkl"
+        assert router_path.exists(), "regime.pkl (router manifest) must be written"
+        assert result.router_path == str(router_path)
+
+        with open(router_path, "rb") as fh:
+            manifest = pickle.load(fh)
+
+        assert manifest["kind"] == "regime_router"
+        assert manifest["symbol"] == "TEST"
+        assert manifest["timeframe"] == "1D"
+        assert manifest["run_id"] == "test_run"
+        assert manifest["passed"] is True
+        assert manifest["fail_closed"] is True
+        # routing_table must have exactly bull and bear
+        rt = manifest["routing_table"]
+        assert "bull" in rt
+        assert "bear" in rt
+        assert "crisis" not in rt
+        # per-regime status
+        assert manifest["regimes"]["bull"]["status"] == "PASS"
+        assert manifest["regimes"]["bear"]["status"] == "PASS"
+        assert manifest["regimes"]["crisis"]["status"] == "FAIL"
+        assert manifest["regimes"]["bull"]["artifact_validated"] is True
+        assert manifest["regimes"]["bear"]["artifact_validated"] is True
+        assert manifest["regimes"]["crisis"]["artifact_validated"] is False
+
+    def test_router_manifest_artifact_paths_all_loadable(self, tmp_path):
+        """I8-E: every path in routing_table points to a loadable pkl."""
+        import pickle
+        from octa_training.core.pipeline import PipelineResult
+
+        pq = self._make_parquet(tmp_path)
+        cfg = self._make_cfg(tmp_path)
+        arts_dir = Path(cfg.regime_ensemble.regime_artifacts_dir)
+
+        bull_src = self._write_fake_pkl(tmp_path / "src_bull.pkl", {"regime": "bull"})
+        bear_src = self._write_fake_pkl(tmp_path / "src_bear.pkl", {"regime": "bear"})
+
+        per_regime_results = {
+            "bull": PipelineResult(
+                symbol="TEST", run_id="run_bull", passed=True,
+                pack_result={"saved": True, "pkl": str(bull_src)},
+            ),
+            "bear": PipelineResult(
+                symbol="TEST", run_id="run_bear", passed=True,
+                pack_result={"saved": True, "pkl": str(bear_src)},
+            ),
+            "crisis": PipelineResult(
+                symbol="TEST", run_id="run_crisis", passed=False,
+                error="gate_fail",
+            ),
+        }
+
+        self._run_ensemble(tmp_path, cfg, pq, per_regime_results)
+
+        router_path = arts_dir / "TEST" / "1D" / "TEST_1D_regime.pkl"
+        with open(router_path, "rb") as fh:
+            manifest = pickle.load(fh)
+
+        for regime, art_path in manifest["routing_table"].items():
+            p = Path(art_path)
+            assert p.exists(), f"routing_table[{regime}] path does not exist: {art_path}"
+            with open(p, "rb") as fh:
+                obj = pickle.load(fh)
+            assert obj is not None, f"routing_table[{regime}] artifact is empty"
+
+    def test_require_bull_false_allows_bear_only_ensemble(self, tmp_path):
+        """I8-F: require_bull=False → ensemble passes if bear passes, even without bull."""
+        from octa_training.core.pipeline import PipelineResult
+
+        pq = self._make_parquet(tmp_path)
+        cfg = self._make_cfg(tmp_path, require_bull=False, require_bear=True)
+
+        bear_src = self._write_fake_pkl(tmp_path / "src_bear.pkl", {"regime": "bear"})
+        per_regime_results = {
+            "bull": PipelineResult(
+                symbol="TEST", run_id="run_bull", passed=False, error="gate_fail",
+            ),
+            "bear": PipelineResult(
+                symbol="TEST", run_id="run_bear", passed=True,
+                pack_result={"saved": True, "pkl": str(bear_src)},
+            ),
+            "crisis": PipelineResult(
+                symbol="TEST", run_id="run_crisis", passed=False, error="gate_fail",
+            ),
+        }
+
+        result = self._run_ensemble(tmp_path, cfg, pq, per_regime_results)
+
+        assert result.passed, f"bear-only should pass when require_bull=False; error={result.error}"
+        assert "bear" in result.regime_artifact_paths
+        assert "bull" not in result.regime_artifact_paths

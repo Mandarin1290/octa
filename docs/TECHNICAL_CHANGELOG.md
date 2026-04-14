@@ -3,6 +3,28 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-04-14 21:31:31] FEATURE
+Neue Funktionalität hinzugefügt - 6 Code-Dateien - 2 Test-Dateien - (+1108/-9 Zeilen)
+
+**Statistics:**
+- Files Changed: 8
+- Lines Added: +1108
+- Lines Deleted: -9
+- Net Change: +1099
+
+**File-Level Changes:**
+```
++    2 -    0  octa/core/governance/governance_audit.py
++   64 -    1  octa/support/ops/run_full_cascade_training_from_parquets.py
++   11 -    0  octa_ops/autopilot/cascade_train.py
++   10 -    1  octa_training/core/config.py
++  180 -    5  octa_training/core/pipeline.py
++   17 -    0  octa_training/core/prescreening.py
++  466 -    2  tests/test_cascade_invariants.py
++  358 -    0  tests/test_governance_audit_gaps.py
+```
+
+
 ## [2026-04-14 06:36:21] CHANGE
 Code-Änderungen - 1 Code-Dateien - (+3/-0 Zeilen)
 

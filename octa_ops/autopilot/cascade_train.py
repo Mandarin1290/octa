@@ -720,6 +720,7 @@ def run_cascade_training(
                     parquet_path=str(pq),
                     dataset=asset_class,
                     asset_class=asset_class,
+                    gov_audit=_gov_scope,
                 )
                 # Synthesize PipelineResult-compatible attributes from RegimeEnsemble.
                 # Critical: downstream code (run_full_cascade_training_from_parquets.py)
@@ -746,12 +747,22 @@ def run_cascade_training(
                 # liquidity are visible to run_full_cascade validation.
                 _rep_pack = (getattr(_rep_sub, "pack_result", None) or {}) if _rep_sub else {}
                 _merged_pack = dict(_rep_pack)
+                # Include per-regime pkls and router manifest so promotion copies them
+                for _art_path in ensemble.regime_artifact_paths.values():
+                    _sub_artifacts.append(_art_path)
+                    _sha_path = str(Path(_art_path).with_suffix(".sha256"))
+                    if Path(_sha_path).exists():
+                        _sub_artifacts.append(_sha_path)
+                if ensemble.router_path and Path(ensemble.router_path).exists():
+                    _sub_artifacts.append(ensemble.router_path)
                 _merged_pack["model_artifacts"] = list(dict.fromkeys(_sub_artifacts))
                 _merged_pack["features_used"] = list(dict.fromkeys(_sub_features))
                 _merged_pack["regime_ensemble"] = {
                     "regimes_trained": ensemble.regimes_trained,
                     "detector_path": ensemble.detector_path,
                     "submodels": {r: getattr(v, "passed", False) for r, v in ensemble.submodels.items()},
+                    "regime_artifact_paths": dict(ensemble.regime_artifact_paths),
+                    "router_path": ensemble.router_path,
                 }
                 # Set error when ensemble did not reach min_regimes_trained threshold
                 # so that cascade_train produces a readable fail_reason (not "gate_failed").

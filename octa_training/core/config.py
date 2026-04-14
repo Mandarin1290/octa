@@ -333,7 +333,11 @@ class RegimeEnsembleConfig(BaseModel):
     Trains one CatBoost submodel per regime (bull/bear/crisis) using
     regime-filtered subsets of the training data.
 
-    Gate: ensemble passes iff regimes_trained >= min_regimes_trained.
+    Gate: by default requires bull AND bear to pass (require_bull + require_bear).
+    Per-regime artifacts are written to regime_artifacts_dir (or the default path
+    octa/var/models/regime_artifacts/<symbol>/<tf>/):
+      <SYMBOL>_<TF>_bull.pkl, <SYMBOL>_<TF>_bear.pkl, <SYMBOL>_<TF>_crisis.pkl
+    A routing manifest is written to <SYMBOL>_<TF>_regime.pkl in the same dir.
     Fallback order: crisis → bear → bull → neutral (highest-priority present wins
     at shadow execution time).
     """
@@ -347,6 +351,11 @@ class RegimeEnsembleConfig(BaseModel):
     fallback_order: List[str] = Field(
         default_factory=lambda: ["crisis", "bear", "bull", "neutral"]
     )
+    # Minimum requirements: ensemble only passes if these regimes produce valid artifacts
+    require_bull: bool = True
+    require_bear: bool = True
+    # Where per-regime artifacts are persisted; None → octa/var/models/regime_artifacts
+    regime_artifacts_dir: Optional[str] = None
 
 
 class TrainingConfig(BaseModel):

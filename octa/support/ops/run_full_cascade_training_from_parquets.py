@@ -923,18 +923,80 @@ def _promote_to_paper_ready(
         timeframes_promoted.append(str(tf))
         per_tf_metrics[str(tf)] = metrics
 
+    # Collect regime routing info from per-TF router manifests (*_regime.pkl)
+    _routing_by_tf: Dict[str, Any] = {}
+    for _stage in stages:
+        _stage_tf = str(_stage.get("timeframe") or "")
+        for _ap in (_stage.get("model_artifacts") or []):
+            if _ap and str(_ap).endswith("_regime.pkl"):
+                try:
+                    import pickle as _pk
+                    with open(_ap, "rb") as _fh:
+                        _rm = _pk.load(_fh)
+                    if isinstance(_rm, dict) and _rm.get("kind") == "regime_router":
+                        _routing_by_tf[_stage_tf] = {
+                            "routing_table": _rm.get("routing_table", {}),
+                            "passed": _rm.get("passed"),
+                            "regimes": _rm.get("regimes", {}),
+                            "detector_path": _rm.get("detector_path"),
+                        }
+                except Exception:
+                    pass
+
+    # Derive ensemble-level fields from per_tf_metrics and regime router manifests.
+    # Priority order for scalar metrics: 1D > 1H > first available TF.
+    _ens_sharpe = None
+    _ens_sortino = None
+    for _tf_pref in ["1D", "1H"] + list(per_tf_metrics.keys()):
+        if _tf_pref in per_tf_metrics:
+            _m = per_tf_metrics[_tf_pref]
+            if _ens_sharpe is None and _m.get("sharpe") is not None:
+                _ens_sharpe = _m["sharpe"]
+            if _ens_sortino is None and _m.get("sortino") is not None:
+                _ens_sortino = _m["sortino"]
+            if _ens_sharpe is not None and _ens_sortino is not None:
+                break
+
+    # Collect regimes that passed training (de-duplicated across TFs) and
+    # determine crisis_oos_status from the regime router manifests.
+    _regimes_trained: List[str] = []
+    _crisis_oos_status = "SKIPPED"
+    for _tf_data in _routing_by_tf.values():
+        _regimes_dict = _tf_data.get("regimes", {})
+        for _r, _r_data in _regimes_dict.items():
+            _r_status = (_r_data.get("status", "") if isinstance(_r_data, dict) else "")
+            if _r_status == "PASS" and _r not in _regimes_trained:
+                _regimes_trained.append(_r)
+            if _r == "crisis":
+                if _r_status == "PASS":
+                    _crisis_oos_status = "PASSED"
+                elif _r_status == "FAIL" and _crisis_oos_status != "PASSED":
+                    _crisis_oos_status = "FAILED"
+
+    # Canonical primary TF for the "tf" convenience field.
+    _tf_order = ["1D", "1H", "30M", "5M", "1M"]
+    _primary_tf = next((t for t in _tf_order if t in timeframes_promoted), timeframes_promoted[0] if timeframes_promoted else None)
+
     # Write ensemble_manifest.json at the symbol level
     sym_dir = paper_root / symbol
     sym_dir.mkdir(parents=True, exist_ok=True)
     manifest = {
+        "version": "v0.0.0",
         "schema_version": "v0.0.0",
         "symbol": symbol,
+        "tf": _primary_tf,
         "architecture": "regime_ensemble",
         "run_id": run_id,
         "created_at": datetime.now(_tz.utc).isoformat(),
         "timeframes": timeframes_promoted,
         "per_tf_metrics": per_tf_metrics,
-        "submodels": {},  # populated by regime_ensemble training path; empty for cascade-only promotion
+        "submodels": _routing_by_tf,  # populated from regime router manifests
+        # --- v0.0.0 schema additions ---
+        "regimes_trained": _regimes_trained,
+        "ensemble_sharpe": _ens_sharpe,
+        "ensemble_sortino": _ens_sortino,
+        "crisis_oos_status": _crisis_oos_status,
+        "regime_distribution_252d": None,  # populated post-training when detector is loaded
     }
     manifest_path = sym_dir / "ensemble_manifest.json"
     manifest_path.write_text(
@@ -1304,6 +1366,7 @@ def run_full_cascade(
                     inventory=inventory,
                     cfg=cfg,
                     log_fn=lambda msg: _log(log_path, f"[prescreening] {msg}"),
+                    gov_audit=_gov_audit,
                 )
                 _prescreened_out = [s for s, r in _ps_results.items() if not r.passed]
                 if _prescreened_out:

@@ -34,6 +34,20 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `octa_training/core/pipeline.py`
 
 
+### [2026-04-14 21:31:31] FEATURE
+**Beschreibung:** Neue Funktionalität hinzugefügt - 6 Code-Dateien - 2 Test-Dateien - (+1108/-9 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 6 Dateien
+  - `octa/core/governance/governance_audit.py`
+  - `octa/support/ops/run_full_cascade_training_from_parquets.py`
+  - `octa_ops/autopilot/cascade_train.py`
+  - ... und 3 weitere
+- **TESTS:** 2 Dateien
+  - `tests/test_cascade_invariants.py`
+  - `tests/test_governance_audit_gaps.py`
+
+
 ## 2026-04-13
 
 

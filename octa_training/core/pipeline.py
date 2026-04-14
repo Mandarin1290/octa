@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 import os
 import json
+import pickle
+import shutil
 
 import numpy as np
 import pandas as pd
@@ -58,9 +60,11 @@ class RegimeEnsemble:
     run_id : run identifier
     submodels : dict mapping regime name → PipelineResult for that submodel
     regimes_trained : number of regimes that passed their training gate
-    passed : True iff regimes_trained >= min_regimes_trained (default 2)
+    passed : True iff bull AND bear both produced valid artifacts (by default)
     detector_path : path where RegimeDetector was persisted (.pkl)
     error : error message if ensemble failed to build
+    regime_artifact_paths : maps regime name → absolute path of per-regime pkl
+    router_path : path to the <SYMBOL>_<TF>_regime.pkl routing manifest
     """
     symbol: str
     timeframe: str
@@ -70,6 +74,8 @@ class RegimeEnsemble:
     passed: bool
     detector_path: Optional[str] = None
     error: Optional[str] = None
+    regime_artifact_paths: Dict[str, str] = field(default_factory=dict)
+    router_path: Optional[str] = None
 
 
 def _normalize_asset_class(label: Optional[str]) -> str:
@@ -2634,6 +2640,8 @@ def train_regime_ensemble(
     run_id: str,
     parquet_path: Optional[str] = None,
     detector_dir: Optional[str] = None,
+    regime_artifacts_dir: Optional[str] = None,
+    gov_audit: Optional[Any] = None,
     **kwargs: Any,
 ) -> "RegimeEnsemble":
     """Train a per-regime CatBoost ensemble for one symbol/TF (v0.0.0).
@@ -2684,6 +2692,16 @@ def train_regime_ensemble(
 
     min_regimes_trained: int = int(getattr(re_cfg, "min_regimes_trained", 2))
     allowed_regimes: List[str] = list(getattr(re_cfg, "regimes", ["bull", "bear", "crisis"]))
+    require_bull: bool = bool(getattr(re_cfg, "require_bull", True))
+    require_bear: bool = bool(getattr(re_cfg, "require_bear", True))
+
+    # --- Resolve per-regime artifact directory ---
+    _re_arts_root: Optional[str] = (
+        regime_artifacts_dir
+        or getattr(re_cfg, "regime_artifacts_dir", None)
+        or "octa/var/models/regime_artifacts"
+    )
+    _re_arts_dir = Path(_re_arts_root) / symbol / timeframe
 
     # --- Build label config from re_cfg.min_rows ---
     min_rows_raw = getattr(re_cfg, "min_rows", {}) or {}
@@ -2757,16 +2775,32 @@ def train_regime_ensemble(
     splits = get_regime_splits(df_full, labels, cfg=label_cfg)
     submodels: Dict[str, PipelineResult] = {}
     regimes_trained = 0
+    regime_artifact_paths: Dict[str, str] = {}
 
     for regime in allowed_regimes:
         if regime not in splits:
             continue  # Not enough rows for this regime
 
         regime_run_id = f"{run_id}_regime_{regime}"
+        # Non-crisis submodels are never deployed during crisis periods — the
+        # crisis submodel handles those intervals.  Applying the crisis OOS gate
+        # to bull/bear/neutral submodels is architecturally incorrect and blocks
+        # valid models that simply aren't designed for crisis resilience.
+        # Only the crisis submodel keeps crisis_oos enabled.
+        _regime_cfg = cfg
+        if regime != "crisis":
+            _crisis_oos = getattr(cfg, "crisis_oos", None)
+            if _crisis_oos is not None and getattr(_crisis_oos, "enabled", False):
+                try:
+                    _regime_cfg = cfg.copy(
+                        update={"crisis_oos": _crisis_oos.copy(update={"enabled": False})}
+                    )
+                except Exception:
+                    _regime_cfg = cfg  # fallback: keep original if copy fails
         try:
             res = train_evaluate_adaptive(
                 symbol=symbol,
-                cfg=cfg,
+                cfg=_regime_cfg,
                 state=state,
                 run_id=regime_run_id,
                 parquet_path=_parquet_path,
@@ -2784,8 +2818,53 @@ def train_regime_ensemble(
             )
 
         submodels[regime] = res
+        if gov_audit is not None:
+            try:
+                from octa.core.governance.governance_audit import EVENT_TRAINING_RUN
+                gov_audit.emit(
+                    EVENT_TRAINING_RUN,
+                    {
+                        "phase": "regime_submodel",
+                        "symbol": symbol,
+                        "timeframe": timeframe,
+                        "regime": regime,
+                        "passed": res.passed,
+                        "error": res.error,
+                    },
+                )
+            except Exception:
+                pass
         if res.passed:
             regimes_trained += 1
+            # Copy artifact to per-regime location before next submodel overwrites it.
+            # safe: fail-soft — copy failure does not fail the submodel itself.
+            _src_pkl_str = (res.pack_result or {}).get("pkl")
+            if _src_pkl_str:
+                _src_pkl = Path(_src_pkl_str)
+                if _src_pkl.exists():
+                    try:
+                        _re_arts_dir.mkdir(parents=True, exist_ok=True)
+                        _dst_pkl = _re_arts_dir / f"{symbol}_{timeframe}_{regime}.pkl"
+                        shutil.copy2(_src_pkl, _dst_pkl)
+                        # copy sha256 sidecar if present
+                        _src_sha = _src_pkl.with_suffix(".sha256")
+                        if _src_sha.exists():
+                            shutil.copy2(
+                                _src_sha,
+                                _re_arts_dir / f"{symbol}_{timeframe}_{regime}.sha256",
+                            )
+                        # load-validate: artifact must be readable
+                        with open(_dst_pkl, "rb") as _fh:
+                            pickle.load(_fh)
+                        regime_artifact_paths[regime] = str(_dst_pkl)
+                    except Exception:
+                        # copy or load failed — do not register this artifact
+                        _dst_maybe = _re_arts_dir / f"{symbol}_{timeframe}_{regime}.pkl"
+                        if _dst_maybe.exists():
+                            try:
+                                _dst_maybe.unlink()
+                            except Exception:
+                                pass
 
     # --- Fit and persist RegimeDetector ---
     detector: Optional[RegimeDetector] = None
@@ -2807,10 +2886,104 @@ def train_regime_ensemble(
         # Non-fatal: ensemble can still be used without a persisted detector
         detector_path = None
 
-    passed = regimes_trained >= min_regimes_trained
+    # --- Compute passed: bull AND bear required by default ---
+    bull_passes = bool(submodels.get("bull") is not None and submodels["bull"].passed)
+    bear_passes = bool(submodels.get("bear") is not None and submodels["bear"].passed)
+
+    if require_bull and require_bear:
+        passed = bull_passes and bear_passes
+    elif require_bull:
+        passed = bull_passes
+    elif require_bear:
+        passed = bear_passes
+    else:
+        # legacy: gate on count only
+        passed = regimes_trained >= min_regimes_trained
+
     _ensemble_error: Optional[str] = None
     if not passed:
-        _ensemble_error = f"insufficient_regimes_trained:{regimes_trained}/{min_regimes_trained}"
+        _missing = [r for r, ok in [("bull", bull_passes), ("bear", bear_passes)] if not ok and (require_bull if r == "bull" else require_bear)]
+        if _missing:
+            _ensemble_error = f"missing_required_regimes:{','.join(_missing)}"
+        else:
+            _ensemble_error = f"insufficient_regimes_trained:{regimes_trained}/{min_regimes_trained}"
+
+    # --- Write RegimeRouter pkl (routing manifest) ---
+    router_path: Optional[str] = None
+    try:
+        from datetime import datetime as _dt
+
+        _crisis_windows: List[Dict[str, Any]] = []
+        try:
+            _c_cfg = getattr(cfg, "crisis_oos", None)
+            if _c_cfg is not None:
+                for _w in getattr(_c_cfg, "windows", []):
+                    _crisis_windows.append({
+                        "name": str(getattr(_w, "name", "")),
+                        "start": str(getattr(_w, "start", "")),
+                        "end": str(getattr(_w, "end", "")),
+                    })
+        except Exception:
+            pass
+
+        def _regime_status(r: str) -> str:
+            if r not in submodels:
+                return "SKIP"
+            return "PASS" if submodels[r].passed else "FAIL"
+
+        _router_manifest: Dict[str, Any] = {
+            "schema_version": 1,
+            "kind": "regime_router",
+            "symbol": symbol,
+            "timeframe": timeframe,
+            "run_id": run_id,
+            "artifact_version": "1.0",
+            "created_at": _dt.utcnow().isoformat(),
+            "passed": passed,
+            "fail_closed": True,
+            "require_bull": require_bull,
+            "require_bear": require_bear,
+            "regimes": {
+                r: {
+                    "status": _regime_status(r),
+                    "artifact_path": regime_artifact_paths.get(r),
+                    "artifact_validated": r in regime_artifact_paths,
+                }
+                for r in allowed_regimes
+            },
+            "routing_table": dict(regime_artifact_paths),
+            "detector_path": detector_path,
+            "crisis_windows_evaluated": _crisis_windows,
+        }
+        _re_arts_dir.mkdir(parents=True, exist_ok=True)
+        _router_pkl_path = _re_arts_dir / f"{symbol}_{timeframe}_regime.pkl"
+        _router_bytes = pickle.dumps(_router_manifest, protocol=4)
+        with open(_router_pkl_path, "wb") as _rfh:
+            _rfh.write(_router_bytes)
+        # load-validate the manifest
+        with open(_router_pkl_path, "rb") as _rfh:
+            pickle.load(_rfh)
+        router_path = str(_router_pkl_path)
+    except Exception:
+        router_path = None
+
+    if gov_audit is not None:
+        try:
+            from octa.core.governance.governance_audit import EVENT_REGIME_ACTIVATED
+            gov_audit.emit(
+                EVENT_REGIME_ACTIVATED,
+                {
+                    "symbol": symbol,
+                    "timeframe": timeframe,
+                    "passed": passed,
+                    "regimes_trained": regimes_trained,
+                    "regime_artifact_paths": dict(regime_artifact_paths),
+                    "router_path": router_path,
+                    "error": _ensemble_error,
+                },
+            )
+        except Exception:
+            pass
 
     return RegimeEnsemble(
         symbol=symbol,
@@ -2821,6 +2994,8 @@ def train_regime_ensemble(
         passed=passed,
         detector_path=detector_path,
         error=_ensemble_error,
+        regime_artifact_paths=regime_artifact_paths,
+        router_path=router_path,
     )
 
 

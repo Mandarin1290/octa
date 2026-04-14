@@ -236,6 +236,7 @@ def prescreen_universe(
     inventory: Dict[str, Any],
     cfg: Any = None,
     log_fn: Any = None,
+    gov_audit: Any = None,
 ) -> Dict[str, ScreenResult]:
     """Run pre-screening for all symbols in the universe.
 
@@ -279,4 +280,20 @@ def prescreen_universe(
             summary.by_reason[reason] = summary.by_reason.get(reason, 0) + 1
 
     log_fn(str(summary))
+
+    if gov_audit is not None:
+        try:
+            from octa.core.governance.governance_audit import EVENT_PRESCREENING_COMPLETE
+            gov_audit.emit(
+                EVENT_PRESCREENING_COMPLETE,
+                {
+                    "total": summary.total,
+                    "passed": summary.passed,
+                    "failed": summary.failed,
+                    "by_reason": dict(summary.by_reason),
+                },
+            )
+        except Exception:
+            pass
+
     return results
