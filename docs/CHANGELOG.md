@@ -19,6 +19,17 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `configs/sweep_catboost_1d.yaml`
 
 
+### [2026-04-15 22:01:02] BUGFIX
+**Beschreibung:** Fehlerbehebung - 2 Code-Dateien - (+382/-1 Zeilen)
+
+**Geänderte Dateien:**
+- **CODE:** 2 Dateien
+  - `octa/core/data/sources/altdata/fred.py`
+  - `octa/support/altdata/fix_altdata_snapshots.py`
+- **CONFIG:** 1 Dateien
+  - `config/altdat.yaml`
+
+
 ## 2026-04-14
 
 

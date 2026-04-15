@@ -74,6 +74,20 @@ sources:
         feature_name: feat_inflation_breakeven
         frequency: daily
         transform: level
+      # Tier-B: macro regime indicators (yield curve, credit, stress)
+      # Added 2026-04-15 — fetch via run_altdata_refresh.py after FRED key confirmed.
+      - id: T10Y2Y
+        feature_name: feat_yield_curve_10y2y
+        frequency: daily
+        transform: level
+      - id: BAMLH0A0HYM2
+        feature_name: feat_hy_spread
+        frequency: daily
+        transform: level
+      - id: STLFSI2
+        feature_name: feat_stress_index
+        frequency: weekly
+        transform: level
   edgar:
     enabled: false
     forms: ["10-K", "10-Q", "8-K"]

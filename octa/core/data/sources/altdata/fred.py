@@ -38,7 +38,12 @@ class FredSource:
                 series.append(_sid)
         if not series:
             return None
-        start = asof - timedelta(days=365)
+        # lookback_days: how many calendar days of history to fetch.
+        # Default 4380 (~12 years) so snapshots cover full training period
+        # (training uses bars from ~2015; 252-bar z_252 needs ≥1y of history).
+        # Configurable via cfg.lookback_days for tests and special cases.
+        lookback_days = int(self.cfg.get("lookback_days", 4380))
+        start = asof - timedelta(days=lookback_days)
         payload: dict[str, Any] = {"series": {}}
         for series_id in series:
             res = fetch_fred_series(series_id=series_id, start_ts=start, end_ts=asof, api_key=api_key)
