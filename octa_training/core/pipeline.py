@@ -1804,6 +1804,18 @@ def train_evaluate_package(
                     ac_spec = by_ac.get(ac_key[:-1], {})
                 if isinstance(ac_spec, dict) and ac_spec:
                     base_spec.update(ac_spec)
+                    # Apply TF-specific sortino floor when sortino_min_by_tf is present.
+                    # This overrides the flat sortino_min default for the current TF,
+                    # allowing 1H to have a different floor than 1D without a full
+                    # by_asset_class split per TF.
+                    _sortino_by_tf = ac_spec.get('sortino_min_by_tf')
+                    if isinstance(_sortino_by_tf, dict) and tf_key:
+                        _tf_sortino = _sortino_by_tf.get(str(tf_key).upper())
+                        if _tf_sortino is not None:
+                            try:
+                                base_spec['sortino_min'] = float(_tf_sortino)
+                            except Exception:
+                                pass
                     if logger:
                         logger.debug(
                             "[%s] Applied by_asset_class gate overlay for '%s': %s",
@@ -2904,9 +2916,9 @@ def train_regime_ensemble(
     if not passed:
         _missing = [r for r, ok in [("bull", bull_passes), ("bear", bear_passes)] if not ok and (require_bull if r == "bull" else require_bear)]
         if _missing:
-            _ensemble_error = f"missing_required_regimes:{','.join(_missing)}"
+            _ensemble_error = f"submodel_gate_failed:{','.join(_missing)}"
         else:
-            _ensemble_error = f"insufficient_regimes_trained:{regimes_trained}/{min_regimes_trained}"
+            _ensemble_error = f"insufficient_regime_diversity:{regimes_trained}/{min_regimes_trained}"
 
     # --- Write RegimeRouter pkl (routing manifest) ---
     router_path: Optional[str] = None

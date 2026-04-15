@@ -350,7 +350,7 @@ def test_audit_chain_integrity_with_new_events(tmp_path: Path) -> None:
     ga = GovernanceAudit(run_id="integrity_test_001", root=tmp_path)
     ga.emit(EVENT_TRAINING_RUN, {"phase": "regime_submodel", "symbol": "X", "timeframe": "1D", "regime": "bull", "passed": True, "error": None})
     ga.emit(EVENT_TRAINING_RUN, {"phase": "regime_submodel", "symbol": "X", "timeframe": "1D", "regime": "bear", "passed": False, "error": "test"})
-    ga.emit(EVENT_REGIME_ACTIVATED, {"symbol": "X", "timeframe": "1D", "passed": False, "regimes_trained": 1, "regime_artifact_paths": {}, "router_path": None, "error": "missing_required_regimes:bear"})
+    ga.emit(EVENT_REGIME_ACTIVATED, {"symbol": "X", "timeframe": "1D", "passed": False, "regimes_trained": 1, "regime_artifact_paths": {}, "router_path": None, "error": "submodel_gate_failed:bear"})
     ga.emit(EVENT_PRESCREENING_COMPLETE, {"total": 5, "passed": 3, "failed": 2, "by_reason": {"price_too_low": 2}})
 
     assert ga.verify()

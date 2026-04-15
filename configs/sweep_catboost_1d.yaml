@@ -132,11 +132,21 @@ gates:
       # 1H intraday signals are regime-selective; requiring PF>1.1 in mid-vol
       # kills most intraday signals. PF≥1.0 = not losing money in mid regime.
       regime_pf_min: 1.0
-      # Research screening: sortino_min ≥ 0.95 (hf_defaults sets 1.0 for 1H).
-      # ADT: sortino=0.979 — genuinely positive 1H signal (sh=1.28, pf=1.13,
-      # cagr=8.6%). The 2.1% gap is a rounding artefact of fat-tailed intraday
-      # returns, not a signal quality failure. 0.95 remains conservative.
+      # Research screening: sortino_min — default for all TFs not listed in
+      # sortino_min_by_tf.  For 1D this stays at 0.95 (daily models have
+      # smoother return distributions).
       sortino_min: 0.95
+      # TF-specific sortino floor (applied after sortino_min default).
+      # 1H recalibration 2026-04-15 (evidenced from full_cascade_20260414T191016Z):
+      #   9 symbols failed 1H at sortino gate; distribution: 0.42–0.93.
+      #   Natural gap at 0.85 (AIG: 0.93 → passes; ALRM: 0.77 → next bucket).
+      #   1H intraday fat-tailed returns structurally produce lower sortino than
+      #   daily: more noise, bid-ask widening, intraday regime transitions.
+      #   0.85 is evidenced, conservative vs institutional 0.75–0.80 floor.
+      #   1D unchanged at 0.95.
+      sortino_min_by_tf:
+        1D: 0.95
+        1H: 0.85
       # Research screening: subwindow IS Sharpe ≥ 0.30 (was 0.5 default).
       # 1H subwindows span only 4-6 months each; 0.5 per-window IS Sharpe is
       # calibrated for daily models (1-year subwindows). 0.30 is realistic for

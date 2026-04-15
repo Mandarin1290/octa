@@ -769,7 +769,7 @@ def run_cascade_training(
                 _ens_error = ensemble.error
                 if not ensemble.passed and not _ens_error:
                     _min_req = int(getattr(_re_cfg, "min_regimes_trained", 2))
-                    _ens_error = f"insufficient_regimes_trained:{ensemble.regimes_trained}/{_min_req}"
+                    _ens_error = f"insufficient_regime_diversity:{ensemble.regimes_trained}/{_min_req}"
                 res = _PR(
                     symbol=symbol,
                     run_id=run_id,

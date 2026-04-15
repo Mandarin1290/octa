@@ -116,7 +116,7 @@ def is_data_sufficient(
         )
         details["regime_coverage"] = cov
         if cov["missing"]:
-            reasons.append("missing_required_regimes")
+            reasons.append("insufficient_regime_data")
         if cov["insufficient"]:
             reasons.append("insufficient_regime_coverage")
 
