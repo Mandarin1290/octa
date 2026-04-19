@@ -52,6 +52,14 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `.github/workflows/build_and_push_image.yml`
 
 
+### [2026-04-19 10:34:42] CHANGE
+**Beschreibung:** Code-Änderungen - (+7/-3 Zeilen)
+
+**Geänderte Dateien:**
+- **CONFIG:** 1 Dateien
+  - `.github/workflows/build_and_push_image.yml`
+
+
 ## 2026-04-15
 
 

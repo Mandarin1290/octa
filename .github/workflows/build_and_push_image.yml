@@ -12,7 +12,6 @@ jobs:
       id-token: write
     env:
       REGISTRY_URL: ${{ secrets.REGISTRY_URL }}
-      REGISTRY_IMAGE: ${{ secrets.REGISTRY_URL == 'ghcr.io' && format('ghcr.io/{0}/octa-trainer', github.repository_owner) || format('{0}/octa-trainer', secrets.REGISTRY_URL) }}
 
     steps:
       - name: Checkout
@@ -36,8 +35,11 @@ jobs:
           fi
 
           if [ "${REGISTRY_URL}" = "ghcr.io" ]; then
+            owner="$(printf '%s' "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
+            registry_image="${REGISTRY_URL}/${owner}/octa-trainer"
+            echo "REGISTRY_IMAGE=${registry_image}" >> "${GITHUB_ENV}"
             echo "registry target: ghcr.io"
-            echo "image target: ${REGISTRY_IMAGE}"
+            echo "image target: ${registry_image}"
             echo "login mode: ghcr_github_token"
             exit 0
           fi
@@ -47,8 +49,10 @@ jobs:
             exit 1
           fi
 
+          registry_image="${REGISTRY_URL}/octa-trainer"
+          echo "REGISTRY_IMAGE=${registry_image}" >> "${GITHUB_ENV}"
           echo "registry target: ${REGISTRY_URL}"
-          echo "image target: ${REGISTRY_IMAGE}"
+          echo "image target: ${registry_image}"
           echo "login mode: custom_registry_secret_login"
 
       - name: Login to GHCR
