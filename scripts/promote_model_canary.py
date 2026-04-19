@@ -8,18 +8,23 @@ This script is conservative: it will promote only if recent validation runs repo
 from __future__ import annotations
 
 import argparse
-import statistics
 
 from mlflow.tracking import MlflowClient
 
 
-def latest_validation_metrics(experiment_name: str = "feast_validation") -> list[dict]:
-    client = MlflowClient()
-    exps = [e for e in client.list_experiments() if e.name == experiment_name]
+def latest_validation_metrics(experiment_name: str = "feast_validation", client: MlflowClient | None = None) -> list[dict]:
+    client = client or MlflowClient()
+    if hasattr(client, "search_experiments"):
+        exps = [e for e in client.search_experiments() if e.name == experiment_name]
+    else:
+        exps = [e for e in client.list_experiments() if e.name == experiment_name]
     if not exps:
+        print(f"Experiment not found: {experiment_name}")
         return []
     exp = exps[0]
+    print(f"Experiment found: {experiment_name} ({exp.experiment_id})")
     runs = client.search_runs([exp.experiment_id], order_by=["attributes.start_time DESC"], max_results=50)
+    print(f"Validation runs found: {len(runs)}")
     res = []
     for r in runs:
         metrics = r.data.metrics
@@ -29,7 +34,11 @@ def latest_validation_metrics(experiment_name: str = "feast_validation") -> list
 
 def evaluate_and_promote(model_name: str, to_stage: str = "Staging"):
     client = MlflowClient()
-    metrics = latest_validation_metrics()
+    try:
+        metrics = latest_validation_metrics(client=client)
+    except Exception as e:
+        print("Failed to read MLflow validation metrics:", e)
+        return 6
     if not metrics:
         print("No validation runs found; skipping promotion.")
         return 1
@@ -44,9 +53,8 @@ def evaluate_and_promote(model_name: str, to_stage: str = "Staging"):
         print("No drift_detected metrics found in recent validation runs; skipping promotion.")
         return 1
 
-    avg_drift = statistics.mean(drift_vals)
-    print(f"Average recent drift_detected: {avg_drift}")
-    if avg_drift > 0.0:
+    print(f"Recent drift_detected values: {drift_vals}")
+    if any(value != 0.0 for value in drift_vals):
         print("Drift detected in recent runs — not promoting.")
         return 2
 
@@ -67,6 +75,7 @@ def evaluate_and_promote(model_name: str, to_stage: str = "Staging"):
             client.transition_model_version_stage(name=model_name, version=v.version, stage=to_stage, archive_existing_versions=False)
         except Exception as e:
             print("Failed to transition version:", e)
+            return 5
     print("Promotion complete.")
     return 0
 
