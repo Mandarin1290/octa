@@ -13,7 +13,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -40,5 +40,4 @@ jobs:
       - name: Smoke run container (optional)
         if: ${{ secrets.REGISTRY_URL != '' }}
         run: |
-          docker run --rm -v ${{ github.workspace }}/tests/data:/data ${{ secrets.REGISTRY_URL }}/octa-trainer:latest --parquet /data/sample_parquet.parquet --target target --version ci-registry-run --cv-folds 3 --hyperopt --backtest || true
-
+          docker run --rm -v ${{ github.workspace }}/tests/data:/data ${{ secrets.REGISTRY_URL }}/octa-trainer:latest --parquet /data/sample_parquet.parquet --target target --version ci-registry-run --cv-folds 3 --hyperopt --backtest

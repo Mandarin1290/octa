@@ -10,26 +10,26 @@ jobs:
   train:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install deps
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install --no-cache-dir -r config/requirements.txt
 
       - name: Create synthetic parquet sample
         run: |
           python - <<'PY'
-import pandas as pd
-df = pd.DataFrame({'feat1':[1,2,3,4,5],'feat2':[10,20,30,40,50],'target':[0,1,0,1,0]})
-df.to_parquet('sample.parquet')
-print('wrote sample.parquet')
-PY
+          import pandas as pd
+          df = pd.DataFrame({'feat1':[1,2,3,4,5],'feat2':[10,20,30,40,50],'target':[0,1,0,1,0]})
+          df.to_parquet('sample.parquet')
+          print('wrote sample.parquet')
+          PY
 
       - name: Run trainer
         run: |

@@ -3,6 +3,27 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-04-19 09:41:28] CHANGE
+Code-Änderungen - (+35/-39 Zeilen)
+
+**Statistics:**
+- Files Changed: 7
+- Lines Added: +35
+- Lines Deleted: -39
+- Net Change: -4
+
+**File-Level Changes:**
+```
++    2 -    3  .github/workflows/build_and_push_image.yml
++    3 -    3  .github/workflows/canary_promote.yml
++    4 -    6  .github/workflows/ci.yml
++   11 -   11  .github/workflows/container_train_and_canary.yml
++    4 -    5  .github/workflows/feast_integration.yml
++    3 -    3  .github/workflows/feast_materialize_integration.yml
++    8 -    8  .github/workflows/train_and_ci.yml
+```
+
+
 ## [2026-04-19 09:30:48] CHANGE
 Code-Änderungen - (+14/-1 Zeilen)
 
