@@ -3,6 +3,22 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-04-19 09:30:48] CHANGE
+Code-Änderungen - (+14/-1 Zeilen)
+
+**Statistics:**
+- Files Changed: 2
+- Lines Added: +14
+- Lines Deleted: -1
+- Net Change: +13
+
+**File-Level Changes:**
+```
++    1 -    1  .github/workflows/canary_promote.yml
++   13 -    0  scripts/promote_model_canary.py
+```
+
+
 ## [2026-04-19 09:21:56] CHANGE
 Code-Änderungen - (+18/-9 Zeilen)
 

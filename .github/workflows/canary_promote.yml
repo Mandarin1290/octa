@@ -24,4 +24,4 @@ jobs:
           MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_TRACKING_USERNAME }}
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
         run: |
-          python3 scripts/promote_model_canary.py --model-name octa-model --to-stage Staging
+          python3 scripts/promote_model_canary.py --model-name demo_model --to-stage Staging

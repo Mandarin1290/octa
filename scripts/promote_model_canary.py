@@ -32,6 +32,15 @@ def latest_validation_metrics(experiment_name: str = "feast_validation", client:
     return res
 
 
+def _registered_model_names(client: MlflowClient) -> list[str]:
+    try:
+        if hasattr(client, "search_registered_models"):
+            return sorted(str(m.name) for m in client.search_registered_models())
+    except Exception as e:
+        print("Could not list registered models:", e)
+    return []
+
+
 def evaluate_and_promote(model_name: str, to_stage: str = "Staging"):
     client = MlflowClient()
     try:
@@ -63,6 +72,10 @@ def evaluate_and_promote(model_name: str, to_stage: str = "Staging"):
         versions = client.get_latest_versions(model_name)
     except Exception as e:
         print("Could not find registered model:", e)
+        names = _registered_model_names(client)
+        if names:
+            print("Available registered models:", ", ".join(names[:25]))
+        print("Searched registered model:", model_name)
         return 3
 
     if not versions:

@@ -15,6 +15,16 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `scripts/promote_model_canary.py`
 
 
+### [2026-04-19 09:30:48] CHANGE
+**Beschreibung:** Code-Änderungen - (+14/-1 Zeilen)
+
+**Geänderte Dateien:**
+- **CONFIG:** 1 Dateien
+  - `.github/workflows/canary_promote.yml`
+- **SCRIPTS:** 1 Dateien
+  - `scripts/promote_model_canary.py`
+
+
 ## 2026-04-15
 
 
