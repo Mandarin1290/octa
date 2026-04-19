@@ -3,6 +3,21 @@
 Detaillierte technische Änderungen. Auto-generiert.
 
 
+## [2026-04-19 10:02:02] CHANGE
+Code-Änderungen - (+8/-6 Zeilen)
+
+**Statistics:**
+- Files Changed: 1
+- Lines Added: +8
+- Lines Deleted: -6
+- Net Change: +2
+
+**File-Level Changes:**
+```
++    8 -    6  .github/workflows/build_and_push_image.yml
+```
+
+
 ## [2026-04-19 09:41:28] CHANGE
 Code-Änderungen - (+35/-39 Zeilen)
 
