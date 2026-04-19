@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY config/requirements-runtime.txt .
 
-RUN pip install --upgrade pip && pip install -r config/requirements-runtime.txt
+RUN pip install --upgrade pip && pip install -r requirements-runtime.txt
 
 COPY . .
 
