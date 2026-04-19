@@ -1,0 +1,12 @@
+.venv
+__pycache__
+*.pyc
+.git
+.gitignore
+
+octa/var
+tmp
+logs
+
+gh_debug_*
+*.parquet

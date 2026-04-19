@@ -60,6 +60,15 @@ Automatisch generiert. Alle Änderungen werden hier dokumentiert.
   - `.github/workflows/build_and_push_image.yml`
 
 
+### [2026-04-19 11:11:49] CHANGE
+**Beschreibung:** Code-Änderungen - (+21/-10 Zeilen)
+
+**Geänderte Dateien:**
+- **OTHER:** 2 Dateien
+  - `.dockerignore`
+  - `octa/infra/deployment/docker/Dockerfile`
+
+
 ## 2026-04-15
 
 
