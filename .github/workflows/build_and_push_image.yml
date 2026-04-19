@@ -12,6 +12,7 @@ jobs:
       id-token: write
     env:
       REGISTRY_URL: ${{ secrets.REGISTRY_URL }}
+      REGISTRY_IMAGE: ${{ secrets.REGISTRY_URL == 'ghcr.io' && format('ghcr.io/{0}/octa-trainer', github.repository_owner) || format('{0}/octa-trainer', secrets.REGISTRY_URL) }}
 
     steps:
       - name: Checkout
@@ -23,10 +24,46 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Login to registry
+      - name: Registry preflight
+        env:
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "${REGISTRY_URL}" ]; then
+            echo "::error::REGISTRY_URL secret is required"
+            exit 1
+          fi
+
+          if [ "${REGISTRY_URL}" = "ghcr.io" ]; then
+            echo "registry target: ghcr.io"
+            echo "image target: ${REGISTRY_IMAGE}"
+            echo "login mode: ghcr_github_token"
+            exit 0
+          fi
+
+          if [ -z "${REGISTRY_USERNAME}" ] || [ -z "${REGISTRY_PASSWORD}" ]; then
+            echo "::error::Custom registry requires REGISTRY_USERNAME and REGISTRY_PASSWORD secrets"
+            exit 1
+          fi
+
+          echo "registry target: ${REGISTRY_URL}"
+          echo "image target: ${REGISTRY_IMAGE}"
+          echo "login mode: custom_registry_secret_login"
+
+      - name: Login to GHCR
+        if: ${{ env.REGISTRY_URL == 'ghcr.io' }}
         uses: docker/login-action@v4
         with:
-          registry: ${{ secrets.REGISTRY_URL }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to custom registry
+        if: ${{ env.REGISTRY_URL != 'ghcr.io' && env.REGISTRY_URL != '' }}
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY_URL }}
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
 
@@ -36,10 +73,10 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ secrets.REGISTRY_URL }}/octa-trainer:${{ github.sha }}
-            ${{ secrets.REGISTRY_URL }}/octa-trainer:latest
+            ${{ env.REGISTRY_IMAGE }}:${{ github.sha }}
+            ${{ env.REGISTRY_IMAGE }}:latest
 
       - name: Smoke run container (optional)
         if: ${{ env.REGISTRY_URL != '' }}
         run: |
-          docker run --rm -v ${{ github.workspace }}/tests/data:/data ${{ env.REGISTRY_URL }}/octa-trainer:latest --parquet /data/sample_parquet.parquet --target target --version ci-registry-run --cv-folds 3 --hyperopt --backtest
+          docker run --rm -v ${{ github.workspace }}/tests/data:/data "${REGISTRY_IMAGE}:latest" --parquet /data/sample_parquet.parquet --target target --version ci-registry-run --cv-folds 3 --hyperopt --backtest
